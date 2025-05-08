@@ -1,16 +1,7 @@
-import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig, searchForWorkspaceRoot } from 'vite';
+import tailwindcss from "@tailwindcss/vite";
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
-    server: {
-        fs: {
-          allow: [
-            // search up for workspace root
-            searchForWorkspaceRoot(process.cwd()),
-            // your custom rules
-            './bindings/*',
-          ],
-        },
-    },
-	plugins: [sveltekit()]
+  plugins: [tailwindcss(), sveltekit()],
 });

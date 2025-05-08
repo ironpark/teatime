@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   go:mod:tidy:
@@ -12,14 +12,14 @@ tasks:
     dir: frontend
     sources:
       - package.json
-      - package-lock.json
+      - pnpm-lock.yaml
     generates:
       - node_modules/*
     preconditions:
-      - sh: npm version
-        msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
+      - sh: pnpm version
+        msg: "Looks like pnpm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
     cmds:
-      - npm install
+      - pnpm install
 
   build:frontend:
     label: build:frontend (PRODUCTION={{.PRODUCTION}})
@@ -36,12 +36,11 @@ tasks:
           BUILD_FLAGS:
             ref: .BUILD_FLAGS
     cmds:
-      - npm run {{.BUILD_COMMAND}} -q
+      - pnpm run {{.BUILD_COMMAND}} -l silent
     env:
       PRODUCTION: '{{.PRODUCTION | default "false"}}'
     vars:
       BUILD_COMMAND: '{{if eq .PRODUCTION "true"}}build{{else}}build:dev{{end}}'
-
 
   generate:bindings:
     label: generate:bindings (BUILD_FLAGS={{.BUILD_FLAGS}})
@@ -51,7 +50,7 @@ tasks:
     sources:
       - "**/*.[jt]s"
       - exclude: frontend/**/*
-      - frontend/bindings/**/*  # Rerun when switching between dev/production mode causes changes in output
+      - frontend/bindings/**/* # Rerun when switching between dev/production mode causes changes in output
       - "**/*.go"
       - go.mod
       - go.sum
@@ -77,7 +76,7 @@ tasks:
     deps:
       - task: install:frontend:deps
     cmds:
-      - npm run dev -- --port {{.VITE_PORT}} --strictPort
+      - pnpm run dev --port {{.VITE_PORT}} --strictPort
 
   update:build-assets:
     summary: Updates the build assets
