@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ironpark/teatime/services"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -14,24 +15,23 @@ import (
 // made available to the frontend.
 // See https://pkg.go.dev/embed for more information.
 
-//go:embed all:frontend/build
+//go:embed all:frontend/dist
 var assets embed.FS
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
 // and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
 // logs any error that might occur.
 func main() {
-
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
 	// 'Assets' configures the asset server with the 'FS' variable pointing to the frontend files.
 	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
 	// 'Mac' options tailor the application when running an macOS.
 	app := application.New(application.Options{
-		Name:        "tea-time",
+		Name:        "teatime",
 		Description: "A demo of using raw HTML & CSS",
 		Services: []application.Service{
-			application.NewService(&GreetService{}),
+			application.NewService(&services.Greeter{}),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -46,7 +46,7 @@ func main() {
 	// 'Mac' options tailor the window when running on macOS.
 	// 'BackgroundColour' is the background colour of the window.
 	// 'URL' is the URL that will be loaded into the webview.
-	app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Window 1",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
@@ -62,7 +62,7 @@ func main() {
 	go func() {
 		for {
 			now := time.Now().Format(time.RFC1123)
-			app.EmitEvent("time", now)
+			app.Event.Emit("time", now)
 			time.Sleep(time.Second)
 		}
 	}()

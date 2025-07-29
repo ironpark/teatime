@@ -6,9 +6,9 @@
         <key>CFBundleName</key>
             <string>My Product</string>
         <key>CFBundleExecutable</key>
-            <string>tea-time</string>
+            <string>teatime</string>
         <key>CFBundleIdentifier</key>
-            <string>com.wails.tea-time</string>
+            <string>com.wails.teatime</string>
         <key>CFBundleVersion</key>
             <string>0.1.0</string>
         <key>CFBundleGetInfoString</key>

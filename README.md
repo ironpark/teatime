@@ -1,59 +1,67 @@
-# Welcome to Your New Wails3 Project!
+# Teatime
 
-Congratulations on generating your Wails3 application! This README will guide you through the next steps to get your project up and running.
+An AI-friendly local workflow automation program inspired by ComfyUI and n8n. Built with Wails 3, SvelteKit, and bits-ui for a modern desktop experience.
+> [!WARNING]
+> This project is in very early development stage. Core features are not yet properly implemented and may not work as expected.
 
+## Requirements
+
+- **Go** 1.24 or later
+- **Node.js** 22.14.0 or later
+- **pnpm** for package management (frontend)
 ## Getting Started
+### Release
+> Not ready yet.
 
-1. Navigate to your project directory in the terminal.
+### From Source
 
-2. To run your application in development mode, use the following command:
 
-   ```
-   wails3 dev
-   ```
+```bash
+# Install Wails 3 (if not already installed):
+go install -v github.com/wailsapp/wails/v3/cmd/wails3@latest
+```
 
-   This will start your application and enable hot-reloading for both frontend and backend changes.
 
-3. To build your application for production, use:
-
-   ```
-   wails3 build
-   ```
-
-   This will create a production-ready executable in the `build` directory.
-
-## Exploring Wails3 Features
-
-Now that you have your project set up, it's time to explore the features that Wails3 offers:
-
-1. **Check out the examples**: The best way to learn is by example. Visit the `examples` directory in the `v3/examples` directory to see various sample applications.
-
-2. **Run an example**: To run any of the examples, navigate to the example's directory and use:
-
-   ```
-   go run .
-   ```
-
-   Note: Some examples may be under development during the alpha phase.
-
-3. **Explore the documentation**: Visit the [Wails3 documentation](https://v3.wails.io/) for in-depth guides and API references.
-
-4. **Join the community**: Have questions or want to share your progress? Join the [Wails Discord](https://discord.gg/JDdSxwjhGf) or visit the [Wails discussions on GitHub](https://github.com/wailsapp/wails/discussions).
+```bash
+git clone https://github.com/ironpark/teatime && cd teatime
+# Install Go dependencies
+go mod tidy   
+# Development mode
+wails3 dev   
+# Or build for production
+wails3 build
+```
 
 ## Project Structure
 
-Take a moment to familiarize yourself with your project structure:
+```
+teatime/
+├── frontend/                    # SvelteKit frontend
+│   ├── src/
+│   │   ├── routes/             # SvelteKit routes
+│   │   ├── stories/            # Storybook stories
+│   │   └── hooks.ts            # SvelteKit hooks
+│   ├── bindings/               # Auto-generated Wails bindings
+│   ├── messages/               # i18n message files
+│   └── .storybook/             # Storybook configuration
+├── services/                   # Go backend services
+├── build/                      # Build configuration
+│   ├── darwin/                 # macOS build config
+│   ├── linux/                  # Linux build config
+│   └── windows/                # Windows build config
+├── main.go                     # Application entry point
+└── go.mod                      # Go module definition
+```
 
-- `frontend/`: Contains your frontend code (HTML, CSS, JavaScript/TypeScript)
-- `main.go`: The entry point of your Go backend
-- `app.go`: Define your application structure and methods here
-- `wails.json`: Configuration file for your Wails project
+## Built With ❤
 
-## Next Steps
+### Frontend:
+- **SvelteKit** - Web framework
+- **Bits-UI** - Headless components library for svelte
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **TypeScript** - Type-safe JavaScript
+- **Storybook** - Component development environment
 
-1. Modify the frontend in the `frontend/` directory to create your desired UI.
-2. Add backend functionality in `main.go`.
-3. Use `wails3 dev` to see your changes in real-time.
-4. When ready, build your application with `wails3 build`.
-
-Happy coding with Wails3! If you encounter any issues or have questions, don't hesitate to consult the documentation or reach out to the Wails community.
+### Backend:
+- **Go** - System programming language
+- **Wails 3** - Desktop application framework
