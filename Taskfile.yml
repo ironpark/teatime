@@ -31,4 +31,14 @@ tasks:
     summary: Runs the application in development mode
     cmds:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
+  
+  db:new:*:
+    dir: ./database/sql/migrations
+    vars:
+      NAME_OF_MIGRATION: "{{index .MATCH 0}}"
+    cmds:
+      - "goose create {{.NAME_OF_MIGRATION}} sql"
 
+  db:gen:
+    cmds:
+      - "sqlc generate"

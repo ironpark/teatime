@@ -17,7 +17,13 @@ const config = {
         }),
 		alias: {
 			'$ipc': "./bindings/github.com/ironpark/teatime",
-			'$ipc/*': "./bindings/github.com/ironpark/teatime/*"
+			'$ipc/*': "./bindings/github.com/ironpark/teatime/*",
+			"$lib/*": "./src/lib/*",
+			"$lib": "./src/lib",
+			"$components/*": "./src/lib/components/*",
+			"$components": "./src/lib/components",
+			"$ui/*": "./src/lib/components/ui/*",
+			"$ui": "./src/lib/components/ui",
 		}
 	}
 };
