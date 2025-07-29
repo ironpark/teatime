@@ -36,7 +36,7 @@ wails3 build
 
 ```
 teatime/
-├── frontend/                    # SvelteKit frontend
+├── frontend/
 │   ├── src/
 │   │   ├── routes/             # SvelteKit routes
 │   │   ├── stories/            # Storybook stories
@@ -44,11 +44,14 @@ teatime/
 │   ├── bindings/               # Auto-generated Wails bindings
 │   ├── messages/               # i18n message files
 │   └── .storybook/             # Storybook configuration
+│
 ├── services/                   # Go backend services
+│
 ├── build/                      # Build configuration
 │   ├── darwin/                 # macOS build config
 │   ├── linux/                  # Linux build config
 │   └── windows/                # Windows build config
+│
 ├── main.go                     # Application entry point
 └── go.mod                      # Go module definition
 ```
@@ -56,12 +59,12 @@ teatime/
 ## Built With ❤
 
 ### Frontend:
-- **SvelteKit** - Web framework
-- **Bits-UI** - Headless components library for svelte
-- **Tailwind CSS v4** - Utility-first CSS framework
-- **TypeScript** - Type-safe JavaScript
-- **Storybook** - Component development environment
+- **[SvelteKit](https://svelte.dev/docs/kit/introduction)** - Web framework
+- **[Bits-UI](https://bits-ui.com/)** - Headless components library for svelte
+- **[Tailwind CSS v4](https://tailwindcss.com/)** - Utility-first CSS framework
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript
+- **[Storybook](https://storybook.js.org/)** - Component development environment
 
 ### Backend:
-- **Go** - System programming language
-- **Wails 3** - Desktop application framework
+- **[Go](https://go.dev/)** - System programming language
+- **[Wails 3](https://github.com/wailsapp/wails)** - Desktop application framework
