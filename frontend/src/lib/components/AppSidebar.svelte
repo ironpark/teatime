@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import {
 		Sidebar,
 		SidebarContent,
@@ -14,14 +14,15 @@
 		SidebarMenuSubButton,
 		SidebarMenuSubItem
 	} from '$ui/sidebar';
-	import {
-		Home,
-		Settings,
-		ChefHat,
-		Play,
-		FileText,
-		Palette
-	} from 'lucide-svelte';
+	import { Home, Settings, ChefHat, Play } from 'lucide-svelte';
+	import { page } from '$app/state';
+
+	function isActive(url: string) {
+		if (url === '/') {
+			return page.url.pathname === '/';
+		}
+		return page.url.pathname.startsWith(url);
+	}
 
 	const data = {
 		navMain: [
@@ -43,16 +44,6 @@
 		],
 		navSecondary: [
 			{
-				title: 'Documentation',
-				url: '/docs',
-				icon: FileText
-			},
-			{
-				title: 'Themes',
-				url: '/themes',
-				icon: Palette
-			},
-			{
 				title: 'Settings',
 				url: '/settings',
 				icon: Settings
@@ -63,15 +54,15 @@
 
 <Sidebar>
 	<SidebarHeader>
-		<div class="flex items-center gap-2 p-2">
-			<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-				<span class="text-primary-foreground font-bold text-sm">T</span>
+		<a href="/" class="hover:bg-accent flex items-center gap-2 rounded-lg p-2 transition-colors">
+			<div class="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
+				<span class="text-primary-foreground text-sm font-bold">T</span>
 			</div>
 			<div class="flex flex-col">
 				<span class="text-sm font-medium">Teatime</span>
-				<span class="text-xs text-muted-foreground">Workflow Automation</span>
+				<span class="text-muted-foreground text-xs">Workflow Automation</span>
 			</div>
-		</div>
+		</a>
 	</SidebarHeader>
 
 	<SidebarContent>
@@ -81,9 +72,15 @@
 				<SidebarMenu>
 					{#each data.navMain as item}
 						<SidebarMenuItem>
-							<SidebarMenuButton href={item.url}>
-								<svelte:component this={item.icon} size={16} />
-								<span>{item.title}</span>
+							<SidebarMenuButton isActive={isActive(item.url)}>
+								<a
+									href={item.url}
+									class="flex w-full items-center gap-2"
+									data-sveltekit-preload-data
+								>
+									<item.icon size={16} />
+									<span>{item.title}</span>
+								</a>
 							</SidebarMenuButton>
 						</SidebarMenuItem>
 					{/each}
@@ -97,9 +94,15 @@
 				<SidebarMenu>
 					{#each data.navSecondary as item}
 						<SidebarMenuItem>
-							<SidebarMenuButton href={item.url}>
-								<svelte:component this={item.icon} size={16} />
-								<span>{item.title}</span>
+							<SidebarMenuButton isActive={isActive(item.url)}>
+								<a
+									href={item.url}
+									class="flex w-full items-center gap-2"
+									data-sveltekit-preload-data
+								>
+									<item.icon size={16} />
+									<span>{item.title}</span>
+								</a>
 							</SidebarMenuButton>
 						</SidebarMenuItem>
 					{/each}
@@ -109,7 +112,7 @@
 	</SidebarContent>
 
 	<SidebarFooter>
-		<div class="p-2 text-xs text-muted-foreground">
+		<div class="text-muted-foreground p-2 text-xs">
 			<div>Version 0.1.0</div>
 			<div class="text-xs opacity-60">Early Development</div>
 		</div>
