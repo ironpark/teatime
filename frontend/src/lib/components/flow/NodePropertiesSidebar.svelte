@@ -100,6 +100,7 @@
 						<div class="space-y-1">
 							<Label for="ingredient-category">Category</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.category}
 								onValueChange={(value) => updateNodeData('category', value)}
 							>
@@ -208,6 +209,7 @@
 						<div class="space-y-1">
 							<Label for="variable-type">Type</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.type}
 								onValueChange={(value) => updateNodeData('type', value)}
 							>
@@ -251,6 +253,7 @@
 						<div class="space-y-1">
 							<Label for="constant-type">Type</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.type}
 								onValueChange={(value) => updateNodeData('type', value)}
 							>
@@ -294,6 +297,7 @@
 						<div class="space-y-1">
 							<Label for="formatter-type">Format Type</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.type}
 								onValueChange={(value) => updateNodeData('type', value)}
 							>
@@ -337,6 +341,7 @@
 						<div class="space-y-1">
 							<Label for="calculator-operation">Operation</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.operation}
 								onValueChange={(value) => updateNodeData('operation', value)}
 							>
@@ -382,6 +387,7 @@
 						<div class="space-y-1">
 							<Label for="aggregator-operation">Operation</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.operation}
 								onValueChange={(value) => updateNodeData('operation', value)}
 							>
@@ -534,6 +540,7 @@
 						<div class="space-y-1">
 							<Label for="manual-confirmation">Requires Confirmation</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.requiresConfirmation ? 'true' : 'false'}
 								onValueChange={(value) => updateNodeData('requiresConfirmation', value === 'true')}
 							>
@@ -576,6 +583,7 @@
 						<div class="space-y-1">
 							<Label for="file-input-type">File Type</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.fileType}
 								onValueChange={(value) => updateNodeData('fileType', value)}
 							>
@@ -684,6 +692,7 @@
 						<div class="space-y-1">
 							<Label for="transcription-model">Model</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.model}
 								onValueChange={(value) => updateNodeData('model', value)}
 							>
@@ -717,6 +726,7 @@
 						<div class="space-y-1">
 							<Label for="translation-source">Source Language</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.sourceLanguage}
 								onValueChange={(value) => updateNodeData('sourceLanguage', value)}
 							>
@@ -829,6 +839,7 @@
 						<div class="space-y-1">
 							<Label for="file-save-format">Format</Label>
 							<Select
+								type="single"
 								value={selectedNode.data.format}
 								onValueChange={(value) => updateNodeData('format', value)}
 							>
