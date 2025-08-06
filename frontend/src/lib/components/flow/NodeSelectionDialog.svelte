@@ -12,192 +12,144 @@
 		Zap,
 		GitBranch,
 		Play,
-		ChefHat,
-		Utensils,
-		CheckCircle,
-		Timer,
-		Thermometer,
-		Scale,
+		Settings,
 		Workflow,
+		Activity,
+		Terminal,
+		Plug,
+		Hand,
+		FileImage,
 		Filter,
 		Shuffle,
-		Settings,
-		Variable,
-		Hash,
-		Type,
-		Calculator,
-		BarChart3,
 		Music,
 		FileText,
 		Languages,
 		Bot,
 		Save,
-		FileImage,
-		Terminal,
-		Plug,
-		Hand
+		Variable,
+		Hash,
+		Type,
+		Calculator,
+		BarChart3,
+		Package
 	} from 'lucide-svelte';
+	import type { NodeInfo } from '$bindings/stores/models';
 
 	interface Props {
 		open?: boolean;
 		category?: 'trigger' | 'branch' | 'action' | 'utility' | null;
-		onNodeSelect: (nodeType: string) => void;
+		availableNodes?: NodeInfo[];
+		onNodeSelect: (nodeId: string) => void;
 		onClose: () => void;
 	}
 
-	let { open = false, category = null, onNodeSelect, onClose }: Props = $props();
-	const nodeCategories = {
-		trigger: {
-			title: 'Triggers',
-			description: 'Start your workflow with these trigger nodes',
-			icon: Zap,
-			color: 'text-blue-600',
-			bgColor: 'bg-blue-50',
-			nodes: [
-				{
-					type: 'command',
-					title: 'Command Line',
-					description: 'Execute command line programs',
-					icon: Terminal,
-					color: 'border-blue-200'
-				},
-				{
-					type: 'mcp',
-					title: 'MCP Server',
-					description: 'Connect to MCP server resources',
-					icon: Plug,
-					color: 'border-blue-200'
-				},
-				{
-					type: 'manual',
-					title: 'Manual Trigger',
-					description: 'Start workflow manually',
-					icon: Hand,
-					color: 'border-blue-200'
-				},
-				{
-					type: 'file-input',
-					title: 'File Input',
-					description: 'Load any input file',
-					icon: FileImage,
-					color: 'border-blue-200'
-				}
-			]
-		},
-		branch: {
-			title: 'Branches',
-			description: 'Control flow with conditional branches',
-			icon: GitBranch,
-			color: 'text-yellow-600',
-			bgColor: 'bg-yellow-50',
-			nodes: [
-				{
-					type: 'condition',
-					title: 'Condition',
-					description: 'Branch based on conditions',
-					icon: Filter,
-					color: 'border-yellow-200'
-				},
-				{
-					type: 'switch',
-					title: 'Switch',
-					description: 'Multiple path branching',
-					icon: Shuffle,
-					color: 'border-yellow-200'
-				}
-			]
-		},
-		action: {
-			title: 'Actions',
-			description: 'Perform actions and transformations',
-			icon: Play,
-			color: 'text-green-600',
-			bgColor: 'bg-green-50',
-			nodes: [
-				{
-					type: 'ffmpeg-extract',
-					title: 'FFmpeg Audio Extract',
-					description: 'Extract audio from video using FFmpeg',
-					icon: Music,
-					color: 'border-green-200'
-				},
-				{
-					type: 'transcription',
-					title: 'Speech Transcription',
-					description: 'Convert audio to text',
-					icon: FileText,
-					color: 'border-green-200'
-				},
-				{
-					type: 'translation',
-					title: 'Text Translation',
-					description: 'Translate text to another language',
-					icon: Languages,
-					color: 'border-green-200'
-				},
-				{
-					type: 'llm-correction',
-					title: 'LLM Text Correction',
-					description: 'Improve text quality using AI',
-					icon: Bot,
-					color: 'border-green-200'
-				},
-				{
-					type: 'file-save',
-					title: 'Save to File',
-					description: 'Save result to file system',
-					icon: Save,
-					color: 'border-green-200'
-				}
-			]
-		},
-		utility: {
-			title: 'Utilities',
-			description: 'Helper nodes for data processing and workflow management',
-			icon: Settings,
-			color: 'text-purple-600',
-			bgColor: 'bg-purple-50',
-			nodes: [
-				{
-					type: 'variable',
-					title: 'Variable',
-					description: 'Store and reference values',
-					icon: Variable,
-					color: 'border-purple-200'
-				},
-				{
-					type: 'constant',
-					title: 'Constant',
-					description: 'Fixed constant value',
-					icon: Hash,
-					color: 'border-purple-200'
-				},
-				{
-					type: 'formatter',
-					title: 'Formatter',
-					description: 'Format text and dates',
-					icon: Type,
-					color: 'border-purple-200'
-				},
-				{
-					type: 'calculator',
-					title: 'Calculator',
-					description: 'Perform mathematical calculations',
-					icon: Calculator,
-					color: 'border-purple-200'
-				},
-				{
-					type: 'aggregator',
-					title: 'Aggregator',
-					description: 'Aggregate and summarize data',
-					icon: BarChart3,
-					color: 'border-purple-200'
-				}
-			]
-		}
-	};
+	let { open = false, category = null, availableNodes = [], onNodeSelect, onClose }: Props = $props();
+	
+	// Helper function to get icon based on node type
+	function getNodeIcon(nodeType: string, nodeName: string): any {
+		const type = nodeType.toLowerCase();
+		const name = nodeName.toLowerCase();
+		
+		// Trigger icons
+		if (name.includes('command') || name.includes('cli')) return Terminal;
+		if (name.includes('webhook')) return Plug;
+		if (name.includes('manual')) return Hand;
+		if (name.includes('file')) return FileImage;
+		
+		// Branch icons
+		if (name.includes('condition')) return Filter;
+		if (name.includes('switch')) return Shuffle;
+		if (name.includes('loop')) return GitBranch;
+		
+		// Action icons
+		if (name.includes('llm') || name.includes('ai')) return Bot;
+		if (name.includes('save')) return Save;
+		if (name.includes('translate')) return Languages;
+		if (name.includes('transcribe')) return FileText;
+		if (name.includes('audio')) return Music;
+		
+		// Utility icons
+		if (name.includes('variable')) return Variable;
+		if (name.includes('constant')) return Hash;
+		if (name.includes('format')) return Type;
+		if (name.includes('calc')) return Calculator;
+		if (name.includes('aggregate')) return BarChart3;
+		
+		// Default icons by category
+		if (type.includes('trigger')) return Zap;
+		if (type.includes('branch')) return GitBranch;
+		if (type.includes('action')) return Activity;
+		
+		return Package;
+	}
+	
+	// Build dynamic categories from available nodes
+	let nodeCategories = $derived(() => {
+		const categories = {
+			trigger: {
+				title: 'Triggers',
+				description: 'Start your workflow with these trigger nodes',
+				icon: Zap,
+				color: 'text-blue-600',
+				bgColor: 'bg-blue-50',
+				nodes: [] as any[]
+			},
+			branch: {
+				title: 'Branches',
+				description: 'Control flow with conditional branches',
+				icon: GitBranch,
+				color: 'text-yellow-600',
+				bgColor: 'bg-yellow-50',
+				nodes: [] as any[]
+			},
+			action: {
+				title: 'Actions',
+				description: 'Perform actions and transformations',
+				icon: Play,
+				color: 'text-green-600',
+				bgColor: 'bg-green-50',
+				nodes: [] as any[]
+			},
+			utility: {
+				title: 'Utilities',
+				description: 'Helper nodes for data processing and workflow management',
+				icon: Settings,
+				color: 'text-purple-600',
+				bgColor: 'bg-purple-50',
+				nodes: [] as any[]
+			}
+		};
+		
+		// Categorize nodes
+		availableNodes.forEach(node => {
+			const type = node.Type.toLowerCase();
+			let categoryKey: 'trigger' | 'branch' | 'action' | 'utility' = 'utility';
+			let borderColor = 'border-purple-200';
+			
+			if (type.includes('trigger')) {
+				categoryKey = 'trigger';
+				borderColor = 'border-blue-200';
+			} else if (type.includes('branch') || type.includes('conditional') || type.includes('loop') || type.includes('switch')) {
+				categoryKey = 'branch';
+				borderColor = 'border-yellow-200';
+			} else if (type.includes('action')) {
+				categoryKey = 'action';
+				borderColor = 'border-green-200';
+			}
+			
+			categories[categoryKey].nodes.push({
+				id: node.Id,
+				title: node.Name,
+				description: node.Description || `${node.Type} node`,
+				icon: getNodeIcon(node.Type, node.Name),
+				color: borderColor
+			});
+		});
+		
+		return categories;
+	});
 
-	let currentCategory = $derived(category ? nodeCategories[category] : null);
+	let currentCategory = $derived(category ? nodeCategories()[category] : null);
 </script>
 
 <Dialog {open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -220,7 +172,7 @@
 					<Button
 						variant="outline"
 						class={`h-auto justify-start p-4 transition-all hover:shadow-md ${node.color}`}
-						onclick={() => onNodeSelect(node.type)}
+						onclick={() => onNodeSelect(node.id)}
 					>
 						<div class="flex w-full items-start gap-3 text-left">
 							<div class="bg-muted rounded-lg p-2">
@@ -238,35 +190,25 @@
 			</div>
 
 			<!-- Quick Actions -->
-			<div class="border-t pt-4">
-				<div class="mb-3 flex items-center gap-2 text-sm font-medium">
-					<Workflow class="h-4 w-4" />
-					Quick Add
+			{#if availableNodes.length > 0}
+				<div class="border-t pt-4">
+					<div class="mb-3 flex items-center gap-2 text-sm font-medium">
+						<Workflow class="h-4 w-4" />
+						Quick Add
+					</div>
+					<div class="flex gap-2 flex-wrap">
+						{#each availableNodes.slice(0, 3) as node}
+							<Badge
+								variant="outline"
+								class="hover:bg-primary hover:text-primary-foreground cursor-pointer"
+								onclick={() => onNodeSelect(node.Id)}
+							>
+								+ {node.Name}
+							</Badge>
+						{/each}
+					</div>
 				</div>
-				<div class="flex gap-2">
-					<Badge
-						variant="outline"
-						class="hover:bg-primary hover:text-primary-foreground cursor-pointer"
-						onclick={() => onNodeSelect('ingredient')}
-					>
-						+ Ingredient
-					</Badge>
-					<Badge
-						variant="outline"
-						class="hover:bg-primary hover:text-primary-foreground cursor-pointer"
-						onclick={() => onNodeSelect('step')}
-					>
-						+ Step
-					</Badge>
-					<Badge
-						variant="outline"
-						class="hover:bg-primary hover:text-primary-foreground cursor-pointer"
-						onclick={() => onNodeSelect('output')}
-					>
-						+ Output
-					</Badge>
-				</div>
-			</div>
+			{/if}
 		{/if}
 	</DialogContent>
 </Dialog>

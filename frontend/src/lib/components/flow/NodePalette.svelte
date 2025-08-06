@@ -2,37 +2,74 @@
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
-  import { ChefHat, Utensils, CheckCircle, Plus } from 'lucide-svelte';
+  import { ChefHat, Plus, Zap, Activity, Save } from 'lucide-svelte';
+  import { onMount } from 'svelte';
+  import { nodeStore } from '$lib/stores/nodes.svelte';
 
   interface Props {
-    addNode: (nodeType: string) => void;
+    addNode: (nodeId: string) => void;
   }
 
   let { addNode }: Props = $props();
 
-  const nodeCategories = [
-    {
-      title: 'Ingredients',
-      icon: ChefHat,
-      items: [
-        { type: 'ingredient', label: 'Ingredient', description: 'Add recipe ingredients', color: 'text-red-600' }
-      ]
-    },
-    {
-      title: 'Processing',
-      icon: Utensils,
-      items: [
-        { type: 'step', label: 'Recipe Step', description: 'Cooking or preparation step', color: 'text-blue-600' }
-      ]
-    },
-    {
-      title: 'Output',
-      icon: CheckCircle,
-      items: [
-        { type: 'output', label: 'Final Result', description: 'Recipe end result', color: 'text-green-600' }
-      ]
+  onMount(async () => {
+    // Ensure nodes are loaded
+    if (nodeStore.availableNodes.length === 0) {
+      await nodeStore.loadNodes();
     }
-  ];
+  });
+
+  // Dynamically group nodes by their type
+  let nodeCategories = $derived(() => {
+    const categories: Record<string, { title: string; icon: unknown; items: Array<{
+      type: string;
+      label: string;
+      description: string;
+      color: string;
+    }> }> = {};
+    
+    nodeStore.availableNodes.forEach(node => {
+      const nodeType = node.Type.toLowerCase();
+      let category = 'Actions';
+      let icon = Activity;
+      let color = 'text-blue-600';
+      
+      if (nodeType.includes('trigger')) {
+        category = 'Triggers';
+        icon = Zap;
+        color = 'text-yellow-600';
+      } else if (nodeType.includes('branch') || nodeType.includes('conditional') || nodeType.includes('loop')) {
+        category = 'Control Flow';
+        icon = ChefHat;
+        color = 'text-purple-600';
+      } else if (nodeType.includes('save') || nodeType.includes('output')) {
+        category = 'Output';
+        icon = Save;
+        color = 'text-green-600';
+      } else if (nodeType.includes('action')) {
+        category = 'Actions';
+        icon = Activity;
+        color = 'text-blue-600';
+      }
+      
+      if (!categories[category]) {
+        categories[category] = {
+          title: category,
+          icon,
+          items: []
+        };
+      }
+      
+      categories[category].items.push({
+        type: node.Id,
+        label: node.Name,
+        description: node.Description || `${node.Type} node`,
+        color
+      });
+    });
+    
+    return Object.values(categories);
+  });
 
   function handleAddNode(nodeType: string) {
     addNode(nodeType);
@@ -48,7 +85,24 @@
       </p>
     </div>
 
-    {#each nodeCategories as category}
+    {#if nodeStore.isLoading}
+      <Card>
+        <CardContent class="p-6">
+          <div class="flex items-center justify-center">
+            <p class="text-sm text-muted-foreground">Loading nodes...</p>
+          </div>
+        </CardContent>
+      </Card>
+    {:else if nodeCategories().length === 0}
+      <Card>
+        <CardContent class="p-6">
+          <div class="flex items-center justify-center">
+            <p class="text-sm text-muted-foreground">No nodes available</p>
+          </div>
+        </CardContent>
+      </Card>
+    {:else}
+      {#each nodeCategories() as category}
       <Card>
         <CardHeader class="pb-3">
           <CardTitle class="flex items-center gap-2 text-base">
@@ -78,51 +132,61 @@
         </CardContent>
       </Card>
       
-      {#if category !== nodeCategories[nodeCategories.length - 1]}
-        <Separator />
-      {/if}
-    {/each}
+        {#if category !== nodeCategories()[nodeCategories().length - 1]}
+          <Separator />
+        {/if}
+      {/each}
+    {/if}
 
     <!-- Quick Actions -->
-    <Card>
-      <CardHeader class="pb-3">
-        <CardTitle class="text-base">Quick Actions</CardTitle>
-      </CardHeader>
-      
-      <CardContent class="pt-0">
-        <div class="space-y-2">
-          <Button
-            variant="outline"
-            size="sm"
-            class="w-full justify-start"
-            onclick={() => {
-              handleAddNode('ingredient');
-              handleAddNode('step');
-              handleAddNode('output');
-            }}
-          >
-            <Plus class="w-4 h-4 mr-2" />
-            Add Basic Flow
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            class="w-full justify-start"
-            onclick={() => {
-              for (let i = 0; i < 3; i++) {
-                handleAddNode('ingredient');
-              }
-              handleAddNode('step');
-              handleAddNode('output');
-            }}
-          >
-            <ChefHat class="w-4 h-4 mr-2" />
-            Add Recipe Template
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    {#if !nodeStore.isLoading && nodeStore.availableNodes.length > 0}
+      <Card>
+        <CardHeader class="pb-3">
+          <CardTitle class="text-base">Quick Actions</CardTitle>
+        </CardHeader>
+        
+        <CardContent class="pt-0">
+          <div class="space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              class="w-full justify-start"
+              onclick={() => {
+                // Add a sample flow with available nodes
+                const triggers = nodeStore.triggerNodes;
+                const actions = nodeStore.actionNodes;
+                
+                if (triggers.length > 0) handleAddNode(triggers[0].Id);
+                if (actions.length > 0) {
+                  handleAddNode(actions[0].Id);
+                  if (actions.length > 1) handleAddNode(actions[1].Id);
+                }
+              }}
+            >
+              <Plus class="w-4 h-4 mr-2" />
+              Add Basic Flow
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              class="w-full justify-start"
+              onclick={() => {
+                // Add a more complex template
+                const triggers = nodeStore.triggerNodes;
+                const actions = nodeStore.actionNodes;
+                
+                if (triggers.length > 0) handleAddNode(triggers[0].Id);
+                actions.slice(0, 4).forEach(action => handleAddNode(action.Id));
+              }}
+            >
+              <Activity class="w-4 h-4 mr-2" />
+              Add Complex Workflow
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    {/if}
   </div>
 </div>
 

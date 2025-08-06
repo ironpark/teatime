@@ -2,29 +2,44 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Plus, Zap, GitBranch, Play, Settings } from 'lucide-svelte';
 	import NodeSelectionDialog from './NodeSelectionDialog.svelte';
+	import { onMount } from 'svelte';
+	import { nodeStore } from '$lib/stores/nodes.svelte';
 
 	const {
 		addNode
 	}: {
-		addNode: (nodeType: string) => void;
+		addNode: (nodeId: string) => void;
 	} = $props();
 
 	let showDialog = $state(false);
 	let selectedCategory = $state<'trigger' | 'branch' | 'action' | 'utility' | null>(null);
+
+	onMount(async () => {
+		// Ensure nodes are loaded
+		if (nodeStore.availableNodes.length === 0) {
+			await nodeStore.loadNodes();
+		}
+	});
 
 	function openDialog(category: 'trigger' | 'branch' | 'action' | 'utility') {
 		selectedCategory = category;
 		showDialog = true;
 	}
 
-	function handleNodeSelect(nodeType: string) {
-		addNode(nodeType);
+	function handleNodeSelect(nodeId: string) {
+		addNode(nodeId);
 		showDialog = false;
 	}
 
 	function closeDialog() {
 		showDialog = false;
 	}
+	
+	// Find a default action node to add with the Plus button
+	let defaultActionNode = $derived(() => {
+		const actionNodes = nodeStore.actionNodes;
+		return actionNodes.length > 0 ? actionNodes[0].Id : null;
+	});
 </script>
 
 <!-- Floating Menu -->
@@ -76,7 +91,8 @@
 			variant="ghost"
 			size="icon"
 			class="hover:bg-primary hover:text-primary-foreground h-12 w-12 rounded-full"
-			onclick={() => addNode('step')}
+			onclick={() => defaultActionNode() && addNode(defaultActionNode())}
+			disabled={!defaultActionNode()}
 		>
 			<Plus class="h-5 w-5" />
 		</Button>
@@ -87,6 +103,7 @@
 <NodeSelectionDialog
 	open={showDialog}
 	category={selectedCategory}
+	availableNodes={nodeStore.availableNodes}
 	onNodeSelect={handleNodeSelect}
 	onClose={closeDialog}
 />
