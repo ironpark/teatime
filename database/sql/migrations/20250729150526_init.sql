@@ -1,11 +1,20 @@
 -- +goose Up
 -- +goose StatementBegin
 
+CREATE TABLE recipes (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    recipe_path TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Executions table for workflow execution history
 CREATE TABLE executions (
     id TEXT PRIMARY KEY,
-    workflow_path TEXT NOT NULL,
-    workflow_name TEXT NOT NULL,
+    recipe_id TEXT NOT NULL,
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id),
     status TEXT NOT NULL CHECK (status IN ('running', 'success', 'failed', 'cancelled')),
     started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     finished_at DATETIME,

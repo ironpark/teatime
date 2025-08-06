@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-auto';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -24,6 +24,8 @@ const config = {
 			"$components": "./src/lib/components",
 			"$ui/*": "./src/lib/components/ui/*",
 			"$ui": "./src/lib/components/ui",
+			"$bindings/*": "./bindings/github.com/ironpark/teatime/*",
+			"$bindings": "./bindings/github.com/ironpark/teatime",
 		}
 	}
 };

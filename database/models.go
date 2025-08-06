@@ -25,8 +25,8 @@ type Credential struct {
 
 type Execution struct {
 	ID               string
-	WorkflowPath     string
-	WorkflowName     string
+	RecipeID         string
+	Foreign          interface{}
 	Status           string
 	StartedAt        time.Time
 	FinishedAt       sql.NullTime
@@ -35,4 +35,13 @@ type Execution struct {
 	InputData        sql.NullString
 	OutputData       sql.NullString
 	ExecutionContext sql.NullString
+}
+
+type Recipe struct {
+	ID          string
+	Name        string
+	Description sql.NullString
+	RecipePath  string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }

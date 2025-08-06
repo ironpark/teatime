@@ -6,6 +6,7 @@
   import { Input } from '$lib/components/ui/input';
   import { SidebarTrigger } from '$lib/components/ui/sidebar';
   import { Separator } from '$lib/components/ui/separator';
+  import { TeaTime } from '$bindings/services';
   import { 
     Plus, 
     Search, 

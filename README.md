@@ -69,6 +69,6 @@ teatime/
 ### Backend:
 - **[Go](https://go.dev/)** - System programming language
 - **[Wails 3](https://github.com/wailsapp/wails)** - Desktop application framework
-- **[sqlc](https://sqlc.dev/)** - Type-safe SQL code generator
-- **[modernc.org/sqlite](https://modernc.org/sqlite)** - Pure Go SQLite implementation
 - **[Extism Go SDK](https://github.com/extism/go-sdk)** - WebAssembly plugin system
+- **[Sqlc](https://sqlc.dev/)** - Type-safe SQL code generator
+- **[modernc.org/sqlite](https://modernc.org/sqlite)** - Pure Go SQLite implementation

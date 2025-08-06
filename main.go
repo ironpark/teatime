@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ironpark/teatime/services"
+	"github.com/ironpark/teatime/stores"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -31,7 +32,7 @@ func main() {
 		Name:        "teatime",
 		Description: "A demo of using raw HTML & CSS",
 		Services: []application.Service{
-			application.NewService(&services.Greeter{}),
+			application.NewService(services.NewTeaTime(stores.NewStore())),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
