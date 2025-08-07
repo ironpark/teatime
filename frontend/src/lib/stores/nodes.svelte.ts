@@ -1,46 +1,17 @@
-import * as TeaTime from '$bindings/services/teatime';
-import type { NodeInfo, Node as BackendNode } from '$bindings/stores/models';
+import {RecipesService, SettingsService} from '$bindings/services';
 import type { Node, Edge } from '@xyflow/svelte';
+import type { NodeInfo } from '$bindings/internal/node';
+import { NodeType } from '$bindings/internal/node/models';
 
 // Store for available node types from backend
 class NodeStore {
 	availableNodes = $state<NodeInfo[]>([]);
 	isLoading = $state(false);
 	error = $state<string | null>(null);
-	
-	// Categorized nodes for easier access
-	get triggerNodes() {
-		return this.availableNodes.filter(n => 
-			n.Type.toLowerCase().includes('trigger')
-		);
-	}
-	
-	get actionNodes() {
-		return this.availableNodes.filter(n => 
-			n.Type.toLowerCase().includes('action') && 
-			!n.Type.toLowerCase().includes('trigger')
-		);
-	}
-	
-	get branchNodes() {
-		return this.availableNodes.filter(n => 
-			n.Type.toLowerCase().includes('branch') || 
-			n.Type.toLowerCase().includes('conditional') || 
-			n.Type.toLowerCase().includes('loop') ||
-			n.Type.toLowerCase().includes('switch')
-		);
-	}
-	
-	get utilityNodes() {
-		return this.availableNodes.filter(n => 
-			!n.Type.toLowerCase().includes('trigger') &&
-			!n.Type.toLowerCase().includes('action') &&
-			!n.Type.toLowerCase().includes('branch') &&
-			!n.Type.toLowerCase().includes('conditional') &&
-			!n.Type.toLowerCase().includes('loop') &&
-			!n.Type.toLowerCase().includes('switch')
-		);
-	}
+	triggerNodes = $derived(this.availableNodes.filter(n => n.type == NodeType.NodeTypeTrigger));
+	actionNodes = $derived(this.availableNodes.filter(n => n.type == NodeType.NodeTypeAction));
+	branchNodes = $derived(this.availableNodes.filter(n => n.type == NodeType.NodeTypeBranch));
+	utilityNodes = $derived(this.availableNodes.filter(n => n.type == NodeType.NodeTypeUtil));
 	
 	// Load nodes from backend
 	async loadNodes() {
@@ -50,7 +21,7 @@ class NodeStore {
 		this.error = null;
 		
 		try {
-			const nodes = await TeaTime.GetNodeInfos();
+			const nodes = await RecipesService.GetAvailableNodes();
 			this.availableNodes = nodes;
 			console.log('Loaded nodes:', nodes);
 		} catch (err) {
@@ -63,13 +34,13 @@ class NodeStore {
 	
 	// Get nodes by type
 	getNodesByType(type: string) {
-		return TeaTime.GetNodeInfosByType(type);
+		return this.availableNodes.filter(n => n.type == type);
 	}
 	
 	// Create a new node instance from backend
-	async createNode(nodeId: string): Promise<BackendNode | null> {
+	async createNode(nodeId: string): Promise<Node | null> {
 		try {
-			const node = await TeaTime.CreateNode(nodeId);
+			const node = await RecipesService.CreateNode(nodeId, 0, 0);
 			return node;
 		} catch (err) {
 			console.error('Failed to create node:', err);
@@ -79,22 +50,22 @@ class NodeStore {
 	
 	// Create a flow node for the editor
 	async createFlowNode(nodeId: string, position: { x: number; y: number }): Promise<Node | null> {
-		const backendNode = await this.createNode(nodeId);
-		if (!backendNode) return null;
+		const node = await RecipesService.CreateNode(nodeId, 0, 0);
+		if (!node) return null;
 		
-		const categoryType = this.getCategoryType(backendNode.Type);
+		const categoryType = this.getCategoryType(node.type);
 		
 		return {
 			id: `node-${Date.now()}-${Math.random()}`,
 			type: categoryType,
 			position,
 			data: {
-				label: backendNode.Name,
-				nodeType: backendNode.Type,
-				description: backendNode.Description,
-				properties: backendNode.Properties,
-				outputs: backendNode.Output,
-				backendNodeId: backendNode.Id
+				label: node.name,
+				nodeType: node.type,
+				description: node.description,
+				properties: node.properties,
+				outputs: node.output,
+				backendNodeId: node.id
 			}
 		};
 	}
@@ -274,7 +245,7 @@ class WorkflowStore {
 		
 		// Add one trigger if available
 		if (triggers.length > 0) {
-			const node = await this.addNodeAt(triggers[0].Id, { x: xPos, y: yPos });
+			const node = await this.addNodeAt(triggers[0].id, { x: xPos, y: yPos });
 			if (node) {
 				newNodes.push(node);
 				xPos += spacing;
@@ -283,7 +254,7 @@ class WorkflowStore {
 		
 		// Add a few action nodes if available
 		for (let i = 0; i < Math.min(3, actions.length); i++) {
-			const node = await this.addNodeAt(actions[i].Id, { x: xPos, y: yPos });
+			const node = await this.addNodeAt(actions[i].id, { x: xPos, y: yPos });
 			if (node) {
 				newNodes.push(node);
 				xPos += spacing;

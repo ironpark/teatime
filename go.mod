@@ -5,9 +5,12 @@ go 1.24.0
 toolchain go1.24.4
 
 require (
+	github.com/goccy/go-yaml v1.18.0
 	github.com/google/uuid v1.6.0
 	github.com/pressly/goose/v3 v3.24.3
+	github.com/samber/lo v1.51.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.15
+	golang.org/x/text v0.25.0
 	modernc.org/sqlite v1.37.0
 )
 
@@ -43,7 +46,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/samber/lo v1.49.1 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
@@ -56,7 +58,6 @@ require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	modernc.org/libc v1.65.0 // indirect

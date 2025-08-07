@@ -12,11 +12,6 @@
 	// Load nodes on mount
 	onMount(async () => {
 		await nodeStore.loadNodes();
-		
-		// Create example workflow if nodes are available
-		if (nodeStore.availableNodes.length > 0 && workflowStore.nodes.length === 0) {
-			await workflowStore.createExampleWorkflow();
-		}
 	});
 
 	// Use store values reactively

@@ -13,7 +13,6 @@
 		theme: 'system'
 	});
 
-
 	const languages = [
 		{ value: 'en' as const, label: 'English', flag: '🇺🇸' },
 		{ value: 'ko' as const, label: '한국어', flag: '🇰🇷' },
@@ -148,7 +147,7 @@
 									{/if}
 									<span>{getThemeLabel(settings.theme)}</span>
 									{#if settings.theme === 'system'}
-										<span class="text-xs text-muted-foreground">
+										<span class="text-muted-foreground text-xs">
 											(currently {mode.current})
 										</span>
 									{/if}

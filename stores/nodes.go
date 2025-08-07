@@ -2,8 +2,7 @@ package stores
 
 import (
 	"github.com/google/uuid"
-	"github.com/ironpark/teatime/node"
-	"github.com/ironpark/teatime/node/types"
+	node2 "github.com/ironpark/teatime/internal/node"
 )
 
 type NodeInfo struct {
@@ -19,8 +18,8 @@ type Node struct {
 	Name        string
 	Description string
 	Type        string
-	Properties  []types.NodeProperty
-	Output      []types.NodeProperty
+	Properties  []node2.NodeProperty
+	Output      []node2.NodeProperty
 }
 
 type nodeStore struct {
@@ -31,11 +30,11 @@ func NewNodeStore() *nodeStore {
 }
 
 func (t *nodeStore) GetNodeInfos() []NodeInfo {
-	nodes := node.GetNodes()
+	nodes := node2.GetNodes()
 	nodeInfos := make([]NodeInfo, len(nodes))
 	for i, node := range nodes {
 		nodeInfos[i] = NodeInfo{
-			Id:          node.ID(),
+			Id:          node.Ref(),
 			Name:        node.Name(),
 			Type:        string(node.Type()),
 			Description: node.Description(),
@@ -45,11 +44,11 @@ func (t *nodeStore) GetNodeInfos() []NodeInfo {
 }
 
 func (t *nodeStore) GetNodeInfosByType(nodeType string) []NodeInfo {
-	nodes := node.GetNodesByType(types.NodeType(nodeType))
+	nodes := node2.GetNodesByType(node2.NodeType(nodeType))
 	nodeInfos := make([]NodeInfo, len(nodes))
 	for i, node := range nodes {
 		nodeInfos[i] = NodeInfo{
-			Id:          node.ID(),
+			Id:          node.Ref(),
 			Name:        node.Name(),
 			Type:        string(node.Type()),
 			Description: node.Description(),
@@ -59,9 +58,12 @@ func (t *nodeStore) GetNodeInfosByType(nodeType string) []NodeInfo {
 }
 
 func (t *nodeStore) GetNodeInfo(id string) NodeInfo {
-	node := node.GetNode(id)
+	node, err := node2.GetNodeByRef(id)
+	if err != nil {
+		return NodeInfo{}
+	}
 	return NodeInfo{
-		Id:          node.ID(),
+		Id:          node.Ref(),
 		Name:        node.Name(),
 		Type:        string(node.Type()),
 		Description: node.Description(),
@@ -69,9 +71,12 @@ func (t *nodeStore) GetNodeInfo(id string) NodeInfo {
 }
 
 func (t *nodeStore) CreateNode(nodeId string) Node {
-	node := node.GetNode(nodeId)
+	node, err := node2.GetNodeByRef(nodeId)
+	if err != nil {
+		return Node{}
+	}
 	return Node{
-		Id:          node.ID(),
+		Id:          node.Ref(),
 		LocalId:     uuid.New().String(),
 		Name:        node.Name(),
 		Type:        string(node.Type()),
