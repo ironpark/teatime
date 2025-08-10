@@ -2,6 +2,7 @@ package stores
 
 import (
 	"github.com/ironpark/teatime/internal/database"
+	node2 "github.com/ironpark/teatime/internal/node"
 	rc "github.com/ironpark/teatime/internal/recipe"
 )
 
@@ -20,9 +21,9 @@ func NewStore(db *database.Client, recipesDir string) *Store {
 }
 
 type NodeStore interface {
-	GetNodeInfos() []NodeInfo
-	GetNodeInfosByType(nodeType string) []NodeInfo
-	GetNodeInfo(id string) NodeInfo
+	GetNodeInfos() []node2.NodeInfo
+	GetNodeInfosByType(nodeType string) []node2.NodeInfo
+	GetNodeInfo(id string) node2.NodeInfo
 	CreateNode(nodeId string) Node
 }
 

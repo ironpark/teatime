@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&CommandActionNode{
-		BaseNode: *node.NewBaseNode("teatime.action.command", node.NodeTypeAction, "Command", "시스템 명령어를 실행하는 액션 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.action.command", node.NodeTypeAction, "Command", "시스템 명령어를 실행하는 액션 노드입니다.", "Terminal"),
 	})
 }
 

@@ -65,6 +65,7 @@ func (s *RecipesService) CreateNode(ref string, x, y int) (rc.Node, error) {
 		Id:          currentHex,
 		Ref:         ref,
 		Position:    rc.Position{x, y},
+		Icon:        createdNode.Icon(),
 		Properties:  createdNode.Properties(),
 		Output:      createdNode.Output(),
 		Name:        createdNode.Name(),

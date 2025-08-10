@@ -10,6 +10,7 @@ export class NodeInfo {
     "name": string;
     "description": string;
     "type": NodeType;
+    "icon": string;
 
     /** Creates a new NodeInfo instance. */
     constructor($$source: Partial<NodeInfo> = {}) {
@@ -24,6 +25,9 @@ export class NodeInfo {
         }
         if (!("type" in $$source)) {
             this["type"] = NodeType.$zero;
+        }
+        if (!("icon" in $$source)) {
+            this["icon"] = "";
         }
 
         Object.assign(this, $$source);

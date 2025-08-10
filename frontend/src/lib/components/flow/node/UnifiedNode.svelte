@@ -1,22 +1,28 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-	import { nodeConfigs, nodeIcons } from './nodeConfigs';
-	import type { NodeProperty } from '$bindings/node/types/models';
-	import { HelpCircle } from 'lucide-svelte';
+	import { nodeConfigs } from './nodeConfigs';
+	import type { NodeProperty } from '$bindings/github.com/ironpark/teatime/internal/node/models';
+	import { HelpCircle, Package, Edit } from 'lucide-svelte';
+	import LucideIcon from '$lib/components/LucideIcon.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { Button } from '$lib/components/ui/button';
+	import { getContext } from 'svelte';
 
-	let { id, data, type, selected = false, isConnectable = true }: NodeProps = $props();
+	let { data, type: nodeType, selected = false, isConnectable = true, id }: NodeProps = $props();
+	
+	// Get handlers from context
+	const handlers = getContext<{
+		onEdit: (nodeId: string) => void;
+		onDoubleClick: (nodeId: string) => void;
+	}>('nodeHandlers');
 
 	// Get the specific node type from data or use the type directly
 	const specificNodeType = $derived.by(() => data.nodeType || type);
 
 	// Get node configuration
-	const config = $derived.by(
-		() => nodeConfigs[type as keyof typeof nodeConfigs] || nodeConfigs.util
-	);
-
-	// Get icon - use specific icon if available, otherwise use type icon
-	const Icon = $derived.by(() => config?.icon || nodeIcons[specificNodeType]);
+	const config = nodeConfigs[nodeType as keyof typeof nodeConfigs] || nodeConfigs.util
+	// Get icon from data
+	const iconString = $derived.by(() => data.nodeIcon || data.icon || null);
 
 	// Get properties array if available (filter out optional properties without values)
 	const properties = $derived.by(() => {
@@ -36,17 +42,10 @@
 		return [];
 	});
 
-	// Convert other data fields to array for rendering (excluding special fields)
-	const dataEntries = $derived.by(() =>
-		Object.entries(data).filter(
-			([key]) => !['label', 'nodeType', 'description', 'properties', 'outputs', 'backendNodeId'].includes(key)
-		)
-	);
-
 	// Determine handle type based on node type
 	const handleType = $derived.by(() => {
-		if (type === 'trigger') return 'source';
-		if (type === 'action' && (specificNodeType === 'output' || specificNodeType === 'file-save'))
+		if (nodeType === 'trigger') return 'source';
+		if (nodeType === 'action' && (specificNodeType === 'output' || specificNodeType === 'file-save'))
 			return 'target';
 		return 'both';
 	});
@@ -77,24 +76,43 @@
 	<Handle type="target" position={Position.Left} {isConnectable} />
 {/if}
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class={`transition-all duration-200 ${properties.length > 0 || outputs.length > 0 ? 'min-w-[240px]' : config?.minWidth || 'w-48'} 
 		${selected ? 'ring-primary shadow-lg ring-2' : 'shadow-sm'} 
 		${config?.color?.border || 'border-gray-200'} 
 		rounded-lg border bg-white p-3`}
+	ondblclick={() => handlers?.onDoubleClick?.(id)}
 >
 	<div class="mb-2 flex items-center justify-between">
 		<div class="flex items-center gap-2">
 			<div class={`rounded p-1 ${config?.color?.iconBg || 'bg-gray-100'}`}>
-				<Icon class={`h-4 w-4 ${config?.color?.iconText || 'text-gray-600'}`} />
+				{#if iconString}
+					<LucideIcon name={iconString as any} class={`h-4 w-4 ${config?.color?.iconText || 'text-gray-600'}`} />
+				{:else}
+					<Package class={`h-4 w-4 ${config?.color?.iconText || 'text-gray-600'}`} />
+				{/if}
 			</div>
-			<span class="text-sm font-medium">{config?.label || 'Node'}</span>
+			<span class="text-sm font-medium">{data.name} {config?.label || 'Node'}</span>
 		</div>
-		{#if config?.badge}
-			<span class={`rounded px-2 py-1 text-xs ${config?.badge?.className || ''}`}>
-				{config?.badge?.text || ''}
-			</span>
-		{/if}
+		<div class="flex items-center gap-1">
+			{#if config?.badge}
+				<span class={`rounded px-2 py-1 text-xs ${config?.badge?.className || ''}`}>
+				 {config?.badge?.text || ''}
+				</span>
+			{/if}
+			<Button 
+				variant="ghost" 
+				size="icon" 
+				class="h-6 w-6 hover:bg-gray-100"
+				onclick={(e) => {
+					e.stopPropagation();
+					handlers?.onEdit?.(id);
+				}}
+			>
+				<Edit class="h-3 w-3" />
+			</Button>
+		</div>
 	</div>
 
 	<div class="space-y-2">
@@ -167,32 +185,6 @@
 			</div>
 		{/if}
 
-		{#if dataEntries.length > 0}
-			<div class="space-y-1">
-				{#each dataEntries as [key, value]}
-					<div class="flex items-start gap-2 text-xs">
-						<span class="text-muted-foreground min-w-[60px] capitalize">
-							{key.replace(/_/g, ' ')}:
-						</span>
-						<span class="flex-1 break-words">
-							{#if typeof value === 'boolean'}
-								<span class={value ? 'text-green-600' : 'text-red-600'}>
-									{value ? 'Yes' : 'No'}
-								</span>
-							{:else if typeof value === 'object' && value !== null}
-								<code class="bg-muted rounded px-1 py-0.5 text-[10px]">
-									{JSON.stringify(value, null, 2)}
-								</code>
-							{:else if value === null || value === undefined}
-								<span class="text-muted-foreground italic">Not set</span>
-							{:else}
-								<span>{String(value)}</span>
-							{/if}
-						</span>
-					</div>
-				{/each}
-			</div>
-		{/if}
 	</div>
 </div>
 

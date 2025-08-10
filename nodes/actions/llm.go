@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&LLMActionNode{
-		BaseNode: *node.NewBaseNode("teatime.action.llm", node.NodeTypeAction, "LLM", "LLM을 통해 텍스트를 생성하는 액션 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.action.llm", node.NodeTypeAction, "LLM", "LLM을 통해 텍스트를 생성하는 액션 노드입니다.", "Bot"),
 	})
 }
 

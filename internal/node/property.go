@@ -81,6 +81,24 @@ type NodeProperty struct {
 	ReadOnly bool `json:"readOnly"`
 }
 
+type Input struct {
+	Type    string   `json:"type"`
+	Options []string `json:"options"`
+}
+
+func NewProperty(name string, value any, readOnly bool) *NodeProperty {
+	return &NodeProperty{
+		Type:        String,
+		Name:        name,
+		Description: "",
+		Optional:    false,
+		Key:         "",
+		Value:       value,
+		Options:     nil,
+		ReadOnly:    readOnly,
+	}
+}
+
 func (p *NodeProperty) Validate() error {
 	if p.Type == Invalid {
 		return errors.New("invalid property type")

@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&WebhookTriggerNode{
-		BaseNode: *node.NewBaseNode("teatime.trigger.webhook", node.NodeTypeTrigger, "Webhook", "Webhook을 통해 워크플로우를 실행하는 트리거 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.trigger.webhook", node.NodeTypeTrigger, "Webhook", "Webhook을 통해 워크플로우를 실행하는 트리거 노드입니다.", "Webhook"),
 	})
 }
 

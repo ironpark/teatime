@@ -18,15 +18,10 @@
     Copy
   } from 'lucide-svelte';
   import { goto } from '$app/navigation';
+  import { RecipesService } from '$bindings/services';
+  import type { Recipe as DBRecipe } from '$bindings/internal/database';
 
-  type Recipe = {
-    id?: string;
-    name: string;
-    description: string;
-    nodes: any[];
-    edges: any[];
-    createdAt: string;
-    updatedAt?: string;
+  type Recipe = DBRecipe & {
     estimatedTime?: string;
     difficulty?: 'easy' | 'medium' | 'hard';
     servings?: number;
@@ -40,15 +35,15 @@
     loadRecipes();
   });
 
-  function loadRecipes() {
+  async function loadRecipes() {
     try {
-      const savedRecipes = JSON.parse(localStorage.getItem('teatime-recipes') || '[]');
-      recipes = savedRecipes.map((recipe: any, index: number) => ({
+      loading = true;
+      const dbRecipes = await RecipesService.ListRecipes();
+      recipes = dbRecipes.map((recipe) => ({
         ...recipe,
-        id: recipe.id || `recipe-${index}`,
-        estimatedTime: calculateEstimatedTime(recipe.nodes),
-        difficulty: calculateDifficulty(recipe.nodes),
-        servings: extractServings(recipe.nodes)
+        estimatedTime: '30 min', // Default for now
+        difficulty: 'medium' as const, // Default for now
+        servings: 4 // Default for now
       }));
     } catch (error) {
       console.error('Failed to load recipes:', error);
@@ -58,42 +53,6 @@
     }
   }
 
-  function calculateEstimatedTime(nodes: any[]): string {
-    const steps = nodes.filter(node => node.type === 'step');
-    let totalMinutes = 0;
-    
-    steps.forEach(step => {
-      if (step.data.duration) {
-        const match = step.data.duration.match(/(\d+)/);
-        if (match) {
-          totalMinutes += parseInt(match[1]);
-        }
-      }
-    });
-    
-    if (totalMinutes === 0) return 'Unknown';
-    if (totalMinutes < 60) return `${totalMinutes} min`;
-    
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
-
-  function calculateDifficulty(nodes: any[]): 'easy' | 'medium' | 'hard' {
-    const stepCount = nodes.filter(node => node.type === 'step').length;
-    const ingredientCount = nodes.filter(node => node.type === 'ingredient').length;
-    
-    const complexity = stepCount + (ingredientCount / 3);
-    
-    if (complexity <= 3) return 'easy';
-    if (complexity <= 6) return 'medium';
-    return 'hard';
-  }
-
-  function extractServings(nodes: any[]): number {
-    const output = nodes.find(node => node.type === 'output');
-    return output?.data.servings || 4;
-  }
 
   function createNewRecipe() {
     goto('/recipes/new');
@@ -103,35 +62,59 @@
     goto(`/recipes/${recipe.id}`);
   }
 
-  function deleteRecipe(recipe: Recipe) {
+  async function deleteRecipe(recipe: Recipe) {
     if (confirm(`Are you sure you want to delete "${recipe.name}"?`)) {
-      const savedRecipes = JSON.parse(localStorage.getItem('teatime-recipes') || '[]');
-      const filteredRecipes = savedRecipes.filter((r: any, index: number) => 
-        (r.id || `recipe-${index}`) !== recipe.id
-      );
-      localStorage.setItem('teatime-recipes', JSON.stringify(filteredRecipes));
-      loadRecipes();
+      try {
+        await RecipesService.DeleteRecipe(recipe.id);
+        await loadRecipes();
+      } catch (error) {
+        console.error('Failed to delete recipe:', error);
+        alert('Failed to delete recipe. Please try again.');
+      }
     }
   }
 
-  function duplicateRecipe(recipe: Recipe) {
-    const newRecipe = {
-      ...recipe,
-      id: `recipe-${Date.now()}`,
-      name: `${recipe.name} (Copy)`,
-      createdAt: new Date().toISOString()
-    };
-    
-    const savedRecipes = JSON.parse(localStorage.getItem('teatime-recipes') || '[]');
-    savedRecipes.push(newRecipe);
-    localStorage.setItem('teatime-recipes', JSON.stringify(savedRecipes));
-    loadRecipes();
+  async function duplicateRecipe(recipe: Recipe) {
+    try {
+      // Get the full recipe data
+      const fullRecipe = await RecipesService.GetRecipe(recipe.id);
+      if (!fullRecipe) {
+        alert('Failed to load recipe for duplication');
+        return;
+      }
+      
+      // Create a new recipe with copied data
+      const result = await RecipesService.CreateRecipe(
+        `${recipe.name} (Copy)`,
+        recipe.description
+      );
+      
+      if (result) {
+        // Update the new recipe with the copied workflow data
+        fullRecipe.name = `${recipe.name} (Copy)`;
+        await RecipesService.UpdateRecipe(result.ID, fullRecipe);
+        await loadRecipes();
+      }
+    } catch (error) {
+      console.error('Failed to duplicate recipe:', error);
+      alert('Failed to duplicate recipe. Please try again.');
+    }
   }
 
-  function executeRecipe(recipe: Recipe) {
-    // Store recipe for execution
-    sessionStorage.setItem('recipe-to-execute', JSON.stringify(recipe));
-    goto('/execution');
+  async function executeRecipe(recipe: Recipe) {
+    try {
+      // Get the full recipe data
+      const fullRecipe = await RecipesService.GetRecipe(recipe.id);
+      if (fullRecipe) {
+        sessionStorage.setItem('recipe-to-execute', JSON.stringify(fullRecipe));
+        goto('/execution');
+      } else {
+        alert('Failed to load recipe for execution');
+      }
+    } catch (error) {
+      console.error('Failed to load recipe:', error);
+      alert('Failed to load recipe. Please try again.');
+    }
   }
 
   let filteredRecipes = $derived(
@@ -278,10 +261,9 @@
                   </Badge>
                 </div>
 
-                <!-- Node count info -->
+                <!-- Recipe info -->
                 <div class="text-xs text-muted-foreground">
-                  {recipe.nodes.filter(n => n.type === 'ingredient').length} ingredients • 
-                  {recipe.nodes.filter(n => n.type === 'step').length} steps
+                  Recipe ID: {recipe.id}
                 </div>
 
                 <!-- Actions -->
@@ -309,7 +291,7 @@
 
                 <!-- Creation date -->
                 <div class="text-xs text-muted-foreground pt-2 border-t">
-                  Created {new Date(recipe.createdAt).toLocaleDateString()}
+                  Created {new Date(recipe.created_at).toLocaleDateString()}
                 </div>
               </div>
             </CardContent>

@@ -13,8 +13,9 @@
 
 	import UnifiedNode from './node/UnifiedNode.svelte';
 	import FloatingNodeMenu from './FloatingNodeMenu.svelte';
-	import NodePropertiesSidebar from './NodePropertiesSidebar.svelte';
+	import NodePropertiesSheet from './NodePropertiesSheet.svelte';
 	import { workflowStore } from '$lib/stores/nodes.svelte';
+	import { setContext } from 'svelte';
 
 	interface Props {
 		nodes: Node[];
@@ -32,6 +33,31 @@
 		onSelectionChange
 	}: Props = $props();
 
+	// Function to handle edit button click
+	function handleEditClick(nodeId: string) {
+		const node = nodes.find(n => n.id === nodeId);
+		if (node) {
+			selectedNodes = [node];
+			propertiesSheetOpen = true;
+		}
+	}
+
+	// Function to handle double click
+	function handleNodeDoubleClick(nodeId: string) {
+		const node = nodes.find(n => n.id === nodeId);
+		if (node) {
+			selectedNodes = [node];
+			propertiesSheetOpen = true;
+		}
+	}
+
+	// Set context for node handlers
+	setContext('nodeHandlers', {
+		onEdit: handleEditClick,
+		onDoubleClick: handleNodeDoubleClick
+	});
+
+
 	// All node types use the UnifiedNode component
 	const nodeTypes = {
 		trigger: UnifiedNode,
@@ -42,11 +68,15 @@
 
 	let selectedNodes = $state<Node[]>([]);
 	let selectedEdges = $state<Edge[]>([]);
+	let propertiesSheetOpen = $state(false);
 
 	async function addNode(nodeId: string) {
 		const newNode = await workflowStore.addNode(nodeId);
-		if (newNode && onNodesChange) {
-			onNodesChange(workflowStore.nodes);
+		if (newNode) {
+			nodes = [...workflowStore.nodes];
+			if (onNodesChange) {
+				onNodesChange(workflowStore.nodes);
+			}
 		}
 	}
 
@@ -57,9 +87,13 @@
 		}
 	}
 
-	function closeSidebar() {
-		selectedNodes = [];
-		selectedEdges = [];
+	function handlePropertiesSheetChange(open: boolean) {
+		propertiesSheetOpen = open;
+		if (!open) {
+			// Optionally clear selection when sheet closes
+			// selectedNodes = [];
+			// selectedEdges = [];
+		}
 	}
 
 	function handleConnect(connection: any) {
@@ -73,14 +107,22 @@
 		onEdgesChange?.(edges);
 	}
 
-	function handleError(error: Error, el: Element) {
-		console.error('SvelteFlow error:', error);
+	function handleError(event: CustomEvent) {
+		console.error('SvelteFlow error:', event.detail);
 	}
 
 	function handleInit() {
 		console.log('SvelteFlow initialized');
 		console.log('Nodes:', nodes);
 		console.log('Edges:', edges);
+	}
+	
+	function handleSelectionChange({ nodes: selectedNodesList, edges: selectedEdgesList }: { nodes: Node[], edges: Edge[] }) {
+		console.log('Selection changed:', selectedNodesList);
+		selectedNodes = selectedNodesList;
+		selectedEdges = selectedEdgesList;
+		
+		// Don't auto-open sheet on selection anymore - only open via edit button
 	}
 </script>
 
@@ -93,6 +135,7 @@
 			onconnect={handleConnect}
 			onerror={handleError}
 			oninit={handleInit}
+			onselectionchange={handleSelectionChange}
 			fitView
 			snapGrid={[15, 15]}
 			defaultEdgeOptions={{ type: 'smoothstep' }}
@@ -108,8 +151,13 @@
 	<!-- Floating Node Menu -->
 	<FloatingNodeMenu {addNode} />
 
-	<!-- Node Properties Sidebar -->
-	<NodePropertiesSidebar {selectedNodes} onNodeUpdate={updateNodeData} onClose={closeSidebar} />
+	<!-- Node Properties Sheet -->
+	<NodePropertiesSheet 
+		bind:selectedNodes 
+		onNodeUpdate={updateNodeData} 
+		bind:open={propertiesSheetOpen}
+		onOpenChange={handlePropertiesSheetChange}
+	/>
 </SvelteFlowProvider>
 
 <style>

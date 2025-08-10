@@ -11,6 +11,7 @@ func init() {
 			node.NodeTypeAction,
 			"ls",
 			"디렉토리의 파일 및 하위 디렉토리 목록을 조회하는 액션 노드입니다.",
+			"FolderOpen",
 		),
 	})
 }

@@ -37,35 +37,26 @@ class NodeStore {
 		return this.availableNodes.filter(n => n.type == type);
 	}
 	
-	// Create a new node instance from backend
-	async createNode(nodeId: string): Promise<Node | null> {
-		try {
-			const node = await RecipesService.CreateNode(nodeId, 0, 0);
-			return node;
-		} catch (err) {
-			console.error('Failed to create node:', err);
-			return null;
-		}
-	}
-	
 	// Create a flow node for the editor
-	async createFlowNode(nodeId: string, position: { x: number; y: number }): Promise<Node | null> {
-		const node = await RecipesService.CreateNode(nodeId, 0, 0);
+	async createFlowNode(nodeRef: string, position: { x: number; y: number }): Promise<Node | null> {
+		const node = await RecipesService.CreateNode(nodeRef, Math.round(position.x), Math.round(position.y));
 		if (!node) return null;
 		
 		const categoryType = this.getCategoryType(node.type);
 		
 		return {
-			id: `node-${Date.now()}-${Math.random()}`,
+			id: node.id, // Use the backend-generated ID
 			type: categoryType,
 			position,
 			data: {
+				icon: node.icon,
 				label: node.name,
+				name: node.name,
 				nodeType: node.type,
 				description: node.description,
 				properties: node.properties,
 				outputs: node.output,
-				backendNodeId: node.id
+				backendNodeRef: node.ref
 			}
 		};
 	}
@@ -133,13 +124,14 @@ class WorkflowStore {
 	recipeDescription = $state('');
 	
 	// Add a node to the workflow
-	async addNode(nodeId: string) {
+	async addNode(nodeRef: string) {
 		const position = {
 			x: Math.random() * 500 + 100,
 			y: Math.random() * 300 + 100
 		};
 		
-		const newNode = await nodeStore.createFlowNode(nodeId, position);
+		const newNode = await nodeStore.createFlowNode(nodeRef, position);
+		console.log('newNode', newNode);
 		if (newNode) {
 			this.nodes = [...this.nodes, newNode];
 		}
@@ -147,8 +139,8 @@ class WorkflowStore {
 	}
 	
 	// Add a node at specific position
-	async addNodeAt(nodeId: string, position: { x: number; y: number }) {
-		const newNode = await nodeStore.createFlowNode(nodeId, position);
+	async addNodeAt(nodeRef: string, position: { x: number; y: number }) {
+		const newNode = await nodeStore.createFlowNode(nodeRef, position);
 		if (newNode) {
 			this.nodes = [...this.nodes, newNode];
 		}
@@ -245,7 +237,7 @@ class WorkflowStore {
 		
 		// Add one trigger if available
 		if (triggers.length > 0) {
-			const node = await this.addNodeAt(triggers[0].id, { x: xPos, y: yPos });
+			const node = await this.addNodeAt(triggers[0].ref, { x: xPos, y: yPos });
 			if (node) {
 				newNodes.push(node);
 				xPos += spacing;
@@ -254,7 +246,7 @@ class WorkflowStore {
 		
 		// Add a few action nodes if available
 		for (let i = 0; i < Math.min(3, actions.length); i++) {
-			const node = await this.addNodeAt(actions[i].id, { x: xPos, y: yPos });
+			const node = await this.addNodeAt(actions[i].ref, { x: xPos, y: yPos });
 			if (node) {
 				newNodes.push(node);
 				xPos += spacing;

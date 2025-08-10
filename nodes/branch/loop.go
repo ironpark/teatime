@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&LoopBranchNode{
-		BaseNode: *node.NewBaseNode("teatime.branch.loop", node.NodeTypeBranch, "Loop", "조건에 따라 워크플로우를 반복 실행하는 루프 브랜치 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.branch.loop", node.NodeTypeBranch, "Loop", "조건에 따라 워크플로우를 반복 실행하는 루프 브랜치 노드입니다.", "Repeat"),
 	})
 }
 

@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&SaveActionNode{
-		BaseNode: *node.NewBaseNode("teatime.action.save", node.NodeTypeAction, "Save", "파일을 저장하는 액션 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.action.save", node.NodeTypeAction, "Save", "파일을 저장하는 액션 노드입니다.", "Save"),
 	})
 }
 

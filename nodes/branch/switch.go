@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&SwitchBranchNode{
-		BaseNode: *node.NewBaseNode("teatime.branch.switch", node.NodeTypeBranch, "Switch", "여러 조건을 평가하여 워크플로우를 분기하는 스위치 브랜치 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.branch.switch", node.NodeTypeBranch, "Switch", "여러 조건을 평가하여 워크플로우를 분기하는 스위치 브랜치 노드입니다.", "Shuffle"),
 	})
 }
 

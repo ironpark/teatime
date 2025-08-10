@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&ConditionalBranchNode{
-		BaseNode: *node.NewBaseNode("teatime.branch.conditional", node.NodeTypeBranch, "Conditional", "조건에 따라 워크플로우를 분기하는 브랜치 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.branch.conditional", node.NodeTypeBranch, "Conditional", "조건에 따라 워크플로우를 분기하는 브랜치 노드입니다.", "GitBranch"),
 	})
 }
 

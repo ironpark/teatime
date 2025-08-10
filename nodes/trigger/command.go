@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&CommandTriggerNode{
-		BaseNode: *node.NewBaseNode("teatime.trigger.command", node.NodeTypeTrigger, "Command", "명령어를 통해 워크플로우를 실행하는 트리거 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.trigger.command", node.NodeTypeTrigger, "Command", "명령어를 통해 워크플로우를 실행하는 트리거 노드입니다.", "Zap"),
 	})
 }
 

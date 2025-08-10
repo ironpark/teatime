@@ -8,6 +8,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { nodeStore, workflowStore } from '$lib/stores/nodes.svelte';
+	import { RecipesService } from '$bindings/services';
 
 	// Load nodes on mount
 	onMount(async () => {
@@ -31,28 +32,50 @@
 		workflowStore.deleteSelected();
 	}
 
-	function saveRecipe() {
-		const recipe = workflowStore.saveToLocal();
-		console.log('Recipe saved:', recipe);
-		
-		// Show success message and redirect to recipe list
-		alert('Recipe saved successfully!');
-		goto('/recipes');
+	async function saveRecipe() {
+		try {
+			// Create the recipe in the backend
+			const result = await RecipesService.CreateRecipe(
+				workflowStore.recipeName || 'Untitled Recipe',
+				workflowStore.recipeDescription || 'No description'
+			);
+			
+			if (result && result.Recipe) {
+				// Update the recipe with the workflow data
+				result.Recipe.nodes = nodes.map(node => ({
+					id: node.id,
+					ref: node.data?.backendNodeRef || '',
+					position: { x: node.position.x, y: node.position.y },
+					properties: node.data?.properties || [],
+					output: node.data?.outputs || [],
+					name: node.data?.label || '',
+					description: node.data?.description || '',
+					type: node.data?.nodeType || ''
+				}));
+				
+				result.Recipe.edges = edges.map(edge => ({
+					id: edge.id,
+					source: edge.source,
+					target: edge.target,
+					sourceHandle: edge.sourceHandle || '',
+					targetHandle: edge.targetHandle || ''
+				}));
+				
+				// Save the updated recipe
+				await RecipesService.SaveRecipe(result.Recipe);
+				
+				console.log('Recipe saved:', result);
+				alert('Recipe saved successfully!');
+				goto('/recipes');
+			} else {
+				alert('Failed to create recipe. Please try again.');
+			}
+		} catch (error) {
+			console.error('Failed to save recipe:', error);
+			alert('Failed to save recipe. Please try again.');
+		}
 	}
 
-	function executeRecipe() {
-		const currentRecipe = {
-			id: `temp-${Date.now()}`,
-			name: recipeName,
-			description: recipeDescription,
-			nodes: nodes,
-			edges: edges
-		};
-
-		// Store recipe for execution
-		sessionStorage.setItem('recipe-to-execute', JSON.stringify(currentRecipe));
-		goto('/execution');
-	}
 
 </script>
 

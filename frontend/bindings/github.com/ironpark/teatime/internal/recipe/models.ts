@@ -46,6 +46,7 @@ export class Node {
     "id": string;
     "ref": string;
     "name": string;
+    "icon": string;
     "description": string;
     "type": string;
     "pos": Position;
@@ -62,6 +63,9 @@ export class Node {
         }
         if (!("name" in $$source)) {
             this["name"] = "";
+        }
+        if (!("icon" in $$source)) {
+            this["icon"] = "";
         }
         if (!("description" in $$source)) {
             this["description"] = "";
@@ -86,14 +90,14 @@ export class Node {
      * Creates a new Node instance from a string or object.
      */
     static createFrom($$source: any = {}): Node {
-        const $$createField6_0 = $$createType1;
         const $$createField7_0 = $$createType1;
+        const $$createField8_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("properties" in $$parsedSource) {
-            $$parsedSource["properties"] = $$createField6_0($$parsedSource["properties"]);
+            $$parsedSource["properties"] = $$createField7_0($$parsedSource["properties"]);
         }
         if ("output" in $$parsedSource) {
-            $$parsedSource["output"] = $$createField7_0($$parsedSource["output"]);
+            $$parsedSource["output"] = $$createField8_0($$parsedSource["output"]);
         }
         return new Node($$parsedSource as Partial<Node>);
     }

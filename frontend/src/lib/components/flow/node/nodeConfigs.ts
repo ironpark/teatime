@@ -1,26 +1,7 @@
-import {
-	ChefHat,
-	Terminal,
-	Variable,
-	Hash,
-	Type,
-	Calculator,
-	Layers,
-	Server,
-	Hand,
-	FileInput,
-	Film,
-	Mic,
-	Languages,
-	Brain,
-	Save,
-	Package
-} from 'lucide-svelte';
 
 export type NodeType = 'trigger' | 'branch' | 'action' | 'util';
 
 export interface NodeConfig {
-	icon: typeof Package;
 	label: string;
 	color: {
 		border: string;
@@ -78,56 +59,23 @@ const typeColors = {
 	}
 };
 
-// Icon mapping for specific node types
-export const nodeIcons: Record<string, typeof Package> = {
-	// Trigger types
-	ingredient: ChefHat,
-	command: Terminal,
-	mcp: Server,
-	manual: Hand,
-	'file-input': FileInput,
-	
-	// Action types
-	'ffmpeg-extract': Film,
-	transcription: Mic,
-	translation: Languages,
-	'llm-correction': Brain,
-	'file-save': Save,
-	output: Package,
-	step: ChefHat,
-	
-	// Util types
-	variable: Variable,
-	constant: Hash,
-	formatter: Type,
-	calculator: Calculator,
-	aggregator: Layers,
-	
-	// Branch types
-	branch: Layers
-};
-
 export const nodeConfigs: Record<'trigger' | 'branch' | 'action' | 'util', NodeConfig> = {
 	trigger: {
-		icon: Terminal,
 		label: 'Trigger',
 		color: typeColors.trigger,
 		minWidth: 'min-w-[200px]'
 	},
 	branch: {
-		icon: Layers,
 		label: 'Branch',
 		color: typeColors.branch,
 		minWidth: 'min-w-[200px]'
 	},
 	action: {
-		icon: Package,
 		label: 'Action',
 		color: typeColors.action,
 		minWidth: 'min-w-[200px]'
 	},
 	util: {
-		icon: Variable,
 		label: 'Utility',
 		color: typeColors.util,
 		minWidth: 'min-w-[200px]'

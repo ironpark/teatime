@@ -8,7 +8,7 @@
 	const {
 		addNode
 	}: {
-		addNode: (nodeId: string) => void;
+		addNode: (nodeRef: string) => void;
 	} = $props();
 
 	let showDialog = $state(false);
@@ -26,8 +26,8 @@
 		showDialog = true;
 	}
 
-	function handleNodeSelect(nodeId: string) {
-		addNode(nodeId);
+	function handleNodeSelect(nodeRef: string) {
+		addNode(nodeRef);
 		showDialog = false;
 	}
 
@@ -36,10 +36,9 @@
 	}
 	
 	// Find a default action node to add with the Plus button
-	let defaultActionNode = $derived(() => {
-		const actionNodes = nodeStore.actionNodes;
-		return actionNodes.length > 0 ? actionNodes[0].Id : null;
-	});
+	let defaultActionNode = $derived(
+		nodeStore.actionNodes.length > 0 ? nodeStore.actionNodes[0].ref : null
+	);
 </script>
 
 <!-- Floating Menu -->
@@ -91,8 +90,8 @@
 			variant="ghost"
 			size="icon"
 			class="hover:bg-primary hover:text-primary-foreground h-12 w-12 rounded-full"
-			onclick={() => defaultActionNode() && addNode(defaultActionNode())}
-			disabled={!defaultActionNode()}
+			onclick={() => defaultActionNode && addNode(defaultActionNode)}
+			disabled={!defaultActionNode}
 		>
 			<Plus class="h-5 w-5" />
 		</Button>

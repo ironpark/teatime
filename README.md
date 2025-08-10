@@ -4,7 +4,7 @@ An AI-friendly local workflow automation program inspired by ComfyUI and n8n. Bu
 > [!WARNING]
 > This project is in very early development stage. Core features are not yet properly implemented and may not work as expected.
 
-## Requirements
+## Build Requirements
 
 - **Go** 1.24 or later
 - **Node.js** 22.14.0 or later

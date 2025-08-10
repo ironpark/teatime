@@ -6,7 +6,7 @@ import (
 
 func init() {
 	node.RegisterNode(&FilterBranchNode{
-		BaseNode: *node.NewBaseNode("teatime.branch.filter", node.NodeTypeBranch, "Filter", "데이터를 필터링하여 조건에 맞는 항목만 처리하는 필터 브랜치 노드입니다."),
+		BaseNode: *node.NewBaseNode("teatime.branch.filter", node.NodeTypeBranch, "Filter", "데이터를 필터링하여 조건에 맞는 항목만 처리하는 필터 브랜치 노드입니다.", "ListFilter"),
 	})
 }
 
