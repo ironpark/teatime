@@ -107,7 +107,7 @@ func (r *LoopBranchNode) Properties() []node.NodeProperty {
 			Optional:    true,
 			Key:         "condition",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Max Iterations",
@@ -123,7 +123,7 @@ func (r *LoopBranchNode) Properties() []node.NodeProperty {
 			Optional:    true,
 			Key:         "breakCondition",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Continue Condition",
@@ -131,7 +131,7 @@ func (r *LoopBranchNode) Properties() []node.NodeProperty {
 			Optional:    true,
 			Key:         "continueCondition",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Parallel Execution",

@@ -49,7 +49,7 @@ func (r *LsActionNode) Output() []node.NodeProperty {
 			Description: "오류 메시지입니다.",
 			Key:         "error",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 			Optional:    true,
 		},
 	}

@@ -5,6 +5,110 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+/**
+ * InputConfig defines the configuration for input UI
+ */
+export class InputConfig {
+    "type": InputType;
+
+    /**
+     * For range and number inputs
+     */
+    "min"?: number | null;
+
+    /**
+     * For range and number inputs
+     */
+    "max"?: number | null;
+
+    /**
+     * For range and number inputs
+     */
+    "step"?: number | null;
+
+    /**
+     * For text and textarea inputs
+     */
+    "placeholder"?: string;
+
+    /**
+     * For textarea input
+     */
+    "rows"?: number;
+
+    /**
+     * For select inputs
+     */
+    "multiple"?: boolean;
+
+    /** Creates a new InputConfig instance. */
+    constructor($$source: Partial<InputConfig> = {}) {
+        if (!("type" in $$source)) {
+            this["type"] = InputType.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new InputConfig instance from a string or object.
+     */
+    static createFrom($$source: any = {}): InputConfig {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new InputConfig($$parsedSource as Partial<InputConfig>);
+    }
+}
+
+/**
+ * InputType defines how the property should be displayed in the UI
+ */
+export enum InputType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    /**
+     * Single line text input
+     */
+    InputTypeText = 1,
+
+    /**
+     * Multi-line text input
+     */
+    InputTypeTextarea = 2,
+
+    /**
+     * Number input
+     */
+    InputTypeNumber = 3,
+
+    /**
+     * Slider input
+     */
+    InputTypeRange = 4,
+
+    /**
+     * Dropdown select
+     */
+    InputTypeSelect = 5,
+
+    /**
+     * Multiple selection
+     */
+    InputTypeMultiSelect = 6,
+
+    /**
+     * Toggle switch
+     */
+    InputTypeSwitch = 7,
+
+    /**
+     * Checkbox
+     */
+    InputTypeCheckbox = 8,
+};
+
 export class NodeInfo {
     "ref": string;
     "name": string;
@@ -49,6 +153,11 @@ export class NodeProperty {
     "type": PropertyType;
 
     /**
+     * Input configuration for UI
+     */
+    "input"?: InputConfig | null;
+
+    /**
      * Name of the property
      */
     "name": string;
@@ -74,7 +183,7 @@ export class NodeProperty {
     "value": any;
 
     /**
-     * Options of the property
+     * Options of the property (for select/multi-select)
      */
     "options": string[];
 
@@ -117,10 +226,14 @@ export class NodeProperty {
      * Creates a new NodeProperty instance from a string or object.
      */
     static createFrom($$source: any = {}): NodeProperty {
-        const $$createField6_0 = $$createType0;
+        const $$createField1_0 = $$createType1;
+        const $$createField7_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("input" in $$parsedSource) {
+            $$parsedSource["input"] = $$createField1_0($$parsedSource["input"]);
+        }
         if ("options" in $$parsedSource) {
-            $$parsedSource["options"] = $$createField6_0($$parsedSource["options"]);
+            $$parsedSource["options"] = $$createField7_0($$parsedSource["options"]);
         }
         return new NodeProperty($$parsedSource as Partial<NodeProperty>);
     }
@@ -160,17 +273,18 @@ export enum PropertyType {
     $JSON = 6,
     XML = 7,
     Date = 8,
-    Text = 9,
 
     /**
      * Arrays
      */
-    TextArray = 10,
-    NumberArray = 11,
-    BooleanArray = 12,
-    JSONArray = 13,
-    XMLArray = 14,
+    StringArray = 9,
+    NumberArray = 10,
+    BooleanArray = 11,
+    JSONArray = 12,
+    XMLArray = 13,
 };
 
 // Private type creation functions
-const $$createType0 = $Create.Array($Create.Any);
+const $$createType0 = InputConfig.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $Create.Array($Create.Any);

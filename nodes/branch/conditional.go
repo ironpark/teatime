@@ -51,7 +51,7 @@ func (r *ConditionalBranchNode) Properties() []node.NodeProperty {
 			Optional:    false,
 			Key:         "leftValue",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Operator",
@@ -68,7 +68,7 @@ func (r *ConditionalBranchNode) Properties() []node.NodeProperty {
 			Optional:    false,
 			Key:         "rightValue",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Data Type",

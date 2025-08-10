@@ -23,7 +23,7 @@ func (r *CommandActionNode) Output() []node.NodeProperty {
 			Description: "명령어 실행 결과입니다.",
 			Key:         "output",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Exit Code",
@@ -37,7 +37,7 @@ func (r *CommandActionNode) Output() []node.NodeProperty {
 			Description: "오류 메시지입니다.",
 			Key:         "error",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 			Optional:    true,
 		},
 	}
@@ -51,7 +51,7 @@ func (r *CommandActionNode) Properties() []node.NodeProperty {
 			Optional:    false,
 			Key:         "command",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Working Directory",

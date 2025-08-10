@@ -37,7 +37,7 @@ func (r *SwitchBranchNode) Output() []node.NodeProperty {
 			Description: "매칭된 값",
 			Key:         "matchValue",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Output Value",
@@ -58,7 +58,7 @@ func (r *SwitchBranchNode) Properties() []node.NodeProperty {
 			Optional:    false,
 			Key:         "switchValue",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Cases",
@@ -91,7 +91,7 @@ func (r *SwitchBranchNode) Properties() []node.NodeProperty {
 			Optional:    true,
 			Key:         "defaultCase",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Stop on First Match",

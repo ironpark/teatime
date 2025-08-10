@@ -105,7 +105,7 @@ func (r *FilterBranchNode) Properties() []node.NodeProperty {
 			Optional:    true,
 			Key:         "filterValue",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Filter Expression",
@@ -113,7 +113,7 @@ func (r *FilterBranchNode) Properties() []node.NodeProperty {
 			Optional:    true,
 			Key:         "filterExpression",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Multiple Filters",

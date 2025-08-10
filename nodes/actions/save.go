@@ -58,7 +58,7 @@ func (r *SaveActionNode) Properties() []node.NodeProperty {
 			Optional:    false,
 			Key:         "content",
 			Value:       "",
-			Type:        node.Text,
+			Type:        node.String,
 		},
 		{
 			Name:        "Encoding",

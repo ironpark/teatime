@@ -16,14 +16,38 @@ const (
 	JSON
 	XML
 	Date
-	Text
 	// Arrays
-	TextArray
+	StringArray
 	NumberArray
 	BooleanArray
 	JSONArray
 	XMLArray
 )
+
+// InputType defines how the property should be displayed in the UI
+type InputType int
+
+const (
+	InputTypeText InputType = iota + 1 // Single line text input
+	InputTypeTextarea                  // Multi-line text input
+	InputTypeNumber                    // Number input
+	InputTypeRange                     // Slider input
+	InputTypeSelect                    // Dropdown select
+	InputTypeMultiSelect               // Multiple selection
+	InputTypeSwitch                    // Toggle switch
+	InputTypeCheckbox                  // Checkbox
+)
+
+// InputConfig defines the configuration for input UI
+type InputConfig struct {
+	Type        InputType `json:"type"`
+	Min         *float64  `json:"min,omitempty"`         // For range and number inputs
+	Max         *float64  `json:"max,omitempty"`         // For range and number inputs
+	Step        *float64  `json:"step,omitempty"`        // For range and number inputs
+	Placeholder string    `json:"placeholder,omitempty"` // For text and textarea inputs
+	Rows        int       `json:"rows,omitempty"`        // For textarea input
+	Multiple    bool      `json:"multiple,omitempty"`    // For select inputs
+}
 
 func (p PropertyType) String() string {
 	switch p {
@@ -45,10 +69,8 @@ func (p PropertyType) String() string {
 		return "XML"
 	case Date:
 		return "Date"
-	case Text:
-		return "Text"
-	case TextArray:
-		return "TextArray"
+	case StringArray:
+		return "StringArray"
 	case NumberArray:
 		return "NumberArray"
 	case BooleanArray:
@@ -65,6 +87,8 @@ func (p PropertyType) String() string {
 type NodeProperty struct {
 	// Type of the property (string, number, boolean, array, json, xml)
 	Type PropertyType `json:"type"`
+	// Input configuration for UI
+	Input *InputConfig `json:"input,omitempty"`
 	// Name of the property
 	Name string `json:"name"`
 	// Description of the property
@@ -75,15 +99,15 @@ type NodeProperty struct {
 	Key string `json:"key"`
 	// Value of the property
 	Value any `json:"value"`
-	// Options of the property
+	// Options of the property (for select/multi-select)
 	Options []string `json:"options"`
 	// not editable
 	ReadOnly bool `json:"readOnly"`
 }
 
-type Input struct {
-	Type    string   `json:"type"`
-	Options []string `json:"options"`
+// Helper functions for creating float64 pointers
+func Float64Ptr(v float64) *float64 {
+	return &v
 }
 
 func NewProperty(name string, value any, readOnly bool) *NodeProperty {
