@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"database/sql"
-	"github.com/ironpark/teatime/internal/database/sql/migrations"
 	"log"
 	"strings"
+
+	"github.com/ironpark/teatime/internal/database/sql/migrations"
 
 	_ "modernc.org/sqlite"
 )

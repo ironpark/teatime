@@ -1,6 +1,7 @@
 package recipe
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/goccy/go-yaml"
@@ -24,6 +25,10 @@ type FlowEdge struct {
 
 type Position [2]int
 
+func (p Position) MarshalYAML() ([]byte, error) {
+	return []byte(fmt.Sprintf("[%d, %d]", p[0], p[1])), nil
+}
+
 func Open(path string) (*Recipe, error) {
 	recipe := &Recipe{}
 	yamlFile, err := os.Open(path)
@@ -32,7 +37,7 @@ func Open(path string) (*Recipe, error) {
 	}
 	defer yamlFile.Close()
 
-	err = yaml.NewDecoder(yamlFile).Decode(&recipe)
+	err = yaml.NewDecoder(yamlFile).Decode(recipe)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +64,12 @@ func (r *Recipe) Save() error {
 		return err
 	}
 	defer yamlFile.Close()
-	err = yaml.NewEncoder(yamlFile).Encode(r)
+	err = yaml.NewEncoder(yamlFile, yaml.IndentSequence(true), yaml.CustomMarshaler(func(v any) ([]byte, error) {
+		if nodes, ok := v.([]Node); ok {
+			return yaml.Marshal(nodes)
+		}
+		return nil, nil
+	})).Encode(r)
 	if err != nil {
 		return err
 	}

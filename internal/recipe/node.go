@@ -1,6 +1,11 @@
 package recipe
 
-import "github.com/ironpark/teatime/internal/node"
+import (
+	"fmt"
+
+	"github.com/goccy/go-yaml"
+	"github.com/ironpark/teatime/internal/node"
+)
 
 type Node struct {
 	Id          string              `json:"id"`
@@ -22,23 +27,24 @@ type minifiedNode struct {
 	Properties map[string]any `json:"properties"`
 }
 
-func (n *Node) MarshalYAML() (interface{}, error) {
+func (n Node) MarshalYAML() ([]byte, error) {
 	properties := make(map[string]any)
 	for _, property := range n.Properties {
 		properties[property.Key] = property.Value
 	}
-	return minifiedNode{
+	return yaml.Marshal(minifiedNode{
 		Ref:        n.Ref,
 		ID:         n.Id,
 		Label:      n.Name,
 		Position:   n.Position,
 		Properties: properties,
-	}, nil
+	})
 }
 
-func (n *Node) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (n *Node) UnmarshalYAML(data []byte) error {
+	fmt.Println(string(data))
 	minified := minifiedNode{}
-	err := unmarshal(&minified)
+	err := yaml.Unmarshal(data, &minified)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,7 @@ require (
 	github.com/samber/lo v1.51.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.15
 	golang.org/x/text v0.25.0
-	modernc.org/sqlite v1.37.0
+	modernc.org/sqlite v1.37.1
 )
 
 require (
@@ -60,7 +60,7 @@ require (
 	golang.org/x/sys v0.34.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	modernc.org/libc v1.65.0 // indirect
+	modernc.org/libc v1.65.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.10.0 // indirect
+	modernc.org/memory v1.11.0 // indirect
 )
