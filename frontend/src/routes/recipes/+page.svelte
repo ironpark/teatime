@@ -6,6 +6,9 @@
   import { Input } from '$lib/components/ui/input';
   import { SidebarTrigger } from '$lib/components/ui/sidebar';
   import { Separator } from '$lib/components/ui/separator';
+  import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '$lib/components/ui/dialog';
+  import { Label } from '$lib/components/ui/label';
+  import { Textarea } from '$lib/components/ui/textarea';
   import { 
     Plus, 
     Search, 
@@ -30,6 +33,12 @@
   let recipes: Recipe[] = $state([]);
   let searchTerm = $state('');
   let loading = $state(true);
+  
+  // Dialog state
+  let dialogOpen = $state(false);
+  let newRecipeName = $state('');
+  let newRecipeDescription = $state('');
+  let creating = $state(false);
 
   onMount(() => {
     loadRecipes();
@@ -55,17 +64,53 @@
 
 
   function createNewRecipe() {
-    goto('/recipes/new');
+    dialogOpen = true;
+  }
+
+  async function handleCreateRecipe() {
+    if (!newRecipeName.trim()) return;
+    
+    try {
+      creating = true;
+      const result = await RecipesService.CreateRecipe(
+        newRecipeName.trim(),
+        newRecipeDescription.trim()
+      );
+      
+      if (result) {
+        // Reset form and close dialog
+        newRecipeName = '';
+        newRecipeDescription = '';
+        dialogOpen = false;
+        
+        // Reload recipes to show the new one
+        await loadRecipes();
+        
+        // Navigate to edit the new recipe
+        goto(`/recipes/${result.ID}`);
+      }
+    } catch (error) {
+      console.error('Failed to create recipe:', error);
+      alert('Failed to create recipe. Please try again.');
+    } finally {
+      creating = false;
+    }
+  }
+
+  function cancelCreateRecipe() {
+    newRecipeName = '';
+    newRecipeDescription = '';
+    dialogOpen = false;
   }
 
   function editRecipe(recipe: Recipe) {
-    goto(`/recipes/${recipe.id}`);
+    goto(`/recipes/${recipe.ID}`);
   }
 
   async function deleteRecipe(recipe: Recipe) {
-    if (confirm(`Are you sure you want to delete "${recipe.name}"?`)) {
+    if (confirm(`Are you sure you want to delete "${recipe.Name}"?`)) {
       try {
-        await RecipesService.DeleteRecipe(recipe.id);
+        await RecipesService.DeleteRecipe(recipe.ID);
         await loadRecipes();
       } catch (error) {
         console.error('Failed to delete recipe:', error);
@@ -77,7 +122,7 @@
   async function duplicateRecipe(recipe: Recipe) {
     try {
       // Get the full recipe data
-      const fullRecipe = await RecipesService.GetRecipe(recipe.id);
+      const fullRecipe = await RecipesService.GetRecipe(recipe.ID);
       if (!fullRecipe) {
         alert('Failed to load recipe for duplication');
         return;
@@ -85,13 +130,13 @@
       
       // Create a new recipe with copied data
       const result = await RecipesService.CreateRecipe(
-        `${recipe.name} (Copy)`,
-        recipe.description
+        `${recipe.Name} (Copy)`,
+        recipe.Description
       );
       
       if (result) {
         // Update the new recipe with the copied workflow data
-        fullRecipe.name = `${recipe.name} (Copy)`;
+        fullRecipe.name = `${recipe.Name} (Copy)`;
         await RecipesService.UpdateRecipe(result.ID, fullRecipe);
         await loadRecipes();
       }
@@ -104,7 +149,7 @@
   async function executeRecipe(recipe: Recipe) {
     try {
       // Get the full recipe data
-      const fullRecipe = await RecipesService.GetRecipe(recipe.id);
+      const fullRecipe = await RecipesService.GetRecipe(recipe.ID);
       if (fullRecipe) {
         sessionStorage.setItem('recipe-to-execute', JSON.stringify(fullRecipe));
         goto('/execution');
@@ -119,8 +164,8 @@
 
   let filteredRecipes = $derived(
     recipes.filter(recipe =>
-      recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recipe.description.toLowerCase().includes(searchTerm.toLowerCase())
+      recipe.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recipe.Description.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -152,10 +197,70 @@
         </p>
       </div>
       
-      <Button onclick={createNewRecipe} class="gap-2">
-        <Plus class="w-4 h-4" />
-        New Recipe
-      </Button>
+      <Dialog bind:open={dialogOpen}>
+        <DialogTrigger>
+          <Button onclick={createNewRecipe} class="gap-2">
+            <Plus class="w-4 h-4" />
+            New Recipe
+          </Button>
+        </DialogTrigger>
+        <DialogContent class="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Recipe</DialogTitle>
+            <DialogDescription>
+              Create a new automation recipe. You can add steps and configure it after creation.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div class="space-y-4 py-4">
+            <div class="space-y-2">
+              <Label for="recipe-name">Recipe Name</Label>
+              <Input
+                id="recipe-name"
+                bind:value={newRecipeName}
+                placeholder="Enter recipe name..."
+                disabled={creating}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleCreateRecipe();
+                  }
+                }}
+              />
+            </div>
+            
+            <div class="space-y-2">
+              <Label for="recipe-description">Description (optional)</Label>
+              <Textarea
+                id="recipe-description"
+                bind:value={newRecipeDescription}
+                placeholder="Describe what this recipe does..."
+                disabled={creating}
+                rows={3}
+              />
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2">
+            <Button variant="outline" onclick={cancelCreateRecipe} disabled={creating}>
+              Cancel
+            </Button>
+            <Button 
+              onclick={handleCreateRecipe} 
+              disabled={creating || !newRecipeName.trim()}
+              class="gap-2"
+            >
+              {#if creating}
+                <div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Creating...
+              {:else}
+                <Plus class="w-4 h-4" />
+                Create Recipe
+              {/if}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
 
     <!-- Search and filters -->
@@ -200,14 +305,14 @@
       </div>
     {:else}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {#each filteredRecipes as recipe (recipe.id)}
+        {#each filteredRecipes as recipe (recipe.ID)}
           <Card class="group hover:shadow-lg transition-all duration-200">
             <CardHeader class="pb-3">
               <div class="flex items-start justify-between">
                 <div class="flex-1">
-                  <CardTitle class="text-lg mb-1">{recipe.name}</CardTitle>
+                  <CardTitle class="text-lg mb-1">{recipe.Name}</CardTitle>
                   <CardDescription class="line-clamp-2">
-                    {recipe.description}
+                    {recipe.Description}
                   </CardDescription>
                 </div>
                 
@@ -263,7 +368,7 @@
 
                 <!-- Recipe info -->
                 <div class="text-xs text-muted-foreground">
-                  Recipe ID: {recipe.id}
+                  Recipe ID: {recipe.ID}
                 </div>
 
                 <!-- Actions -->
@@ -291,7 +396,7 @@
 
                 <!-- Creation date -->
                 <div class="text-xs text-muted-foreground pt-2 border-t">
-                  Created {new Date(recipe.created_at).toLocaleDateString()}
+                  Created {new Date(recipe.CreatedAt).toLocaleDateString()}
                 </div>
               </div>
             </CardContent>
