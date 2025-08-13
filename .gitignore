@@ -9,3 +9,7 @@ build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 /*.md
 /.llms
 !README.md
+
+# IDE files
+.idea/
+*.iml
