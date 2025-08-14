@@ -13,7 +13,7 @@ import (
 )
 
 type RecipesService struct {
-	store stores.RecipesStore
+	store *stores.Store
 }
 type RecipeInfo struct {
 	database.Recipe
@@ -24,7 +24,7 @@ type RecipeInfo struct {
 	NodeTypes           []string
 }
 
-func NewRecipesService(store stores.RecipesStore) *RecipesService {
+func NewRecipesService(store *stores.Store) *RecipesService {
 	return &RecipesService{store: store}
 }
 
