@@ -3,15 +3,11 @@
 	import { SidebarTrigger } from '$lib/components/ui/sidebar';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Label } from '$lib/components/ui/label';
+	import { Switch } from '$lib/components/ui/switch';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import { Settings, Globe, Palette, Monitor, Sun, Moon } from 'lucide-svelte';
-	import { settingsStore, type Settings as SettingsType } from '$lib/stores/settings';
+	import { Settings, Globe, Palette, Monitor, Sun, Moon, Zap } from 'lucide-svelte';
+	import { settingsStore, type UISettings } from '$lib/stores/settings.svelte';
 	import { mode } from 'mode-watcher';
-
-	let settings = $state<SettingsType>({
-		language: 'en',
-		theme: 'system'
-	});
 
 	const languages = [
 		{ value: 'en' as const, label: 'English', flag: '🇺🇸' },
@@ -32,18 +28,19 @@
 	];
 
 	onMount(() => {
-		// Load settings from store
-		settingsStore.load();
-		const unsubscribe = settingsStore.subscribe((value) => {
-			settings = { ...value };
-		});
-
-		return unsubscribe;
+		// Settings are loaded automatically via constructor
 	});
 
-	function updateSetting<K extends keyof SettingsType>(key: K, value: SettingsType[K]) {
-		// Update settings and save immediately
-		settingsStore.updateSetting(key, value);
+	async function updateLanguage(language: UISettings['language']) {
+		await settingsStore.updateLanguage(language);
+	}
+
+	async function updateTheme(theme: UISettings['theme']) {
+		await settingsStore.updateTheme(theme);
+	}
+
+	async function updateAutoStart(autoStart: boolean) {
+		await settingsStore.updateAutoStart(autoStart);
 	}
 
 	function getLanguageLabel(value: string) {
@@ -91,14 +88,14 @@
 					<Label for="language-select">Interface Language</Label>
 					<Select.Root
 						type="single"
-						value={settings.language}
+						value={settingsStore.language}
 						onValueChange={(value) =>
-							value && updateSetting('language', value as SettingsType['language'])}
+							value && updateLanguage(value as UISettings['language'])}
 					>
 						<Select.Trigger id="language-select" class="w-full max-w-sm">
 							<div class="flex items-center gap-2">
-								<span>{languages.find((lang) => lang.value === settings.language)?.flag}</span>
-								<span>{getLanguageLabel(settings.language)}</span>
+								<span>{languages.find((lang) => lang.value === settingsStore.language)?.flag}</span>
+								<span>{getLanguageLabel(settingsStore.language)}</span>
 							</div>
 						</Select.Trigger>
 						<Select.Content>
@@ -132,21 +129,21 @@
 						<Label for="theme-select">Theme</Label>
 						<Select.Root
 							type="single"
-							value={settings.theme}
+							value={settingsStore.theme}
 							onValueChange={(value) =>
-								value && updateSetting('theme', value as SettingsType['theme'])}
+								value && updateTheme(value as UISettings['theme'])}
 						>
 							<Select.Trigger id="theme-select" class="w-full max-w-sm">
 								<div class="flex items-center gap-2">
-									{#if settings.theme === 'light'}
+									{#if settingsStore.theme === 'light'}
 										<Sun class="h-4 w-4" />
-									{:else if settings.theme === 'dark'}
+									{:else if settingsStore.theme === 'dark'}
 										<Moon class="h-4 w-4" />
 									{:else}
 										<Monitor class="h-4 w-4" />
 									{/if}
-									<span>{getThemeLabel(settings.theme)}</span>
-									{#if settings.theme === 'system'}
+									<span>{getThemeLabel(settingsStore.theme)}</span>
+									{#if settingsStore.theme === 'system'}
 										<span class="text-muted-foreground text-xs">
 											(currently {mode.current})
 										</span>
