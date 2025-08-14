@@ -67,7 +67,10 @@ func (s *settingsStore) UpdateTheme(theme string) error {
 //
 // Returns an error if the database update fails.
 func (s *settingsStore) UpdateAutoStart(autoStart bool) error {
-	return s.db.UpdateAutoStart(context.Background(), autoStart)
+	if autoStart {
+		return s.db.UpdateAutoStart(context.Background(), 1)
+	}
+	return s.db.UpdateAutoStart(context.Background(), 0)
 }
 
 // UpdateLanguage updates only the language setting to the specified value.

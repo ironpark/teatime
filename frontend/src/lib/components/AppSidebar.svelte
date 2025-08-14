@@ -27,13 +27,8 @@
 	const data = {
 		navMain: [
 			{
-				title: 'Dashboard',
-				url: '/',
-				icon: Home
-			},
-			{
 				title: 'Recipes',
-				url: '/recipes',
+				url: '/',
 				icon: ChefHat
 			},
 			{

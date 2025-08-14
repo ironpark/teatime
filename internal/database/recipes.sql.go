@@ -11,11 +11,11 @@ import (
 
 const createRecipe = `-- name: CreateRecipe :one
 INSERT INTO recipes (
-    id, name, description, recipe_path
+    id, name, description, recipe_path, tags, node_types, node_count
 ) VALUES (
-    ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?
 )
-RETURNING id, name, description, recipe_path, created_at, updated_at
+RETURNING id, name, description, recipe_path, tags, node_types, node_count, created_at, updated_at
 `
 
 type CreateRecipeParams struct {
@@ -23,6 +23,9 @@ type CreateRecipeParams struct {
 	Name        string
 	Description string
 	RecipePath  string
+	Tags        string
+	NodeTypes   string
+	NodeCount   int64
 }
 
 func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Recipe, error) {
@@ -31,6 +34,9 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 		arg.Name,
 		arg.Description,
 		arg.RecipePath,
+		arg.Tags,
+		arg.NodeTypes,
+		arg.NodeCount,
 	)
 	var i Recipe
 	err := row.Scan(
@@ -38,6 +44,9 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 		&i.Name,
 		&i.Description,
 		&i.RecipePath,
+		&i.Tags,
+		&i.NodeTypes,
+		&i.NodeCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -67,7 +76,7 @@ func (q *Queries) ExistsRecipeByPath(ctx context.Context, recipePath string) (bo
 }
 
 const getRecipe = `-- name: GetRecipe :one
-SELECT id, name, description, recipe_path, created_at, updated_at FROM recipes
+SELECT id, name, description, recipe_path, tags, node_types, node_count, created_at, updated_at FROM recipes
 WHERE id = ? LIMIT 1
 `
 
@@ -79,6 +88,9 @@ func (q *Queries) GetRecipe(ctx context.Context, id string) (Recipe, error) {
 		&i.Name,
 		&i.Description,
 		&i.RecipePath,
+		&i.Tags,
+		&i.NodeTypes,
+		&i.NodeCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -86,7 +98,7 @@ func (q *Queries) GetRecipe(ctx context.Context, id string) (Recipe, error) {
 }
 
 const getRecipeByPath = `-- name: GetRecipeByPath :one
-SELECT id, name, description, recipe_path, created_at, updated_at FROM recipes
+SELECT id, name, description, recipe_path, tags, node_types, node_count, created_at, updated_at FROM recipes
 WHERE recipe_path = ?
 LIMIT 1
 `
@@ -99,6 +111,9 @@ func (q *Queries) GetRecipeByPath(ctx context.Context, recipePath string) (Recip
 		&i.Name,
 		&i.Description,
 		&i.RecipePath,
+		&i.Tags,
+		&i.NodeTypes,
+		&i.NodeCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -118,7 +133,7 @@ func (q *Queries) GetRecipeIdByPath(ctx context.Context, recipePath string) (str
 }
 
 const listRecipes = `-- name: ListRecipes :many
-SELECT id, name, description, recipe_path, created_at, updated_at FROM recipes
+SELECT id, name, description, recipe_path, tags, node_types, node_count, created_at, updated_at FROM recipes
 ORDER BY created_at DESC
 `
 
@@ -136,6 +151,9 @@ func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
 			&i.Name,
 			&i.Description,
 			&i.RecipePath,
+			&i.Tags,
+			&i.NodeTypes,
+			&i.NodeCount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -153,7 +171,7 @@ func (q *Queries) ListRecipes(ctx context.Context) ([]Recipe, error) {
 }
 
 const searchRecipesByName = `-- name: SearchRecipesByName :many
-SELECT id, name, description, recipe_path, created_at, updated_at FROM recipes
+SELECT id, name, description, recipe_path, tags, node_types, node_count, created_at, updated_at FROM recipes
 WHERE name LIKE ?
 ORDER BY created_at DESC
 `
@@ -172,6 +190,9 @@ func (q *Queries) SearchRecipesByName(ctx context.Context, name string) ([]Recip
 			&i.Name,
 			&i.Description,
 			&i.RecipePath,
+			&i.Tags,
+			&i.NodeTypes,
+			&i.NodeCount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -193,25 +214,41 @@ UPDATE recipes
 SET 
     name = ?,
     description = ?,
+    tags = ?,
+    node_types = ?,
+    node_count = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, name, description, recipe_path, created_at, updated_at
+RETURNING id, name, description, recipe_path, tags, node_types, node_count, created_at, updated_at
 `
 
 type UpdateRecipeParams struct {
 	Name        string
 	Description string
+	Tags        string
+	NodeTypes   string
+	NodeCount   int64
 	ID          string
 }
 
 func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Recipe, error) {
-	row := q.db.QueryRowContext(ctx, updateRecipe, arg.Name, arg.Description, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateRecipe,
+		arg.Name,
+		arg.Description,
+		arg.Tags,
+		arg.NodeTypes,
+		arg.NodeCount,
+		arg.ID,
+	)
 	var i Recipe
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
 		&i.RecipePath,
+		&i.Tags,
+		&i.NodeTypes,
+		&i.NodeCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -223,25 +260,41 @@ UPDATE recipes
 SET 
     name = ?,
     description = ?,
+    tags = ?,
+    node_types = ?,
+    node_count = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE recipe_path = ?
-RETURNING id, name, description, recipe_path, created_at, updated_at
+RETURNING id, name, description, recipe_path, tags, node_types, node_count, created_at, updated_at
 `
 
 type UpdateRecipeByPathParams struct {
 	Name        string
 	Description string
+	Tags        string
+	NodeTypes   string
+	NodeCount   int64
 	RecipePath  string
 }
 
 func (q *Queries) UpdateRecipeByPath(ctx context.Context, arg UpdateRecipeByPathParams) (Recipe, error) {
-	row := q.db.QueryRowContext(ctx, updateRecipeByPath, arg.Name, arg.Description, arg.RecipePath)
+	row := q.db.QueryRowContext(ctx, updateRecipeByPath,
+		arg.Name,
+		arg.Description,
+		arg.Tags,
+		arg.NodeTypes,
+		arg.NodeCount,
+		arg.RecipePath,
+	)
 	var i Recipe
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
 		&i.RecipePath,
+		&i.Tags,
+		&i.NodeTypes,
+		&i.NodeCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

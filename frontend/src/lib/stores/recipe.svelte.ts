@@ -64,7 +64,7 @@ export class RecipeStore {
     async save(): Promise<boolean> {
         return await this.withLoading(async () => {
             const data = this.serializeRecipeData();
-            const recipe = await RecipesService.SaveRecipe(Recipe.createFrom(data));
+            const recipe = await RecipesService.SaveRecipe(this.recipeId, Recipe.createFrom(data));
             if (!recipe) {
                 throw new Error('Failed to save recipe');
             }

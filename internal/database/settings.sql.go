@@ -66,7 +66,7 @@ SET auto_start = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = 1
 `
 
-func (q *Queries) UpdateAutoStart(ctx context.Context, autoStart bool) error {
+func (q *Queries) UpdateAutoStart(ctx context.Context, autoStart int64) error {
 	_, err := q.db.ExecContext(ctx, updateAutoStart, autoStart)
 	return err
 }
@@ -93,7 +93,7 @@ WHERE id = 1
 
 type UpdateSettingsParams struct {
 	Theme     string
-	AutoStart bool
+	AutoStart int64
 	Language  string
 }
 

@@ -9,5 +9,6 @@ export {
 };
 
 export {
-    CreatedRecipe
+    CreatedRecipe,
+    RecipeInfo
 } from "./models.js";

@@ -1,201 +1,296 @@
-<script>
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$ui/card';
-	import { Button } from '$ui/button';
-	import { Badge } from '$ui/badge';
-	import { SidebarTrigger } from '$ui/sidebar';
-	import { Separator } from '$ui/separator';
-	import { 
-		Activity, 
-		Clock, 
-		PlayCircle, 
-		Settings, 
-		ChefHat,
-		TrendingUp
-	} from 'lucide-svelte';
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { SidebarTrigger } from '$lib/components/ui/sidebar';
+  import { Separator } from '$lib/components/ui/separator';
+  import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '$lib/components/ui/dialog';
+  import { Label } from '$lib/components/ui/label';
+  import { Textarea } from '$lib/components/ui/textarea';
+  import { 
+    Plus, 
+    Search, 
+    ChefHat
+  } from 'lucide-svelte';
+  import { goto } from '$app/navigation';
+  import { RecipesService } from '$bindings/services';
+  import { RecipeInfo } from '$bindings/services';
+  import RecipeCard from '$lib/components/RecipeCard.svelte';
 
-	const stats = [
-		{
-			title: 'Active Recipes',
-			value: '12',
-			change: '+2 from last week',
-			icon: ChefHat
-		},
-		{
-			title: 'Total Executions',
-			value: '2,847',
-			change: '+15% from last month',
-			icon: Activity
-		},
-		{
-			title: 'Success Rate',
-			value: '98.2%',
-			change: '+0.5% from last week',
-			icon: TrendingUp
-		},
-		{
-			title: 'Avg. Execution Time',
-			value: '1.2s',
-			change: '-0.3s from last week',
-			icon: Clock
-		}
-	];
+  let recipes: RecipeInfo[] = $state([]);
+  let searchTerm = $state('');
+  let loading = $state(true);
+  
+  // Dialog state
+  let dialogOpen = $state(false);
+  let newRecipeName = $state('');
+  let newRecipeDescription = $state('');
+  let creating = $state(false);
 
-	const recentRecipes = [
-		{
-			name: 'Data Processing Recipe',
-			status: 'running',
-			lastRun: '2 minutes ago',
-			executions: 156
-		},
-		{
-			name: 'Image Enhancement Recipe',
-			status: 'idle',
-			lastRun: '1 hour ago',
-			executions: 89
-		},
-		{
-			name: 'API Integration Recipe',
-			status: 'running',
-			lastRun: '5 minutes ago',
-			executions: 234
-		},
-		{
-			name: 'Backup Automation Recipe',
-			status: 'scheduled',
-			lastRun: '12 hours ago',
-			executions: 45
-		}
-	];
+  onMount(() => {
+    loadRecipes();
+  });
+
+  async function loadRecipes() {
+    try {
+      loading = true;
+      recipes = await RecipesService.ListRecipes();
+      console.log(recipes);
+    } catch (error) {
+      console.error('Failed to load recipes:', error);
+      recipes = [];
+    } finally {
+      loading = false;
+    }
+  }
+
+  function createNewRecipe() {
+    dialogOpen = true;
+  }
+
+  async function handleCreateRecipe() {
+    if (!newRecipeName.trim()) return;
+    
+    try {
+      creating = true;
+      const result = await RecipesService.CreateRecipe(
+        newRecipeName.trim(),
+        newRecipeDescription.trim()
+      );
+      
+      if (result) {
+        // Reset form and close dialog
+        newRecipeName = '';
+        newRecipeDescription = '';
+        dialogOpen = false;
+        
+        // Reload recipes to show the new one
+        await loadRecipes();
+        
+        // Navigate to edit the new recipe
+        goto(`/recipes/${result.ID}`);
+      }
+    } catch (error) {
+      console.error('Failed to create recipe:', error);
+      alert('Failed to create recipe. Please try again.');
+    } finally {
+      creating = false;
+    }
+  }
+
+  function cancelCreateRecipe() {
+    newRecipeName = '';
+    newRecipeDescription = '';
+    dialogOpen = false;
+  }
+
+  function editRecipe(recipe: RecipeInfo) {
+    goto(`/recipes/${recipe.ID}`);
+  }
+
+  async function deleteRecipe(recipe: RecipeInfo) {
+    if (confirm(`Are you sure you want to delete "${recipe.Name}"?`)) {
+      try {
+        await RecipesService.DeleteRecipe(recipe.ID);
+        await loadRecipes();
+      } catch (error) {
+        console.error('Failed to delete recipe:', error);
+        alert('Failed to delete recipe. Please try again.');
+      }
+    }
+  }
+
+  async function duplicateRecipe(recipe: RecipeInfo) {
+    try {
+      // Get the full recipe data
+      const fullRecipe = await RecipesService.GetRecipe(recipe.ID);
+      if (!fullRecipe) {
+        alert('Failed to load recipe for duplication');
+        return;
+      }
+      
+      // Create a new recipe with copied data
+      const result = await RecipesService.CreateRecipe(
+        `${recipe.Name} (Copy)`,
+        recipe.Description
+      );
+      
+      if (result) {
+        // Update the new recipe with the copied workflow data
+        fullRecipe.name = `${recipe.Name} (Copy)`;
+        await RecipesService.UpdateRecipe(result.ID, fullRecipe);
+        await loadRecipes();
+      }
+    } catch (error) {
+      console.error('Failed to duplicate recipe:', error);
+      alert('Failed to duplicate recipe. Please try again.');
+    }
+  }
+
+  async function executeRecipe(recipe: RecipeInfo) {
+    try {
+      // Get the full recipe data
+      const fullRecipe = await RecipesService.GetRecipe(recipe.ID);
+      if (fullRecipe) {
+        sessionStorage.setItem('recipe-to-execute', JSON.stringify(fullRecipe));
+        goto('/execution');
+      } else {
+        alert('Failed to load recipe for execution');
+      }
+    } catch (error) {
+      console.error('Failed to load recipe:', error);
+      alert('Failed to load recipe. Please try again.');
+    }
+  }
+
+  let filteredRecipes = $derived(
+    recipes.filter(recipe =>
+      recipe.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recipe.Description.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
 </script>
 
+<svelte:head>
+  <title>Teatime</title>
+</svelte:head>
+
 <div class="flex flex-col h-full">
-	<header class="flex h-16 items-center gap-2 border-b px-4">
-		<SidebarTrigger />
-		<Separator orientation="vertical" class="mr-2 h-4" />
-		<h1 class="text-lg font-semibold">Dashboard</h1>
-	</header>
+  <header class="flex h-16 items-center gap-2 border-b px-4">
+    <SidebarTrigger />
+    <Separator orientation="vertical" class="mr-2 h-4" />
+    <h1 class="text-lg font-semibold">Teatime</h1>
+  </header>
 
-	<main class="flex-1 p-6 space-y-6">
-		<div class="flex items-center justify-between">
-			<div>
-				<h2 class="text-2xl font-bold tracking-tight">Welcome to Teatime</h2>
-				<p class="text-muted-foreground">
-					Monitor and manage your AI workflow automation
-				</p>
-			</div>
-			<Button>
-				<PlayCircle class="mr-2 h-4 w-4" />
-				New Recipe
-			</Button>
-		</div>
+  <main class="flex-1 p-6 space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold tracking-tight">Recipe Library</h2>
+        <p class="text-muted-foreground">
+          Manage and organize your automation recipes
+        </p>
+      </div>
+      
+      <Dialog bind:open={dialogOpen}>
+        <DialogTrigger>
+          <Button onclick={createNewRecipe} class="gap-2">
+            <Plus class="w-4 h-4" />
+            New Recipe
+          </Button>
+        </DialogTrigger>
+        <DialogContent class="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Recipe</DialogTitle>
+            <DialogDescription>
+              Create a new automation recipe. You can add steps and configure it after creation.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div class="space-y-4 py-4">
+            <div class="space-y-2">
+              <Label for="recipe-name">Recipe Name</Label>
+              <Input
+                id="recipe-name"
+                bind:value={newRecipeName}
+                placeholder="Enter recipe name..."
+                disabled={creating}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleCreateRecipe();
+                  }
+                }}
+              />
+            </div>
+            
+            <div class="space-y-2">
+              <Label for="recipe-description">Description (optional)</Label>
+              <Textarea
+                id="recipe-description"
+                bind:value={newRecipeDescription}
+                placeholder="Describe what this recipe does..."
+                disabled={creating}
+                rows={3}
+              />
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2">
+            <Button variant="outline" onclick={cancelCreateRecipe} disabled={creating}>
+              Cancel
+            </Button>
+            <Button 
+              onclick={handleCreateRecipe} 
+              disabled={creating || !newRecipeName.trim()}
+              class="gap-2"
+            >
+              {#if creating}
+                <div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Creating...
+              {:else}
+                <Plus class="w-4 h-4" />
+                Create Recipe
+              {/if}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
 
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-			{#each stats as stat}
-				<Card>
-					<CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle class="text-sm font-medium">{stat.title}</CardTitle>
-						<stat.icon class="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div class="text-2xl font-bold">{stat.value}</div>
-						<p class="text-xs text-muted-foreground">{stat.change}</p>
-					</CardContent>
-				</Card>
-			{/each}
-		</div>
+    <!-- Search and filters -->
+    <div class="flex items-center gap-4">
+      <div class="relative flex-1 max-w-md">
+        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          bind:value={searchTerm}
+          placeholder="Search recipes..."
+          class="pl-10"
+        />
+      </div>
+      
+      <div class="flex items-center gap-2 text-sm text-muted-foreground">
+        <span>{filteredRecipes.length} recipe{filteredRecipes.length === 1 ? '' : 's'}</span>
+      </div>
+    </div>
 
-		<div class="grid gap-4 md:grid-cols-2">
-			<Card>
-				<CardHeader>
-					<CardTitle>Recent Recipes</CardTitle>
-					<CardDescription>
-						Your most recently active recipes
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div class="space-y-4">
-						{#each recentRecipes as recipe}
-							<div class="flex items-center justify-between">
-								<div class="space-y-1">
-									<p class="text-sm font-medium leading-none">{recipe.name}</p>
-									<p class="text-sm text-muted-foreground">
-										{recipe.executions} executions • {recipe.lastRun}
-									</p>
-								</div>
-								<Badge 
-									variant={recipe.status === 'running' ? 'default' : 
-											recipe.status === 'scheduled' ? 'secondary' : 'outline'}
-								>
-									{recipe.status}
-								</Badge>
-							</div>
-						{/each}
-					</div>
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Quick Actions</CardTitle>
-					<CardDescription>
-						Common tasks and shortcuts
-					</CardDescription>
-				</CardHeader>
-				<CardContent class="space-y-3">
-					<Button variant="outline" class="w-full justify-start">
-						<ChefHat class="mr-2 h-4 w-4" />
-						Create New Recipe
-					</Button>
-					<Button variant="outline" class="w-full justify-start">
-						<PlayCircle class="mr-2 h-4 w-4" />
-						Execute Recipe
-					</Button>
-					<Button variant="outline" class="w-full justify-start">
-						<Settings class="mr-2 h-4 w-4" />
-						System Settings
-					</Button>
-				</CardContent>
-			</Card>
-		</div>
-
-		<Card>
-			<CardHeader>
-				<CardTitle>System Status</CardTitle>
-				<CardDescription>
-					Current system health and performance
-				</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<div class="grid gap-4 md:grid-cols-3">
-					<div class="space-y-2">
-						<div class="flex items-center justify-between">
-							<span class="text-sm">CPU Usage</span>
-							<span class="text-sm font-medium">34%</span>
-						</div>
-						<div class="w-full bg-secondary rounded-full h-2">
-							<div class="bg-primary h-2 rounded-full" style="width: 34%"></div>
-						</div>
-					</div>
-					<div class="space-y-2">
-						<div class="flex items-center justify-between">
-							<span class="text-sm">Memory Usage</span>
-							<span class="text-sm font-medium">67%</span>
-						</div>
-						<div class="w-full bg-secondary rounded-full h-2">
-							<div class="bg-primary h-2 rounded-full" style="width: 67%"></div>
-						</div>
-					</div>
-					<div class="space-y-2">
-						<div class="flex items-center justify-between">
-							<span class="text-sm">Active Connections</span>
-							<span class="text-sm font-medium">8/20</span>
-						</div>
-						<div class="w-full bg-secondary rounded-full h-2">
-							<div class="bg-primary h-2 rounded-full" style="width: 40%"></div>
-						</div>
-					</div>
-				</div>
-			</CardContent>
-		</Card>
-	</main>
+    <!-- Recipe grid -->
+    {#if loading}
+      <div class="flex items-center justify-center h-64">
+        <div class="text-muted-foreground">Loading recipes...</div>
+      </div>
+    {:else if filteredRecipes.length === 0}
+      <div class="text-center py-12">
+        <ChefHat class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 class="text-lg font-semibold mb-2">
+          {searchTerm ? 'No recipes found' : 'No recipes yet'}
+        </h3>
+        <p class="text-muted-foreground mb-4">
+          {searchTerm 
+            ? 'Try adjusting your search terms'
+            : 'Get started by creating your first recipe'
+          }
+        </p>
+        {#if !searchTerm}
+          <Button onclick={createNewRecipe} class="gap-2">
+            <Plus class="w-4 h-4" />
+            Create Your First Recipe
+          </Button>
+        {/if}
+      </div>
+    {:else}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {#each filteredRecipes as recipe (recipe.ID)}
+          <RecipeCard
+            {recipe}
+            onEdit={editRecipe}
+            onDelete={deleteRecipe}
+            onDuplicate={duplicateRecipe}
+            onExecute={executeRecipe}
+          />
+        {/each}
+      </div>
+    {/if}
+  </main>
 </div>
+

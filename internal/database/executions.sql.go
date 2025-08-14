@@ -27,7 +27,7 @@ INSERT INTO executions (
 ) VALUES (
     ?, ?, ?, ?, ?
 )
-RETURNING id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context
+RETURNING id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context
 `
 
 type CreateExecutionParams struct {
@@ -50,7 +50,6 @@ func (q *Queries) CreateExecution(ctx context.Context, arg CreateExecutionParams
 	err := row.Scan(
 		&i.ID,
 		&i.RecipeID,
-		&i.Foreign,
 		&i.Status,
 		&i.StartedAt,
 		&i.FinishedAt,
@@ -74,7 +73,7 @@ func (q *Queries) DeleteExecution(ctx context.Context, id string) error {
 }
 
 const getExecution = `-- name: GetExecution :one
-SELECT id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
+SELECT id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
 WHERE id = ? LIMIT 1
 `
 
@@ -84,7 +83,6 @@ func (q *Queries) GetExecution(ctx context.Context, id string) (Execution, error
 	err := row.Scan(
 		&i.ID,
 		&i.RecipeID,
-		&i.Foreign,
 		&i.Status,
 		&i.StartedAt,
 		&i.FinishedAt,
@@ -133,7 +131,7 @@ func (q *Queries) GetExecutionStats(ctx context.Context, recipeID string) (GetEx
 }
 
 const getExecutionsByRecipeAndStatus = `-- name: GetExecutionsByRecipeAndStatus :many
-SELECT id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
+SELECT id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
 WHERE recipe_id = ? AND status = ?
 ORDER BY started_at DESC
 `
@@ -155,7 +153,6 @@ func (q *Queries) GetExecutionsByRecipeAndStatus(ctx context.Context, arg GetExe
 		if err := rows.Scan(
 			&i.ID,
 			&i.RecipeID,
-			&i.Foreign,
 			&i.Status,
 			&i.StartedAt,
 			&i.FinishedAt,
@@ -179,7 +176,7 @@ func (q *Queries) GetExecutionsByRecipeAndStatus(ctx context.Context, arg GetExe
 }
 
 const getRecentExecutions = `-- name: GetRecentExecutions :many
-SELECT id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
+SELECT id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
 WHERE started_at >= datetime('now', '-7 days')
 ORDER BY started_at DESC
 LIMIT ?
@@ -197,7 +194,6 @@ func (q *Queries) GetRecentExecutions(ctx context.Context, limit int64) ([]Execu
 		if err := rows.Scan(
 			&i.ID,
 			&i.RecipeID,
-			&i.Foreign,
 			&i.Status,
 			&i.StartedAt,
 			&i.FinishedAt,
@@ -221,7 +217,7 @@ func (q *Queries) GetRecentExecutions(ctx context.Context, limit int64) ([]Execu
 }
 
 const getRunningExecutions = `-- name: GetRunningExecutions :many
-SELECT id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
+SELECT id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
 WHERE status = 'running'
 ORDER BY started_at DESC
 `
@@ -238,7 +234,6 @@ func (q *Queries) GetRunningExecutions(ctx context.Context) ([]Execution, error)
 		if err := rows.Scan(
 			&i.ID,
 			&i.RecipeID,
-			&i.Foreign,
 			&i.Status,
 			&i.StartedAt,
 			&i.FinishedAt,
@@ -262,7 +257,7 @@ func (q *Queries) GetRunningExecutions(ctx context.Context) ([]Execution, error)
 }
 
 const listExecutions = `-- name: ListExecutions :many
-SELECT id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
+SELECT id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
 ORDER BY started_at DESC
 `
 
@@ -278,7 +273,6 @@ func (q *Queries) ListExecutions(ctx context.Context) ([]Execution, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.RecipeID,
-			&i.Foreign,
 			&i.Status,
 			&i.StartedAt,
 			&i.FinishedAt,
@@ -302,7 +296,7 @@ func (q *Queries) ListExecutions(ctx context.Context) ([]Execution, error) {
 }
 
 const listExecutionsByRecipe = `-- name: ListExecutionsByRecipe :many
-SELECT id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
+SELECT id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
 WHERE recipe_id = ?
 ORDER BY started_at DESC
 `
@@ -319,7 +313,6 @@ func (q *Queries) ListExecutionsByRecipe(ctx context.Context, recipeID string) (
 		if err := rows.Scan(
 			&i.ID,
 			&i.RecipeID,
-			&i.Foreign,
 			&i.Status,
 			&i.StartedAt,
 			&i.FinishedAt,
@@ -343,7 +336,7 @@ func (q *Queries) ListExecutionsByRecipe(ctx context.Context, recipeID string) (
 }
 
 const listExecutionsByStatus = `-- name: ListExecutionsByStatus :many
-SELECT id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
+SELECT id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context FROM executions
 WHERE status = ?
 ORDER BY started_at DESC
 `
@@ -360,7 +353,6 @@ func (q *Queries) ListExecutionsByStatus(ctx context.Context, status string) ([]
 		if err := rows.Scan(
 			&i.ID,
 			&i.RecipeID,
-			&i.Foreign,
 			&i.Status,
 			&i.StartedAt,
 			&i.FinishedAt,
@@ -399,7 +391,7 @@ SET
     error_message = ?2,
     output_data = ?3
 WHERE id = ?4
-RETURNING id, recipe_id, "foreign", status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context
+RETURNING id, recipe_id, status, started_at, finished_at, duration_ms, error_message, input_data, output_data, execution_context
 `
 
 type UpdateExecutionStatusParams struct {
@@ -420,7 +412,6 @@ func (q *Queries) UpdateExecutionStatus(ctx context.Context, arg UpdateExecution
 	err := row.Scan(
 		&i.ID,
 		&i.RecipeID,
-		&i.Foreign,
 		&i.Status,
 		&i.StartedAt,
 		&i.FinishedAt,

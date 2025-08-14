@@ -8,6 +8,9 @@ import { Create as $Create } from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as recipe$0 from "../internal/recipe/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as time$0 from "../../../../time/models.js";
 
 export class CreatedRecipe {
     "Recipe": recipe$0.Recipe | null;
@@ -38,6 +41,80 @@ export class CreatedRecipe {
     }
 }
 
+export class RecipeInfo {
+    "ID": string;
+    "Name": string;
+    "Description": string;
+    "RecipePath": string;
+    "NodeCount": number;
+    "CreatedAt": time$0.Time;
+    "UpdatedAt": time$0.Time;
+    "ExecutionCount": number;
+    "LastExecution": time$0.Time;
+    "LastExecutionStatus": string;
+    "Tags": string[];
+    "NodeTypes": string[];
+
+    /** Creates a new RecipeInfo instance. */
+    constructor($$source: Partial<RecipeInfo> = {}) {
+        if (!("ID" in $$source)) {
+            this["ID"] = "";
+        }
+        if (!("Name" in $$source)) {
+            this["Name"] = "";
+        }
+        if (!("Description" in $$source)) {
+            this["Description"] = "";
+        }
+        if (!("RecipePath" in $$source)) {
+            this["RecipePath"] = "";
+        }
+        if (!("NodeCount" in $$source)) {
+            this["NodeCount"] = 0;
+        }
+        if (!("CreatedAt" in $$source)) {
+            this["CreatedAt"] = null;
+        }
+        if (!("UpdatedAt" in $$source)) {
+            this["UpdatedAt"] = null;
+        }
+        if (!("ExecutionCount" in $$source)) {
+            this["ExecutionCount"] = 0;
+        }
+        if (!("LastExecution" in $$source)) {
+            this["LastExecution"] = null;
+        }
+        if (!("LastExecutionStatus" in $$source)) {
+            this["LastExecutionStatus"] = "";
+        }
+        if (!("Tags" in $$source)) {
+            this["Tags"] = [];
+        }
+        if (!("NodeTypes" in $$source)) {
+            this["NodeTypes"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RecipeInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RecipeInfo {
+        const $$createField10_0 = $$createType2;
+        const $$createField11_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("Tags" in $$parsedSource) {
+            $$parsedSource["Tags"] = $$createField10_0($$parsedSource["Tags"]);
+        }
+        if ("NodeTypes" in $$parsedSource) {
+            $$parsedSource["NodeTypes"] = $$createField11_0($$parsedSource["NodeTypes"]);
+        }
+        return new RecipeInfo($$parsedSource as Partial<RecipeInfo>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = recipe$0.Recipe.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $Create.Array($Create.Any);

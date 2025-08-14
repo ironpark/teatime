@@ -9,6 +9,9 @@ CREATE TABLE recipes (
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     recipe_path TEXT NOT NULL UNIQUE,
+    tags TEXT NOT NULL DEFAULT '',
+    node_types TEXT NOT NULL DEFAULT '',
+    node_count INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

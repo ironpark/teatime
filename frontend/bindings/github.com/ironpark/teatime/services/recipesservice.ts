@@ -7,9 +7,6 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as database$0 from "../internal/database/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as node$0 from "../internal/node/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -53,14 +50,14 @@ export function GetRecipe(id: string): $CancellablePromise<recipe$0.Recipe | nul
     });
 }
 
-export function ListRecipes(): $CancellablePromise<database$0.Recipe[]> {
+export function ListRecipes(): $CancellablePromise<$models.RecipeInfo[]> {
     return $Call.ByID(590765802).then(($result: any) => {
         return $$createType8($result);
     });
 }
 
-export function SaveRecipe(recipe: recipe$0.Recipe | null): $CancellablePromise<recipe$0.Recipe | null> {
-    return $Call.ByID(4266337316, recipe).then(($result: any) => {
+export function SaveRecipe(id: string, recipe: recipe$0.Recipe | null): $CancellablePromise<recipe$0.Recipe | null> {
+    return $Call.ByID(4266337316, id, recipe).then(($result: any) => {
         return $$createType6($result);
     });
 }
@@ -81,5 +78,5 @@ const $$createType3 = node$0.NodeInfo.createFrom;
 const $$createType4 = $Create.Array($$createType3);
 const $$createType5 = recipe$0.Recipe.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = database$0.Recipe.createFrom;
+const $$createType7 = $models.RecipeInfo.createFrom;
 const $$createType8 = $Create.Array($$createType7);

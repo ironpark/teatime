@@ -9,51 +9,10 @@ import { Create as $Create } from "@wailsio/runtime";
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../time/models.js";
 
-export class Recipe {
-    "ID": string;
-    "Name": string;
-    "Description": string;
-    "RecipePath": string;
-    "CreatedAt": time$0.Time;
-    "UpdatedAt": time$0.Time;
-
-    /** Creates a new Recipe instance. */
-    constructor($$source: Partial<Recipe> = {}) {
-        if (!("ID" in $$source)) {
-            this["ID"] = "";
-        }
-        if (!("Name" in $$source)) {
-            this["Name"] = "";
-        }
-        if (!("Description" in $$source)) {
-            this["Description"] = "";
-        }
-        if (!("RecipePath" in $$source)) {
-            this["RecipePath"] = "";
-        }
-        if (!("CreatedAt" in $$source)) {
-            this["CreatedAt"] = null;
-        }
-        if (!("UpdatedAt" in $$source)) {
-            this["UpdatedAt"] = null;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Recipe instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Recipe {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new Recipe($$parsedSource as Partial<Recipe>);
-    }
-}
-
 export class Setting {
     "ID": number;
     "Theme": string;
-    "AutoStart": boolean;
+    "AutoStart": number;
     "Language": string;
     "CreatedAt": time$0.Time;
     "UpdatedAt": time$0.Time;
@@ -67,7 +26,7 @@ export class Setting {
             this["Theme"] = "";
         }
         if (!("AutoStart" in $$source)) {
-            this["AutoStart"] = false;
+            this["AutoStart"] = 0;
         }
         if (!("Language" in $$source)) {
             this["Language"] = "";

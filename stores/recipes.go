@@ -99,6 +99,9 @@ func (r *recipesStore) Sync() error {
 				Name:        recipe.Name,
 				Description: recipe.Description,
 				RecipePath:  path,
+				Tags:        genTags(recipe),
+				NodeTypes:   genNodeTypes(recipe),
+				NodeCount:   int64(len(recipe.Nodes)),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to create recipe: %w", err)
@@ -108,6 +111,9 @@ func (r *recipesStore) Sync() error {
 			_, err := queries.UpdateRecipeByPath(ctx, database.UpdateRecipeByPathParams{
 				Name:        recipe.Name,
 				Description: recipe.Description,
+				Tags:        genTags(recipe),
+				NodeTypes:   genNodeTypes(recipe),
+				NodeCount:   int64(len(recipe.Nodes)),
 				RecipePath:  path,
 			})
 			if err != nil {
@@ -177,6 +183,9 @@ func (r *recipesStore) CreateRecipe(name, description string) (id string, recipe
 			Name:        name,
 			Description: description,
 			RecipePath:  recipePath,
+			Tags:        genTags(recipe),
+			NodeTypes:   genNodeTypes(recipe),
+			NodeCount:   int64(len(recipe.Nodes)),
 		})
 		if err != nil {
 			// Clean up file if database insert fails
@@ -237,11 +246,15 @@ func (r *recipesStore) UpdateRecipe(id string, recipe *rc.Recipe) error {
 			return fmt.Errorf("failed to save recipe file: %w", err)
 		}
 	}
-
+	nodeTypes := genNodeTypes(recipe)
+	tags := genTags(recipe)
 	if _, err := r.db.UpdateRecipe(context.Background(), database.UpdateRecipeParams{
 		ID:          id,
 		Name:        recipe.Name,
 		Description: recipe.Description,
+		Tags:        tags,
+		NodeTypes:   nodeTypes,
+		NodeCount:   int64(len(recipe.Nodes)),
 	}); err != nil {
 		return fmt.Errorf("failed to update recipe in database: %w", err)
 	}
@@ -327,4 +340,51 @@ func (r *recipesStore) GetExecutionsByRecipe(recipeID string) ([]database.Execut
 		return nil, fmt.Errorf("failed to get executions: %w", err)
 	}
 	return executions, nil
+}
+
+func genNodeTypes(recipe *rc.Recipe) string {
+	if len(recipe.Nodes) == 0 {
+		return ""
+	}
+	types := lo.Uniq(lo.Map(recipe.Nodes, func(node rc.Node, _ int) string {
+		return node.Ref
+	}))
+	typesJSON, err := json.Marshal(types)
+	if err != nil {
+		return ""
+	}
+	return string(typesJSON)
+}
+
+func genTags(recipe *rc.Recipe) string {
+	if len(recipe.Nodes) == 0 {
+		return ""
+	}
+	tags := lo.Uniq(lo.Map(recipe.Nodes, func(node rc.Node, _ int) string {
+		if node.Ref == "teatime.trigger.command" {
+			return "trigger:command"
+		}
+		if node.Ref == "teatime.trigger.webhook" {
+			return "trigger:webhook"
+		}
+		if node.Ref == "teatime.trigger.schedule" {
+			return "trigger:schedule"
+		}
+		if node.Ref == "teatime.trigger.mcp" {
+			return "trigger:mcp"
+		}
+		if node.Ref == "teatime.trigger.button" {
+			return "trigger:button"
+		}
+		name := strings.ToLower(node.Name)
+		if strings.Contains(name, "llm") || strings.Contains(name, "chatgpt") {
+			return "llm"
+		}
+		return ""
+	}))
+	tagsJSON, err := json.Marshal(tags)
+	if err != nil {
+		return ""
+	}
+	return string(tagsJSON)
 }

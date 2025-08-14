@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -13,6 +14,14 @@ import (
 
 type RecipesService struct {
 	store stores.RecipesStore
+}
+type RecipeInfo struct {
+	database.Recipe
+	ExecutionCount      int
+	LastExecution       time.Time
+	LastExecutionStatus string
+	Tags                []string
+	NodeTypes           []string
 }
 
 func NewRecipesService(store stores.RecipesStore) *RecipesService {
@@ -47,10 +56,11 @@ func (s *RecipesService) CreateRecipe(name, description string) (*CreatedRecipe,
 	}, nil
 }
 
-func (s *RecipesService) SaveRecipe(recipe *rc.Recipe) (*rc.Recipe, error) {
+func (s *RecipesService) SaveRecipe(id string, recipe *rc.Recipe) (*rc.Recipe, error) {
 	if err := recipe.Save(); err != nil {
 		return nil, err
 	}
+	s.store.UpdateRecipe(id, recipe)
 	return recipe, nil
 }
 
@@ -82,8 +92,27 @@ func (s *RecipesService) GetRecipe(id string) (*rc.Recipe, error) {
 	return s.store.GetRecipe(id)
 }
 
-func (s *RecipesService) ListRecipes() ([]database.Recipe, error) {
-	return s.store.ListRecipes()
+func (s *RecipesService) ListRecipes() ([]RecipeInfo, error) {
+	recipes, err := s.store.ListRecipes()
+	if err != nil {
+		return nil, err
+	}
+	recipeInfos := make([]RecipeInfo, len(recipes))
+	for i, recipe := range recipes {
+		info := RecipeInfo{
+			Recipe: recipe,
+		}
+		if recipe.NodeTypes != "" {
+			json.Unmarshal([]byte(recipe.NodeTypes), &info.NodeTypes)
+			fmt.Println("NodeTypes", info.NodeTypes)
+		}
+		if recipe.Tags != "" {
+			json.Unmarshal([]byte(recipe.Tags), &info.Tags)
+			fmt.Println("Tags", info.Tags)
+		}
+		recipeInfos[i] = info
+	}
+	return recipeInfos, nil
 }
 
 func (s *RecipesService) UpdateRecipe(id string, recipe *rc.Recipe) error {

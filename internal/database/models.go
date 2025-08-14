@@ -26,7 +26,6 @@ type Credential struct {
 type Execution struct {
 	ID               string
 	RecipeID         string
-	Foreign          interface{}
 	Status           string
 	StartedAt        time.Time
 	FinishedAt       sql.NullTime
@@ -42,6 +41,9 @@ type Recipe struct {
 	Name        string
 	Description string
 	RecipePath  string
+	Tags        string
+	NodeTypes   string
+	NodeCount   int64
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -49,7 +51,7 @@ type Recipe struct {
 type Setting struct {
 	ID        int64
 	Theme     string
-	AutoStart bool
+	AutoStart int64
 	Language  string
 	CreatedAt time.Time
 	UpdatedAt time.Time

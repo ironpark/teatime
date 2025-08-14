@@ -8,9 +8,9 @@ ORDER BY created_at DESC;
 
 -- name: CreateRecipe :one
 INSERT INTO recipes (
-    id, name, description, recipe_path
+    id, name, description, recipe_path, tags, node_types, node_count
 ) VALUES (
-    ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?
 )
 RETURNING *;
 
@@ -19,6 +19,9 @@ UPDATE recipes
 SET 
     name = ?,
     description = ?,
+    tags = ?,
+    node_types = ?,
+    node_count = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
@@ -28,6 +31,9 @@ UPDATE recipes
 SET 
     name = ?,
     description = ?,
+    tags = ?,
+    node_types = ?,
+    node_count = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE recipe_path = ?
 RETURNING *;
