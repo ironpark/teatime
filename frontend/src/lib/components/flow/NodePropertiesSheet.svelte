@@ -12,7 +12,10 @@
 	import { InputType, type NodeProperty } from '$bindings/internal/node';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
+	import { useSvelteFlow } from '@xyflow/svelte';
 
+	let { updateNodeData } = useSvelteFlow();
+	
 	interface Props {
 		selectedNodes: Node[];
 		onNodeUpdate: (nodeId: string, updates: any) => void;
@@ -21,17 +24,11 @@
 	}
 
 	let { selectedNodes = $bindable([]), onNodeUpdate, open = $bindable(false), onOpenChange }: Props = $props();
+	const selectedNode = $derived(selectedNodes?.[0]);
 
-	let selectedNode = $derived(selectedNodes?.[0]);
-	
-	$effect(() => {
-		console.log('NodePropertiesSheet - open:', open);
-		console.log('NodePropertiesSheet - selectedNode:', selectedNode);
-	});
-
-	function updateNodeData(field: string, value: any) {
+	function updateNodeProperty(field: string, value: any) {
 		if (selectedNode) {
-			onNodeUpdate(selectedNode.id, { [field]: value });
+			updateNodeData(selectedNode.id, { [field]: value });
 		}
 	}
 
@@ -41,7 +38,7 @@
 			const index = properties.findIndex((p: NodeProperty) => p.key === prop.key);
 			if (index !== -1) {
 				properties[index] = { ...properties[index], value };
-				onNodeUpdate(selectedNode.id, { properties });
+				updateNodeData(selectedNode.id, { properties });
 			}
 		}
 	}
@@ -238,7 +235,7 @@
 								<Input
 									id="node-label"
 									value={selectedNode.data.label || ''}
-									oninput={(e) => updateNodeData('label', (e.target as HTMLInputElement).value)}
+									oninput={(e) => updateNodeProperty('label', (e.target as HTMLInputElement).value)}
 									placeholder="Enter node label"
 								/>
 							</div>

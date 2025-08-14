@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
 	import { nodeConfigs } from './nodeConfigs';
-	import type { NodeProperty } from '$bindings/github.com/ironpark/teatime/internal/node/models';
+	import type { NodeProperty } from '$bindings/internal/node/models';
 	import { HelpCircle, Package, Edit } from 'lucide-svelte';
 	import LucideIcon from '$lib/components/LucideIcon.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -9,15 +9,19 @@
 	import { getContext } from 'svelte';
 
 	let { data, type: nodeType, selected = false, isConnectable = true, id }: NodeProps = $props();
-	
+
+	const typeName = $derived.by(() => {
+		if (nodeType === 'trigger') return 'Trigger';
+		if (nodeType === 'action') return 'Action';
+		if (nodeType === 'branch') return 'Branch';
+		if (nodeType === 'util') return 'Utility';
+		return 'Unknown';
+	});
 	// Get handlers from context
 	const handlers = getContext<{
 		onEdit: (nodeId: string) => void;
 		onDoubleClick: (nodeId: string) => void;
 	}>('nodeHandlers');
-
-	// Get the specific node type from data or use the type directly
-	const specificNodeType = $derived.by(() => data.nodeType || type);
 
 	// Get node configuration
 	const config = nodeConfigs[nodeType as keyof typeof nodeConfigs] || nodeConfigs.util
@@ -45,7 +49,7 @@
 	// Determine handle type based on node type
 	const handleType = $derived.by(() => {
 		if (nodeType === 'trigger') return 'source';
-		if (nodeType === 'action' && (specificNodeType === 'output' || specificNodeType === 'file-save'))
+		if (nodeType === 'action')
 			return 'target';
 		return 'both';
 	});
@@ -93,7 +97,7 @@
 					<Package class={`h-4 w-4 ${config?.color?.iconText || 'text-gray-600'}`} />
 				{/if}
 			</div>
-			<span class="text-sm font-medium">{data.name} {config?.label || 'Node'}</span>
+			<span class="text-sm font-medium">{data.name} {typeName}</span>
 		</div>
 		<div class="flex items-center gap-1">
 			{#if config?.badge}

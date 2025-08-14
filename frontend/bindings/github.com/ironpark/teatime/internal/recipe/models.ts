@@ -44,37 +44,70 @@ export class FlowEdge {
 
 export class Node {
     "id": string;
-    "ref": string;
-    "name": string;
-    "icon": string;
-    "description": string;
     "type": string;
-    "pos": Position;
-    "properties": node$0.NodeProperty[];
-    "output": node$0.NodeProperty[];
+    "position": Position;
+    "data": NodeData;
 
     /** Creates a new Node instance. */
     constructor($$source: Partial<Node> = {}) {
         if (!("id" in $$source)) {
             this["id"] = "";
         }
+        if (!("type" in $$source)) {
+            this["type"] = "";
+        }
+        if (!("position" in $$source)) {
+            this["position"] = null;
+        }
+        if (!("data" in $$source)) {
+            this["data"] = (new NodeData());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Node instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Node {
+        const $$createField3_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("data" in $$parsedSource) {
+            $$parsedSource["data"] = $$createField3_0($$parsedSource["data"]);
+        }
+        return new Node($$parsedSource as Partial<Node>);
+    }
+}
+
+export class NodeData {
+    "ref": string;
+    "icon": string;
+    "label": string;
+    "name": string;
+    "nodeType": string;
+    "description": string;
+    "properties": node$0.NodeProperty[];
+    "output": node$0.NodeProperty[];
+
+    /** Creates a new NodeData instance. */
+    constructor($$source: Partial<NodeData> = {}) {
         if (!("ref" in $$source)) {
             this["ref"] = "";
-        }
-        if (!("name" in $$source)) {
-            this["name"] = "";
         }
         if (!("icon" in $$source)) {
             this["icon"] = "";
         }
+        if (!("label" in $$source)) {
+            this["label"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("nodeType" in $$source)) {
+            this["nodeType"] = "";
+        }
         if (!("description" in $$source)) {
             this["description"] = "";
-        }
-        if (!("type" in $$source)) {
-            this["type"] = "";
-        }
-        if (!("pos" in $$source)) {
-            this["pos"] = Array.from({ length: 2 }, () => 0);
         }
         if (!("properties" in $$source)) {
             this["properties"] = [];
@@ -87,23 +120,23 @@ export class Node {
     }
 
     /**
-     * Creates a new Node instance from a string or object.
+     * Creates a new NodeData instance from a string or object.
      */
-    static createFrom($$source: any = {}): Node {
-        const $$createField7_0 = $$createType1;
-        const $$createField8_0 = $$createType1;
+    static createFrom($$source: any = {}): NodeData {
+        const $$createField6_0 = $$createType2;
+        const $$createField7_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("properties" in $$parsedSource) {
-            $$parsedSource["properties"] = $$createField7_0($$parsedSource["properties"]);
+            $$parsedSource["properties"] = $$createField6_0($$parsedSource["properties"]);
         }
         if ("output" in $$parsedSource) {
-            $$parsedSource["output"] = $$createField8_0($$parsedSource["output"]);
+            $$parsedSource["output"] = $$createField7_0($$parsedSource["output"]);
         }
-        return new Node($$parsedSource as Partial<Node>);
+        return new NodeData($$parsedSource as Partial<NodeData>);
     }
 }
 
-export type Position = number[];
+export type Position = any;
 
 export class Recipe {
     "name": string;
@@ -137,8 +170,8 @@ export class Recipe {
      * Creates a new Recipe instance from a string or object.
      */
     static createFrom($$source: any = {}): Recipe {
-        const $$createField3_0 = $$createType3;
-        const $$createField4_0 = $$createType5;
+        const $$createField3_0 = $$createType4;
+        const $$createField4_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("nodes" in $$parsedSource) {
             $$parsedSource["nodes"] = $$createField3_0($$parsedSource["nodes"]);
@@ -151,9 +184,10 @@ export class Recipe {
 }
 
 // Private type creation functions
-const $$createType0 = node$0.NodeProperty.createFrom;
-const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = Node.createFrom;
-const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = FlowEdge.createFrom;
-const $$createType5 = $Create.Array($$createType4);
+const $$createType0 = NodeData.createFrom;
+const $$createType1 = node$0.NodeProperty.createFrom;
+const $$createType2 = $Create.Array($$createType1);
+const $$createType3 = Node.createFrom;
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = FlowEdge.createFrom;
+const $$createType6 = $Create.Array($$createType5);

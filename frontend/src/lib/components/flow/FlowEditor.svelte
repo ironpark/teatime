@@ -7,46 +7,44 @@
 		MiniMap,
 		type Node,
 		type Edge,
-		SvelteFlowProvider
+		SvelteFlowProvider,
+		type NodeTargetEventWithPointer
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 
 	import UnifiedNode from './node/UnifiedNode.svelte';
 	import FloatingNodeMenu from './FloatingNodeMenu.svelte';
 	import NodePropertiesSheet from './NodePropertiesSheet.svelte';
-	import { workflowStore } from '$lib/stores/nodes.svelte';
 	import { setContext } from 'svelte';
-
+	import type { RecipeStore } from '$lib/stores/recipe.svelte';
 	interface Props {
-		nodes: Node[];
-		edges: Edge[];
+		recipeStore: RecipeStore;
 		onNodesChange?: (nodes: Node[]) => void;
 		onEdgesChange?: (edges: Edge[]) => void;
 		onSelectionChange?: (selection: { nodes: Node[]; edges: Edge[] }) => void;
 	}
 
 	let {
-		nodes = $bindable([]),
-		edges = $bindable([]),
 		onNodesChange,
 		onEdgesChange,
-		onSelectionChange
+		onSelectionChange,
+		recipeStore
 	}: Props = $props();
 
 	// Function to handle edit button click
 	function handleEditClick(nodeId: string) {
-		const node = nodes.find(n => n.id === nodeId);
+		const node = recipeStore.nodes.find(n => n.id === nodeId);
 		if (node) {
-			selectedNodes = [node];
+			recipeStore.selectedNodes = [node];
 			propertiesSheetOpen = true;
 		}
 	}
 
 	// Function to handle double click
 	function handleNodeDoubleClick(nodeId: string) {
-		const node = nodes.find(n => n.id === nodeId);
+		const node = recipeStore.nodes.find(n => n.id === nodeId);
 		if (node) {
-			selectedNodes = [node];
+			recipeStore.selectedNodes = [node];
 			propertiesSheetOpen = true;
 		}
 	}
@@ -66,34 +64,10 @@
 		util: UnifiedNode
 	};
 
-	let selectedNodes = $state<Node[]>([]);
-	let selectedEdges = $state<Edge[]>([]);
 	let propertiesSheetOpen = $state(false);
 
 	async function addNode(nodeId: string) {
-		const newNode = await workflowStore.addNode(nodeId);
-		if (newNode) {
-			nodes = [...workflowStore.nodes];
-			if (onNodesChange) {
-				onNodesChange(workflowStore.nodes);
-			}
-		}
-	}
-
-	function updateNodeData(nodeId: string, updates: Record<string, unknown>) {
-		workflowStore.updateNode(nodeId, updates);
-		if (onNodesChange) {
-			onNodesChange(workflowStore.nodes);
-		}
-	}
-
-	function handlePropertiesSheetChange(open: boolean) {
-		propertiesSheetOpen = open;
-		if (!open) {
-			// Optionally clear selection when sheet closes
-			// selectedNodes = [];
-			// selectedEdges = [];
-		}
+		await recipeStore.createNodeByRef(nodeId, 0, 0);
 	}
 
 	function handleConnect(connection: any) {
@@ -103,39 +77,41 @@
 			id: `e${connection.source}-${connection.target}`,
 			type: 'smoothstep'
 		};
-		edges = [...edges, newEdge];
-		onEdgesChange?.(edges);
+		recipeStore.edges = [...recipeStore.edges, newEdge];
+		onEdgesChange?.(recipeStore.edges);
 	}
 
-	function handleError(event: CustomEvent) {
-		console.error('SvelteFlow error:', event.detail);
+	function handleError(event: Event) {
+		console.error('SvelteFlow error:', event);
 	}
 
 	function handleInit() {
 		console.log('SvelteFlow initialized');
-		console.log('Nodes:', nodes);
-		console.log('Edges:', edges);
+		console.log('Nodes:', recipeStore.nodes);
+		console.log('Edges:', recipeStore.edges);
 	}
 	
 	function handleSelectionChange({ nodes: selectedNodesList, edges: selectedEdgesList }: { nodes: Node[], edges: Edge[] }) {
 		console.log('Selection changed:', selectedNodesList);
-		selectedNodes = selectedNodesList;
-		selectedEdges = selectedEdgesList;
-		
-		// Don't auto-open sheet on selection anymore - only open via edit button
+		recipeStore.selectedNodes = selectedNodesList;
+		recipeStore.selectedEdges = selectedEdgesList;
+	}
+
+	function handleNodeDrag(targetNode: Node, nodes: Node[], event: MouseEvent | TouchEvent) {
+		console.log('Node dragged:', targetNode, nodes, event);
 	}
 </script>
 
 <SvelteFlowProvider>
 	<div class="relative flex-1">
 		<SvelteFlow
-			bind:nodes
-			bind:edges
+			bind:nodes={recipeStore.nodes}
+			bind:edges={recipeStore.edges}
 			{nodeTypes}
 			onconnect={handleConnect}
-			onerror={handleError}
 			oninit={handleInit}
 			onselectionchange={handleSelectionChange}
+			onerror={handleError}
 			fitView
 			snapGrid={[15, 15]}
 			defaultEdgeOptions={{ type: 'smoothstep' }}
@@ -153,31 +129,14 @@
 
 	<!-- Node Properties Sheet -->
 	<NodePropertiesSheet 
-		bind:selectedNodes 
-		onNodeUpdate={updateNodeData} 
+		bind:selectedNodes={recipeStore.selectedNodes} 
+		onNodeUpdate={(nodeId, updates) => {
+			console.log('Node updated:', nodeId, updates);
+			recipeStore.updateNodeData(nodeId, updates);
+		}} 
 		bind:open={propertiesSheetOpen}
-		onOpenChange={handlePropertiesSheetChange}
+		onOpenChange={(open) => {
+			propertiesSheetOpen = open;
+		}}
 	/>
 </SvelteFlowProvider>
-
-<style>
-	:global(.svelte-flow) {
-		background-color: hsl(var(--background));
-	}
-
-	:global(.svelte-flow__node) {
-		font-family: inherit;
-	}
-
-	:global(.svelte-flow__edge) {
-		stroke: hsl(var(--border));
-	}
-
-	:global(.svelte-flow__edge.selected) {
-		stroke: hsl(var(--primary));
-	}
-
-	:global(.svelte-flow__connection-line) {
-		stroke: hsl(var(--primary));
-	}
-</style>

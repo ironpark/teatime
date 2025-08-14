@@ -1,7 +1,6 @@
 package recipe
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/goccy/go-yaml"
@@ -21,12 +20,6 @@ type FlowEdge struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
 	Type   string `json:"type,omitempty"`
-}
-
-type Position [2]int
-
-func (p Position) MarshalYAML() ([]byte, error) {
-	return []byte(fmt.Sprintf("[%d, %d]", p[0], p[1])), nil
 }
 
 func Open(path string) (*Recipe, error) {

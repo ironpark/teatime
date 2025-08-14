@@ -62,15 +62,19 @@ func (s *RecipesService) CreateNode(ref string, x, y int) (rc.Node, error) {
 	current := time.Now().UnixNano()
 	currentHex := fmt.Sprintf("%x", current)
 	return rc.Node{
-		Id:          currentHex,
-		Ref:         ref,
-		Position:    rc.Position{x, y},
-		Icon:        createdNode.Icon(),
-		Properties:  createdNode.Properties(),
-		Output:      createdNode.Output(),
-		Name:        createdNode.Name(),
-		Description: createdNode.Description(),
-		Type:        string(createdNode.Type()),
+		Id:       currentHex,
+		Position: rc.Position{x, y},
+		Type:     string(createdNode.Type()),
+		NodeData: rc.NodeData{
+			Ref:         ref,
+			Icon:        createdNode.Icon(),
+			Label:       createdNode.Name(),
+			Name:        createdNode.Name(),
+			NodeType:    string(createdNode.Type()),
+			Description: createdNode.Description(),
+			Properties:  createdNode.Properties(),
+			Output:      createdNode.Output(),
+		},
 	}, nil
 }
 

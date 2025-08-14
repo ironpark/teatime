@@ -7,16 +7,22 @@ import (
 	"github.com/ironpark/teatime/internal/node"
 )
 
-type Node struct {
-	Id          string              `json:"id"`
+type NodeData struct {
 	Ref         string              `json:"ref"`
-	Name        string              `json:"name"`
 	Icon        string              `json:"icon"`
+	Label       string              `json:"label"`
+	Name        string              `json:"name"`
+	NodeType    string              `json:"nodeType"`
 	Description string              `json:"description"`
-	Type        string              `json:"type"`
-	Position    Position            `json:"pos"`
 	Properties  []node.NodeProperty `json:"properties"`
 	Output      []node.NodeProperty `json:"output"`
+}
+
+type Node struct {
+	Id       string   `json:"id"`
+	Type     string   `json:"type"`
+	Position Position `json:"position"`
+	NodeData `json:"data"`
 }
 
 type minifiedNode struct {
@@ -35,7 +41,7 @@ func (n Node) MarshalYAML() ([]byte, error) {
 	return yaml.Marshal(minifiedNode{
 		Ref:        n.Ref,
 		ID:         n.Id,
-		Label:      n.Name,
+		Label:      n.Label,
 		Position:   n.Position,
 		Properties: properties,
 	})
@@ -50,13 +56,13 @@ func (n *Node) UnmarshalYAML(data []byte) error {
 	}
 	n.Id = minified.ID
 	n.Ref = minified.Ref
-	n.Name = minified.Label
-
+	n.Label = minified.Label
 	n.Position = minified.Position
 	node, err := node.GetNodeByRef(n.Ref)
 	if err != nil {
 		return err
 	}
+	n.Name = node.Name()
 	n.Icon = node.Icon()
 	n.Type = string(node.Type())
 	n.Description = node.Description()

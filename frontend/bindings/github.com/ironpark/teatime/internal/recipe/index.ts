@@ -4,6 +4,7 @@
 export {
     FlowEdge,
     Node,
+    NodeData,
     Recipe
 } from "./models.js";
 
