@@ -1,4 +1,6 @@
 # Teatime
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fironpark%2Fteatime.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fironpark%2Fteatime?ref=badge_shield)
+
 
 An AI-friendly local workflow automation program inspired by ComfyUI and n8n. Built with Wails 3, SvelteKit, and bits-ui for a modern desktop experience.
 > [!WARNING]
@@ -72,3 +74,7 @@ teatime/
 - **[Extism Go SDK](https://github.com/extism/go-sdk)** - WebAssembly plugin system
 - **[Sqlc](https://sqlc.dev/)** - Type-safe SQL code generator
 - **[modernc.org/sqlite](https://modernc.org/sqlite)** - Pure Go SQLite implementation
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fironpark%2Fteatime.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fironpark%2Fteatime?ref=badge_large)
