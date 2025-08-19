@@ -77,4 +77,20 @@ teatime/
 
 
 ## License
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fironpark%2Fteatime.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fironpark%2Fteatime?ref=badge_large)
+
+
+<div style="display:flex;gap:25px">
+    <a href="https://app.fossa.com/projects/git%2Bgithub.com%2Fironpark%2Fteatime?ref=badge_large">
+        <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fironpark%2Fteatime.svg?type=large" style="min-width:300px">
+    </a>
+    <div>
+        <div>
+        <h3>Why MPL 2.0</h3>
+        Because I wanted it to be used as freely as possible while ensuring that improvements would be shared with the community. As long as the library itself isn't modified, there's no obligation to disclose source code, and unlike GPL-family licenses, it doesn't impose additional constraints even in Go's static linking environment, making it well-suited for this purpose.
+        </div>
+       <div>
+       <h3>I Found GPL License in the Report - Is it OK?</h3>
+       These are from dependencies that generate Go code from C headers without actual linking. Pure Go implementations that reference libc headers for compatibility don't typically create licensing obligations, but consult legal counsel for specific concerns. See <a href="https://gitlab.com/cznic/libc/-/issues/31#note_1644264616">related discussion</a>.
+       </div>
+    </div>
+</div>
