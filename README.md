@@ -1,6 +1,5 @@
 # Teatime
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fironpark%2Fteatime.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fironpark%2Fteatime?ref=badge_shield)
-
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fironpark%2Fteatime.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fironpark%2Fteatime?ref=badge_shield) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fironpark%2Fteatime.svg?type=shield&issueType=security)](https://app.fossa.com/projects/git%2Bgithub.com%2Fironpark%2Fteatime?ref=badge_shield&issueType=security)
 
 An AI-friendly local workflow automation program inspired by ComfyUI and n8n. Built with Wails 3, SvelteKit, and bits-ui for a modern desktop experience.
 > [!WARNING]
@@ -89,7 +88,7 @@ teatime/
         Because I wanted it to be used as freely as possible while ensuring that improvements would be shared with the community. As long as the library itself isn't modified, there's no obligation to disclose source code, and unlike GPL-family licenses, it doesn't impose additional constraints even in Go's static linking environment, making it well-suited for this purpose.
         </div>
        <div>
-       <h3>I Found GPL License in the Report - Is it OK?</h3>
+       <h3>I Found GPL License in the Report. Is it OK?</h3>
        These are from dependencies that generate Go code from C headers without actual linking. Pure Go implementations that reference libc headers for compatibility don't typically create licensing obligations, but consult legal counsel for specific concerns. See <a href="https://gitlab.com/cznic/libc/-/issues/31#note_1644264616">related discussion</a>.
        </div>
     </div>
