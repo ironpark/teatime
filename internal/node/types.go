@@ -2,7 +2,10 @@
 // It defines the base interfaces and types that all workflow nodes must implement.
 package node
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // NodeType represents the category of a workflow node.
 type NodeType string
@@ -111,7 +114,15 @@ func (r *BaseNode) Info() NodeInfo {
 // Run executes the node logic. This method panics by default and must be
 // overridden by concrete implementations.
 func (r *BaseNode) Run(ctx context.Context, states map[string]any) (output map[string]any, continueFlow bool, err error) {
-	panic("not implemented please override Run(ctx, params) method")
+	return nil, false, fmt.Errorf("%s [%s] not implemented please override Run(ctx, params) method", r.nodeInfo.Name, r.nodeInfo.Ref)
+}
+
+func (r *BaseNode) ResolveInput(states map[string]any) (map[string]any, error) {
+	return states, fmt.Errorf("%s [%s] not implemented please override ResolveInput(states) method", r.nodeInfo.Name, r.nodeInfo.Ref)
+}
+
+func (r *BaseNode) Validate(input map[string]any) error {
+	return fmt.Errorf("%s [%s] not implemented please override Validate(input) method", r.nodeInfo.Name, r.nodeInfo.Ref)
 }
 
 // Node defines the interface that all workflow nodes must implement.
