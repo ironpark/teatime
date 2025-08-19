@@ -129,6 +129,8 @@ func (r *BaseNode) Validate(input map[string]any) error {
 	return fmt.Errorf("%s [%s] not implemented please override Validate(input) method", r.nodeInfo.Name, r.nodeInfo.Ref)
 }
 
+// NodeResult is the result of a node execution.
+// TODO: Add a way to specify the next node to execute (edges)
 type NodeResult struct {
 	Output   map[string]any
 	Error    error
