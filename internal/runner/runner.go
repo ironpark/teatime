@@ -114,20 +114,20 @@ func executeNode(ctx context.Context, state *runState, node recipe.Node, callbac
 	resultChannel := state.getNodeResultChannel(node.Id)
 	callback(state.recipe, StateRun, node, nil, nil)
 	// run node
-	output, continueFlow, err := rawNode.Run(ctx, state.states)
-	if err != nil {
-		callback(state.recipe, StateError, node, nil, err)
-		resultChannel <- err
+	result := rawNode.Run(ctx, state.states)
+	if result.Error != nil {
+		callback(state.recipe, StateError, node, nil, result.Error)
+		resultChannel <- result.Error
 		return
 	}
 	// if node is not allowed to continue flow, stop execution
-	if !continueFlow {
-		callback(state.recipe, StateDone, node, output, nil)
+	if !result.Continue {
+		callback(state.recipe, StateDone, node, result.Output, nil)
 		return
 	}
 	// set node output to states
-	state.setNodeOutput(node.Id, output)
-	callback(state.recipe, StateDone, node, output, nil)
+	state.setNodeOutput(node.Id, result.Output)
+	callback(state.recipe, StateDone, node, result.Output, nil)
 	// run next nodes
 	nextNodes, err := state.recipe.GetConnectedNodes(node.Id)
 	if err != nil {

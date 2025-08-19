@@ -113,8 +113,12 @@ func (r *BaseNode) Info() NodeInfo {
 
 // Run executes the node logic. This method panics by default and must be
 // overridden by concrete implementations.
-func (r *BaseNode) Run(ctx context.Context, states map[string]any) (output map[string]any, continueFlow bool, err error) {
-	return nil, false, fmt.Errorf("%s [%s] not implemented please override Run(ctx, params) method", r.nodeInfo.Name, r.nodeInfo.Ref)
+func (r *BaseNode) Run(ctx context.Context, states map[string]any) (result NodeResult) {
+	return NodeResult{
+		Output:   nil,
+		Error:    fmt.Errorf("%s [%s] not implemented please override Run(ctx, params) method", r.nodeInfo.Name, r.nodeInfo.Ref),
+		Continue: false,
+	}
 }
 
 func (r *BaseNode) ResolveInput(states map[string]any) (map[string]any, error) {
@@ -123,6 +127,12 @@ func (r *BaseNode) ResolveInput(states map[string]any) (map[string]any, error) {
 
 func (r *BaseNode) Validate(input map[string]any) error {
 	return fmt.Errorf("%s [%s] not implemented please override Validate(input) method", r.nodeInfo.Name, r.nodeInfo.Ref)
+}
+
+type NodeResult struct {
+	Output   map[string]any
+	Error    error
+	Continue bool
 }
 
 // Node defines the interface that all workflow nodes must implement.
@@ -144,7 +154,7 @@ type Node interface {
 	// Info returns the complete metadata for the node.
 	Info() NodeInfo
 	// Run executes the node with the given context and state.
-	Run(ctx context.Context, states map[string]any) (output map[string]any, continueFlow bool, err error)
+	Run(ctx context.Context, states map[string]any) (result NodeResult)
 	// Validate checks if the provided input is valid for this node.
 	Validate(input map[string]any) error
 	// ResolveInput evaluates expressions and resolves bindings to produce actual input values.
