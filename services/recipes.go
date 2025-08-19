@@ -15,6 +15,7 @@ import (
 type RecipesService struct {
 	store *stores.Store
 }
+
 type RecipeInfo struct {
 	database.Recipe
 	ExecutionCount      int

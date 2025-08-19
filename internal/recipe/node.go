@@ -23,6 +23,7 @@ type Node struct {
 	Type     string   `json:"type"`
 	Position Position `json:"position"`
 	NodeData `json:"data"`
+	rawNode  node.Node `json:"-"`
 }
 
 type minifiedNode struct {
@@ -47,6 +48,10 @@ func (n Node) MarshalYAML() ([]byte, error) {
 	})
 }
 
+func (n *Node) GetRawNode() node.Node {
+	return n.rawNode
+}
+
 func (n *Node) UnmarshalYAML(data []byte) error {
 	fmt.Println(string(data))
 	minified := minifiedNode{}
@@ -68,7 +73,7 @@ func (n *Node) UnmarshalYAML(data []byte) error {
 	n.Description = node.Description()
 	n.Properties = node.Properties()
 	n.Output = node.Output()
-
+	n.rawNode = node
 	for i, property := range n.Properties {
 		if value, ok := minified.Properties[property.Key]; ok {
 			n.Properties[i].Value = value

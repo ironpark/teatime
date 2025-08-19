@@ -113,7 +113,7 @@ export class SettingsStore {
         return {
             language: this.validateLanguage(dbSettings.Language),
             theme: this.validateTheme(dbSettings.Theme),
-            autoStart: dbSettings.AutoStart
+            autoStart: dbSettings.AutoStart === 1
         };
     }
 

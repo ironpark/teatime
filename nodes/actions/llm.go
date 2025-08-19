@@ -25,14 +25,6 @@ func (r *LLMActionNode) Output() []node.NodeProperty {
 			Value:       "",
 			Type:        node.String,
 		},
-		{
-			Name:        "Token Usage",
-			Description: "토큰 사용량 정보입니다.",
-			Key:         "tokenUsage",
-			Value:       "",
-			Type:        node.JSON,
-			Optional:    true,
-		},
 	}
 }
 

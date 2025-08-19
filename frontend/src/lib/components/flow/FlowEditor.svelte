@@ -71,14 +71,14 @@
 	}
 
 	function handleConnect(connection: any) {
-		console.log('Connection attempt:', connection);
-		const newEdge = {
-			...connection,
-			id: `e${connection.source}-${connection.target}`,
-			type: 'smoothstep'
-		};
-		recipeStore.edges = [...recipeStore.edges, newEdge];
-		onEdgesChange?.(recipeStore.edges);
+		// console.log('Connection attempt:', connection);
+		// const newEdge = {
+		// 	...connection,
+		// 	id: `e${connection.source}-${connection.target}`,
+		// 	type: 'smoothstep'
+		// };
+		// recipeStore.edges = [...recipeStore.edges, newEdge];
+		// onEdgesChange?.(recipeStore.edges);
 	}
 
 	function handleError(event: Event) {

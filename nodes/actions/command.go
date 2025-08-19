@@ -62,14 +62,6 @@ func (r *CommandActionNode) Properties() []node.NodeProperty {
 			Type:        node.String,
 		},
 		{
-			Name:        "Environment Variables",
-			Description: "환경 변수를 JSON 형식으로 입력하세요",
-			Optional:    true,
-			Key:         "env",
-			Value:       "{}",
-			Type:        node.JSON,
-		},
-		{
 			Name:        "Timeout",
 			Description: "타임아웃 시간(초)",
 			Optional:    true,

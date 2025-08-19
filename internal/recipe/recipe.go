@@ -1,6 +1,7 @@
 package recipe
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/goccy/go-yaml"
@@ -49,6 +50,39 @@ func Create(path, name, description string) (*Recipe, error) {
 		return nil, err
 	}
 	return recipe, nil
+}
+
+func (r *Recipe) GetNodeById(id string) (Node, error) {
+	for _, node := range r.Nodes {
+		if node.Id == id {
+			return node, nil
+		}
+	}
+	return Node{}, fmt.Errorf("node not found: %s", id)
+}
+
+func (r *Recipe) GetConnectedNodes(id string) ([]Node, error) {
+	nodes := []Node{}
+	for _, edge := range r.Edges {
+		if edge.Source == id {
+			node, err := r.GetNodeById(edge.Target)
+			if err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, node)
+		}
+	}
+	return nodes, nil
+}
+
+func (r *Recipe) GetNodeDependencies(id string) (ids []string, err error) {
+	ids = []string{}
+	for _, edge := range r.Edges {
+		if edge.Target == id {
+			ids = append(ids, edge.Source)
+		}
+	}
+	return ids, nil
 }
 
 func (r *Recipe) Save() error {
