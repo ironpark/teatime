@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/ironpark/teatime/internal/database"
 	"github.com/ironpark/teatime/internal/node"
 	rc "github.com/ironpark/teatime/internal/recipe"
+	"github.com/ironpark/teatime/internal/runner"
 	"github.com/ironpark/teatime/stores"
 	"github.com/samber/lo"
 )
@@ -87,6 +89,29 @@ func (s *RecipesService) CreateNode(ref string, x, y int) (rc.Node, error) {
 			Output:      createdNode.Output(),
 		},
 	}, nil
+}
+
+func (s *RecipesService) RunRecipe(recipe *rc.Recipe, startNodeId string, properties map[string]any) error {
+	return runner.Run(context.Background(), recipe, startNodeId, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
+		fmt.Println("Recipe", recipe.Name, "Node", node.Id, "State", state, "Output", output, "Error", err)
+	})
+}
+
+func (s *RecipesService) RunRecipeByID(id string, startNodeId string, properties map[string]any) error {
+	recipe, err := s.store.GetRecipe(id)
+	if err != nil {
+		return err
+	}
+	triggerNode, err := recipe.GetNodeById(startNodeId)
+	if err != nil {
+		return err
+	}
+	if triggerNode.Type != string(node.NodeTypeTrigger) {
+		return fmt.Errorf("node %s is not a trigger node", startNodeId)
+	}
+	return runner.Run(context.Background(), recipe, startNodeId, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
+		fmt.Println("Recipe", recipe.Name, "Node", node.Id, "State", state, "Output", output, "Error", err)
+	})
 }
 
 func (s *RecipesService) GetRecipe(id string) (*rc.Recipe, error) {

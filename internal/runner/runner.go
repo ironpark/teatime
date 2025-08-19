@@ -10,22 +10,24 @@ import (
 	"github.com/ironpark/teatime/internal/recipe"
 )
 
+type NodeExecutionStatus string
+
 // Node execution states.
 const (
 	// StateWait indicates a node is waiting for dependencies.
-	StateWait = "wait"
+	StateWait NodeExecutionStatus = "wait"
 	// StateRun indicates a node is currently executing.
-	StateRun = "run"
+	StateRun NodeExecutionStatus = "run"
 	// StateDone indicates a node has completed successfully.
-	StateDone = "done"
+	StateDone NodeExecutionStatus = "done"
 	// StateError indicates a node encountered an error.
-	StateError = "error"
+	StateError NodeExecutionStatus = "error"
 )
 
 // Callback is called during node execution to report state changes.
 // It receives the recipe, current state, node being executed, output data,
 // and any error that occurred.
-type Callback func(recipe *recipe.Recipe, state string, node recipe.Node, output map[string]any, err error)
+type Callback func(recipe *recipe.Recipe, state NodeExecutionStatus, node recipe.Node, output map[string]any, err error)
 
 // Run executes a recipe workflow starting from the specified node.
 // It manages concurrent node execution while respecting dependencies.
@@ -56,7 +58,7 @@ func Run(ctx context.Context, target *recipe.Recipe, startNodeId string, propert
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err = startNode(ctx, runState, triggerNode, properties, func(recipe *recipe.Recipe, state string, node recipe.Node, output map[string]any, err error) {
+	err = startNode(ctx, runState, triggerNode, properties, func(recipe *recipe.Recipe, state NodeExecutionStatus, node recipe.Node, output map[string]any, err error) {
 		callback(recipe, state, node, output, err)
 		if err != nil {
 			cancel()

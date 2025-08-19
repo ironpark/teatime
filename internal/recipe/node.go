@@ -1,7 +1,8 @@
 package recipe
 
 import (
-	"fmt"
+	"encoding/json"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 	"github.com/ironpark/teatime/internal/node"
@@ -52,13 +53,50 @@ func (n *Node) GetRawNode() node.Node {
 	return n.rawNode
 }
 
+func (n *Node) UnmarshalJSON(data []byte) error {
+	minified := minifiedNode{}
+	// TODO: Find a better way to detect if the node is minified or full
+	if !strings.Contains(string(data), "\"position\"") {
+		err := json.Unmarshal(data, &n)
+		if err != nil {
+			return err
+		}
+		return n.unmarshalFromMinified(minified)
+	}
+	// if not minified
+	type fullNode struct {
+		Id       string   `json:"id"`
+		Type     string   `json:"type"`
+		Position Position `json:"position"`
+		NodeData `json:"data"`
+	}
+	full := fullNode{}
+	err := json.Unmarshal(data, &full)
+	if err != nil {
+		return err
+	}
+	n.Id = full.Id
+	n.Type = full.Type
+	n.Position = full.Position
+	n.NodeData = full.NodeData
+	node, err := node.GetNodeByRef(full.Ref)
+	if err != nil {
+		return err
+	}
+	n.rawNode = node
+	return nil
+}
+
 func (n *Node) UnmarshalYAML(data []byte) error {
-	fmt.Println(string(data))
 	minified := minifiedNode{}
 	err := yaml.Unmarshal(data, &minified)
 	if err != nil {
 		return err
 	}
+	return n.unmarshalFromMinified(minified)
+}
+
+func (n *Node) unmarshalFromMinified(minified minifiedNode) error {
 	n.Id = minified.ID
 	n.Ref = minified.Ref
 	n.Label = minified.Label
