@@ -291,6 +291,44 @@ export enum NodeType {
     NodeTypeUtil = "util",
 };
 
+/**
+ * OutputHandle represents a connection point from a node.
+ * Nodes can have multiple output handles for different execution paths.
+ */
+export class OutputHandle {
+    /**
+     * Unique identifier for this handle
+     */
+    "id": string;
+
+    /**
+     * Optional human-readable label
+     */
+    "label"?: string;
+
+    /**
+     * Optional description of when this handle is used
+     */
+    "description"?: string;
+
+    /** Creates a new OutputHandle instance. */
+    constructor($$source: Partial<OutputHandle> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new OutputHandle instance from a string or object.
+     */
+    static createFrom($$source: any = {}): OutputHandle {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new OutputHandle($$parsedSource as Partial<OutputHandle>);
+    }
+}
+
 export enum PropertyType {
     /**
      * The Go zero value for the underlying type of the enum.

@@ -11,12 +11,14 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// Client wraps database connections with query methods and transaction support.
+// It embeds Queries for direct access to generated database operations.
 type Client struct {
 	*Queries
 	DB *sql.DB
 }
 
-// OpenOption defines options for opening a database
+// OpenOption defines configuration options for opening a database connection.
 type OpenOption func(*openConfig)
 
 type openConfig struct {
@@ -24,14 +26,16 @@ type openConfig struct {
 	dbPath   string
 }
 
-// WithInMemory sets the database to use in-memory mode
+// WithInMemory configures the database to use in-memory SQLite mode.
+// Useful for testing and temporary data storage.
 func WithInMemory() OpenOption {
 	return func(c *openConfig) {
 		c.inMemory = true
 	}
 }
 
-// Open creates a new database client with options
+// Open creates a new database client with the specified options.
+// It automatically runs migrations and configures SQLite with foreign keys enabled.
 func Open(ctx context.Context, dbPath string, opts ...OpenOption) (*Client, error) {
 	config := &openConfig{
 		dbPath: dbPath,
@@ -70,11 +74,14 @@ func Open(ctx context.Context, dbPath string, opts ...OpenOption) (*Client, erro
 	}, nil
 }
 
-// OpenInMemory is a convenience function for creating an in-memory database
+// OpenInMemory is a convenience function for creating an in-memory database.
+// It's equivalent to calling Open with WithInMemory() option.
 func OpenInMemory() (*Client, error) {
 	return Open(context.Background(), "", WithInMemory())
 }
 
+// WithTx executes a function within a database transaction.
+// The transaction is automatically rolled back if the function returns an error.
 func (c *Client) WithTx(ctx context.Context, fn func(ctx context.Context, queries *Queries) error) error {
 	tx, err := c.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -88,21 +95,23 @@ func (c *Client) WithTx(ctx context.Context, fn func(ctx context.Context, querie
 	return tx.Commit()
 }
 
+// Close closes the database connection.
 func (c *Client) Close() error {
 	return c.DB.Close()
 }
 
-// GetMigrationVersion returns the current migration version
+// GetMigrationVersion returns the current database schema migration version.
 func (c *Client) GetMigrationVersion() (int64, error) {
 	return migrations.GetVersion(c.DB)
 }
 
-// GetMigrationStatus prints the current migration status
+// GetMigrationStatus displays the current database migration status and history.
 func (c *Client) GetMigrationStatus() error {
 	return migrations.GetMigrationStatus(c.DB)
 }
 
-// ResetDatabase drops all tables and runs migrations from scratch
+// ResetDatabase drops all tables and re-runs all migrations from the beginning.
+// WARNING: This will destroy all existing data.
 func (c *Client) ResetDatabase() error {
 	return migrations.ResetDatabase(c.DB)
 }

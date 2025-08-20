@@ -10,12 +10,23 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as node$0 from "../node/models.js";
 
 /**
- * FlowEdge represents a connection between nodes
+ * FlowEdge represents a connection between two nodes in the workflow.
+ * It defines the data flow from source node to target node through specific handles.
  */
 export class FlowEdge {
     "id": string;
     "source": string;
     "target": string;
+
+    /**
+     * Output handle ID from source node
+     */
+    "sourceHandle": string;
+
+    /**
+     * Input handle ID to target node (optional)
+     */
+    "targetHandle": string;
     "type"?: string;
 
     /** Creates a new FlowEdge instance. */
@@ -28,6 +39,12 @@ export class FlowEdge {
         }
         if (!("target" in $$source)) {
             this["target"] = "";
+        }
+        if (!("sourceHandle" in $$source)) {
+            this["sourceHandle"] = "";
+        }
+        if (!("targetHandle" in $$source)) {
+            this["targetHandle"] = "";
         }
 
         Object.assign(this, $$source);
@@ -42,6 +59,10 @@ export class FlowEdge {
     }
 }
 
+/**
+ * Node represents a workflow node instance with position and runtime data.
+ * It combines NodeData with instance-specific information like ID and position.
+ */
 export class Node {
     "id": string;
     "type": string;
@@ -79,6 +100,10 @@ export class Node {
     }
 }
 
+/**
+ * NodeData contains the metadata and configuration for a workflow node.
+ * It includes all the information needed to display and execute the node.
+ */
 export class NodeData {
     "ref": string;
     "icon": string;
@@ -88,6 +113,7 @@ export class NodeData {
     "description": string;
     "properties": node$0.NodeProperty[];
     "output": node$0.NodeProperty[];
+    "outputHandles": node$0.OutputHandle[];
 
     /** Creates a new NodeData instance. */
     constructor($$source: Partial<NodeData> = {}) {
@@ -115,6 +141,9 @@ export class NodeData {
         if (!("output" in $$source)) {
             this["output"] = [];
         }
+        if (!("outputHandles" in $$source)) {
+            this["outputHandles"] = [];
+        }
 
         Object.assign(this, $$source);
     }
@@ -125,6 +154,7 @@ export class NodeData {
     static createFrom($$source: any = {}): NodeData {
         const $$createField6_0 = $$createType2;
         const $$createField7_0 = $$createType2;
+        const $$createField8_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("properties" in $$parsedSource) {
             $$parsedSource["properties"] = $$createField6_0($$parsedSource["properties"]);
@@ -132,12 +162,23 @@ export class NodeData {
         if ("output" in $$parsedSource) {
             $$parsedSource["output"] = $$createField7_0($$parsedSource["output"]);
         }
+        if ("outputHandles" in $$parsedSource) {
+            $$parsedSource["outputHandles"] = $$createField8_0($$parsedSource["outputHandles"]);
+        }
         return new NodeData($$parsedSource as Partial<NodeData>);
     }
 }
 
+/**
+ * Position represents a 2D coordinate as [x, y] array.
+ * It supports both YAML array format [x,y] and JSON object format {"x":x,"y":y}.
+ */
 export type Position = any;
 
+/**
+ * Recipe represents a complete workflow definition with nodes and connections.
+ * It contains all the information needed to execute a workflow.
+ */
 export class Recipe {
     "name": string;
     "path": string;
@@ -170,8 +211,8 @@ export class Recipe {
      * Creates a new Recipe instance from a string or object.
      */
     static createFrom($$source: any = {}): Recipe {
-        const $$createField3_0 = $$createType4;
-        const $$createField4_0 = $$createType6;
+        const $$createField3_0 = $$createType6;
+        const $$createField4_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("nodes" in $$parsedSource) {
             $$parsedSource["nodes"] = $$createField3_0($$parsedSource["nodes"]);
@@ -187,7 +228,9 @@ export class Recipe {
 const $$createType0 = NodeData.createFrom;
 const $$createType1 = node$0.NodeProperty.createFrom;
 const $$createType2 = $Create.Array($$createType1);
-const $$createType3 = Node.createFrom;
+const $$createType3 = node$0.OutputHandle.createFrom;
 const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = FlowEdge.createFrom;
+const $$createType5 = Node.createFrom;
 const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = FlowEdge.createFrom;
+const $$createType8 = $Create.Array($$createType7);

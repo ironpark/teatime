@@ -126,8 +126,8 @@ func (r *BaseNode) GetOutputHandles(ctx PropertyContext) []OutputHandle {
 	return r.outputHandles
 }
 
-// ValidateProperties validates the properties of the node.
-// 기본적으로는 아무것도 하지 않지만 각 노드 구현에서 재정의 가능
+// ValidateProperties validates the input properties for the node.
+// Default implementation does nothing, but concrete nodes can override this for custom validation.
 func (r *BaseNode) ValidateProperties(input map[string]any) error {
 	return nil
 }

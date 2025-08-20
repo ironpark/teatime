@@ -9,6 +9,13 @@ import (
 	"github.com/samber/lo"
 )
 
+// ResolveInput resolves dynamic input properties for a node based on workflow state.
+// It processes three types of property values:
+//   - Bindings: @[bindingName] - replaced with values from workflow state
+//   - Expressions: {{expression}} - evaluated using expr-lang with state context
+//   - Plain values: returned as-is
+//
+// Returns a map of resolved property values ready for node execution.
 func ResolveInput(node Node, states map[string]any) (resolvedProperties map[string]any, err error) {
 	re := regexp.MustCompile(`{{.*}}`)
 	properties := node.GetProperties(PropertyContext(states))
@@ -62,10 +69,16 @@ func ResolveInput(node Node, states map[string]any) (resolvedProperties map[stri
 	return resolvedProperties, nil
 }
 
-// Eval evaluates an expression and returns the result.
-// states is the current states of the workflow it have state of the nodes input,output datas
-// - {node id}.input.{property key name} = value
-// - {node id}.output.{output key name} = value
+// Eval evaluates a JavaScript-like expression using the expr-lang library.
+// It creates an execution environment with workflow state data and built-in functions.
+//
+// States are structured as:
+//   - {nodeId}.input.{propertyKey} = input values
+//   - {nodeId}.output.{outputKey} = output values
+//   - Direct key-value pairs for other workflow data
+//
+// Built-in functions include: len(), strContains(), toLowerCase(), toUpperCase(), toString()
+// Special variables: $ref contains the current node's reference ID
 func Eval(expression string, states map[string]any, ref string) (any, error) {
 	expression = strings.TrimSpace(expression)
 	

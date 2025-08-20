@@ -12,8 +12,8 @@ import (
 type runState struct {
 	recipe *recipe.Recipe
 	// states stores all node I/O values with keys:
-	// "{nodeId}.input.{propertyKey}" for inputs
-	// "{nodeId}.output.{outputKey}" for outputs
+	// "{nodeId}.input.{propertyKey}" for node inputs
+	// "{nodeId}.output.{outputKey}" for node outputs
 	states       map[string]any
 	nodeExecuted map[string]bool
 	// nodeResults contains channels for signaling node completion

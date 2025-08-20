@@ -7,5 +7,6 @@ export {
     NodeInfo,
     NodeProperty,
     NodeType,
+    OutputHandle,
     PropertyType
 } from "./models.js";
