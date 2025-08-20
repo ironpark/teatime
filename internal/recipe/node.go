@@ -79,11 +79,11 @@ func (n *Node) UnmarshalJSON(data []byte) error {
 	n.Type = full.Type
 	n.Position = full.Position
 	n.NodeData = full.NodeData
-	node, err := node.GetNodeByRef(full.Ref)
+	rawNode, err := node.GetNodeByRef(full.Ref)
 	if err != nil {
 		return err
 	}
-	n.rawNode = node
+	n.rawNode = rawNode
 	return nil
 }
 
@@ -101,17 +101,18 @@ func (n *Node) unmarshalFromMinified(minified minifiedNode) error {
 	n.Ref = minified.Ref
 	n.Label = minified.Label
 	n.Position = minified.Position
-	node, err := node.GetNodeByRef(n.Ref)
+	rawNode, err := node.GetNodeByRef(n.Ref)
 	if err != nil {
 		return err
 	}
-	n.Name = node.Name()
-	n.Icon = node.Icon()
-	n.Type = string(node.Type())
-	n.Description = node.Description()
-	n.Properties = node.Properties()
-	n.Output = node.Output()
-	n.rawNode = node
+	n.Name = rawNode.Name()
+	n.Icon = rawNode.Icon()
+	n.Type = string(rawNode.Type())
+	n.Description = rawNode.Description()
+	ctx := node.PropertyContext{}
+	n.Properties = rawNode.GetProperties(ctx)
+	n.Output = rawNode.GetOutput(ctx)
+	n.rawNode = rawNode
 	for i, property := range n.Properties {
 		if value, ok := minified.Properties[property.Key]; ok {
 			n.Properties[i].Value = value

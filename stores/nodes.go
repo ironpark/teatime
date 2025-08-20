@@ -89,7 +89,7 @@ func (t *nodeStore) CreateNode(nodeId string) Node {
 		Id:         node.Ref(),
 		LocalId:    uuid.New().String(),
 		NodeInfo:   node.Info(),
-		Properties: node.Properties(),
-		Output:     node.Output(),
+		Properties: node.GetProperties(node2.PropertyContext{}),
+		Output:     node.GetOutput(node2.PropertyContext{}),
 	}
 }

@@ -82,7 +82,8 @@ func startNode(ctx context.Context, state *runState, node recipe.Node, propertie
 	}
 	rawNode := node.GetRawNode()
 	// validate node input
-	err := n.ValidateProperties(rawNode.Properties(), properties)
+	propCtx := n.PropertyContext(properties)
+	err := n.ValidateProperties(rawNode.GetProperties(propCtx), properties)
 	if err != nil {
 		callback(state.recipe, StateError, node, nil, err)
 		return err

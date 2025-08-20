@@ -49,6 +49,19 @@ type NodeResult struct {
 	Continue bool
 }
 
+// PropertyContext provides context for dynamic property resolution.
+// It contains the current property values that nodes can use to
+// dynamically adjust their properties and outputs.
+type PropertyContext map[string]any
+
+// OutputHandle represents a connection point from a node.
+// Nodes can have multiple output handles for different execution paths.
+type OutputHandle struct {
+	ID          string `json:"id"`                    // Unique identifier for this handle
+	Label       string `json:"label,omitempty"`       // Optional human-readable label
+	Description string `json:"description,omitempty"` // Optional description of when this handle is used
+}
+
 // Node defines the interface that all workflow nodes must implement.
 type Node interface {
 	// Ref returns the unique identifier for the node type.
@@ -61,10 +74,15 @@ type Node interface {
 	Icon() string
 	// Description returns a brief description of the node's functionality.
 	Description() string
-	// Properties returns the input properties that can be configured for this node.
-	Properties() []NodeProperty
-	// Output returns the output properties that this node produces.
-	Output() []NodeProperty
+	// GetProperties returns dynamic properties based on context.
+	// Nodes can override this to provide context-aware properties.
+	GetProperties(ctx PropertyContext) []NodeProperty
+	// GetOutput returns dynamic output properties based on context.
+	// Nodes can override this to provide context-aware outputs.
+	GetOutput(ctx PropertyContext) []NodeProperty
+	// GetOutputHandles returns dynamic output handles based on context.
+	// Nodes can override this to provide context-aware handles.
+	GetOutputHandles(ctx PropertyContext) []OutputHandle
 	// Info returns the complete metadata for the node.
 	Info() NodeInfo
 	// Run executes the node with the given context and state.

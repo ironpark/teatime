@@ -11,7 +11,7 @@ import (
 
 func ResolveInput(node Node, states map[string]any) (resolvedProperties map[string]any, err error) {
 	re := regexp.MustCompile(`{{.*}}`)
-	properties := node.Properties()
+	properties := node.GetProperties(PropertyContext(states))
 	propertiesMap := lo.Reduce(properties, func(acc map[string]NodeProperty, property NodeProperty, _ int) map[string]NodeProperty {
 		acc[property.Key] = property
 		return acc

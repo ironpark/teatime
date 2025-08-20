@@ -8,12 +8,14 @@ import (
 // BaseNode provides a default implementation of the Node interface.
 // It should be embedded in concrete node implementations.
 type BaseNode struct {
-	nodeInfo NodeInfo
+	nodeInfo      NodeInfo
+	properties    []NodeProperty
+	output        []NodeProperty
+	outputHandles []OutputHandle
 }
 
-// NewBaseNode creates a new BaseNode with the specified properties.
-// If icon is empty, a default icon based on nodeType will be used.
-func NewBaseNode(ref string, nodeType NodeType, name string, description string, icon string) *BaseNode {
+// NewBaseNode creates a new BaseNode with properties, outputs, and handles.
+func NewBaseNode(ref string, nodeType NodeType, name string, description string, icon string, properties []NodeProperty, output []NodeProperty, outputHandles []OutputHandle) BaseNode {
 	nodeInfo := NodeInfo{
 		Ref:         ref,
 		Type:        nodeType,
@@ -24,8 +26,19 @@ func NewBaseNode(ref string, nodeType NodeType, name string, description string,
 	if icon != "" {
 		nodeInfo.Icon = icon
 	}
-	return &BaseNode{
-		nodeInfo: nodeInfo,
+	
+	// If no output handles specified, create a default one
+	if outputHandles == nil {
+		outputHandles = []OutputHandle{
+			{ID: "default"},
+		}
+	}
+	
+	return BaseNode{
+		nodeInfo:      nodeInfo,
+		properties:    properties,
+		output:        output,
+		outputHandles: outputHandles,
 	}
 }
 
@@ -72,6 +85,45 @@ func (r *BaseNode) Description() string {
 // Info returns the complete node metadata.
 func (r *BaseNode) Info() NodeInfo {
 	return r.nodeInfo
+}
+
+// Properties returns the static input properties.
+// This provides access to the base properties defined in NewBaseNode.
+func (r *BaseNode) Properties() []NodeProperty {
+	return r.properties
+}
+
+// Output returns the static output properties.
+// This provides access to the base output defined in NewBaseNode.
+func (r *BaseNode) Output() []NodeProperty {
+	return r.output
+}
+
+// OutputHandles returns the static output handles.
+// This provides access to the base output handles defined in NewBaseNode.
+func (r *BaseNode) OutputHandles() []OutputHandle {
+	return r.outputHandles
+}
+
+// GetProperties returns dynamic properties based on context.
+// Default implementation returns the static properties.
+// Concrete nodes can override this for dynamic behavior.
+func (r *BaseNode) GetProperties(ctx PropertyContext) []NodeProperty {
+	return r.properties
+}
+
+// GetOutput returns dynamic output properties based on context.
+// Default implementation returns the static output.
+// Concrete nodes can override this for dynamic behavior.
+func (r *BaseNode) GetOutput(ctx PropertyContext) []NodeProperty {
+	return r.output
+}
+
+// GetOutputHandles returns dynamic output handles based on context.
+// Default implementation returns the static output handles.
+// Concrete nodes can override this for dynamic behavior.
+func (r *BaseNode) GetOutputHandles(ctx PropertyContext) []OutputHandle {
+	return r.outputHandles
 }
 
 // ValidateProperties validates the properties of the node.
