@@ -160,12 +160,12 @@ func (p *NodeProperty) ValidateValue(v any) error {
 		}
 	case Int64:
 		// Accept various number types that can be converted to int64
-		switch v.(type) {
+		switch val := v.(type) {
 		case int64, int32, int16, int8, int:
 			// Valid integer types
 		case float64:
 			// JSON unmarshals numbers as float64, check if it's a whole number
-			if f := v.(float64); !isWholeNumber(f) {
+			if !isWholeNumber(val) {
 				return errors.New("invalid int64 value: not a whole number")
 			}
 		default:
@@ -173,12 +173,12 @@ func (p *NodeProperty) ValidateValue(v any) error {
 		}
 	case Uint64:
 		// Accept various number types that can be converted to uint64
-		switch v.(type) {
+		switch val := v.(type) {
 		case uint64, uint32, uint16, uint8, uint:
 			// Valid unsigned integer types
 		case float64:
 			// JSON unmarshals numbers as float64, check if it's a positive whole number
-			if f := v.(float64); !isPositiveWholeNumber(f) {
+			if !isPositiveWholeNumber(val) {
 				return errors.New("invalid uint64 value: must be positive whole number")
 			}
 		default:
