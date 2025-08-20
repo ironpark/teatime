@@ -1,3 +1,13 @@
+// Package recipe provides workflow definition and node data structures for the Teatime automation platform.
+//
+// This package handles the complete lifecycle of workflow recipes, including:
+//   - Loading and saving recipes from/to YAML files
+//   - Managing workflow nodes with their properties and connections
+//   - Serializing nodes in both full and minified formats for storage efficiency
+//   - Providing graph operations like dependency resolution and connected node traversal
+//
+// The main types are Recipe (workflow definition), Node (workflow step), and FlowEdge (node connection).
+// Nodes support dual serialization formats: full format for runtime and minified format for persistence.
 package recipe
 
 import (
@@ -7,6 +17,8 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+// Recipe represents a complete workflow definition with nodes and connections.
+// It contains all the information needed to execute a workflow.
 type Recipe struct {
 	Name        string     `json:"name"`
 	Path        string     `json:"path"`
@@ -15,7 +27,8 @@ type Recipe struct {
 	Edges       []FlowEdge `json:"edges"`
 }
 
-// FlowEdge represents a connection between nodes
+// FlowEdge represents a connection between two nodes in the workflow.
+// It defines the data flow from source node to target node.
 type FlowEdge struct {
 	ID     string `json:"id"`
 	Source string `json:"source"`
@@ -23,6 +36,8 @@ type FlowEdge struct {
 	Type   string `json:"type,omitempty"`
 }
 
+// Open loads a recipe from a YAML file at the specified path.
+// It returns an error if the file cannot be read or parsed.
 func Open(path string) (*Recipe, error) {
 	recipe := &Recipe{}
 	yamlFile, err := os.Open(path)
@@ -39,6 +54,8 @@ func Open(path string) (*Recipe, error) {
 	return recipe, nil
 }
 
+// Create creates a new recipe with the given path, name, and description.
+// It saves the recipe to disk and returns the created recipe instance.
 func Create(path, name, description string) (*Recipe, error) {
 	recipe := &Recipe{
 		Path:        path,
@@ -52,6 +69,8 @@ func Create(path, name, description string) (*Recipe, error) {
 	return recipe, nil
 }
 
+// GetNodeById finds and returns a node by its ID.
+// It returns an error if no node with the specified ID is found.
 func (r *Recipe) GetNodeById(id string) (Node, error) {
 	for _, node := range r.Nodes {
 		if node.Id == id {
@@ -61,6 +80,8 @@ func (r *Recipe) GetNodeById(id string) (Node, error) {
 	return Node{}, fmt.Errorf("node not found: %s", id)
 }
 
+// GetConnectedNodes returns all nodes that are connected as targets from the specified source node.
+// It follows outgoing edges from the given node ID.
 func (r *Recipe) GetConnectedNodes(id string) ([]Node, error) {
 	nodes := []Node{}
 	for _, edge := range r.Edges {
@@ -75,6 +96,8 @@ func (r *Recipe) GetConnectedNodes(id string) ([]Node, error) {
 	return nodes, nil
 }
 
+// GetNodeDependencies returns the IDs of all nodes that the specified node depends on.
+// It follows incoming edges to the given node ID.
 func (r *Recipe) GetNodeDependencies(id string) (ids []string, err error) {
 	ids = []string{}
 	for _, edge := range r.Edges {
@@ -85,6 +108,8 @@ func (r *Recipe) GetNodeDependencies(id string) (ids []string, err error) {
 	return ids, nil
 }
 
+// Save persists the recipe to its associated file path in YAML format.
+// It creates or overwrites the file with the current recipe data.
 func (r *Recipe) Save() error {
 	yamlFile, err := os.Create(r.Path)
 	if err != nil {

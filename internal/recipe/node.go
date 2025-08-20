@@ -1,24 +1,31 @@
+// Package recipe provides node data types used by UI and filesystem.
+// It minimizes node data when saving and expands minimized data when loading.
 package recipe
 
 import (
 	"encoding/json"
-	"strings"
+	"fmt"
 
 	"github.com/goccy/go-yaml"
 	"github.com/ironpark/teatime/internal/node"
 )
 
+// NodeData contains the metadata and configuration for a workflow node.
+// It includes all the information needed to display and execute the node.
 type NodeData struct {
-	Ref         string              `json:"ref"`
-	Icon        string              `json:"icon"`
-	Label       string              `json:"label"`
-	Name        string              `json:"name"`
-	NodeType    string              `json:"nodeType"`
-	Description string              `json:"description"`
-	Properties  []node.NodeProperty `json:"properties"`
-	Output      []node.NodeProperty `json:"output"`
+	Ref           string              `json:"ref"`
+	Icon          string              `json:"icon"`
+	Label         string              `json:"label"`
+	Name          string              `json:"name"`
+	NodeType      string              `json:"nodeType"`
+	Description   string              `json:"description"`
+	Properties    []node.NodeProperty `json:"properties"`
+	Output        []node.NodeProperty `json:"output"`
+	OutputHandles []node.OutputHandle `json:"outputHandles"`
 }
 
+// Node represents a workflow node instance with position and runtime data.
+// It combines NodeData with instance-specific information like ID and position.
 type Node struct {
 	Id       string   `json:"id"`
 	Type     string   `json:"type"`
@@ -35,6 +42,8 @@ type minifiedNode struct {
 	Properties map[string]any `json:"properties"`
 }
 
+// MarshalYAML converts the node to a minified YAML representation.
+// It only includes essential data to reduce file size.
 func (n Node) MarshalYAML() ([]byte, error) {
 	properties := make(map[string]any)
 	for _, property := range n.Properties {
@@ -49,44 +58,59 @@ func (n Node) MarshalYAML() ([]byte, error) {
 	})
 }
 
+// GetRawNode returns the underlying node implementation.
+// This provides access to the node's execution logic.
 func (n *Node) GetRawNode() node.Node {
 	return n.rawNode
 }
 
+// UnmarshalJSON deserializes JSON data into a Node.
+// It handles both minified and full node representations.
 func (n *Node) UnmarshalJSON(data []byte) error {
-	minified := minifiedNode{}
-	// TODO: Find a better way to detect if the node is minified or full
-	if !strings.Contains(string(data), "\"position\"") {
-		err := json.Unmarshal(data, &n)
-		if err != nil {
+	// Parse JSON to detect format type
+	var temp map[string]any
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	// Check for minified format (has "pos" field)
+	if _, hasPos := temp["pos"]; hasPos {
+		minified := minifiedNode{}
+		if err := json.Unmarshal(data, &minified); err != nil {
 			return err
 		}
 		return n.unmarshalFromMinified(minified)
 	}
-	// if not minified
-	type fullNode struct {
-		Id       string   `json:"id"`
-		Type     string   `json:"type"`
-		Position Position `json:"position"`
-		NodeData `json:"data"`
+
+	// Check for full format (has "position" field)  
+	if _, hasPosition := temp["position"]; hasPosition {
+		type fullNode struct {
+			Id       string   `json:"id"`
+			Type     string   `json:"type"`
+			Position Position `json:"position"`
+			NodeData `json:"data"`
+		}
+		full := fullNode{}
+		if err := json.Unmarshal(data, &full); err != nil {
+			return err
+		}
+		n.Id = full.Id
+		n.Type = full.Type
+		n.Position = full.Position
+		n.NodeData = full.NodeData
+		rawNode, err := node.GetNodeByRef(full.Ref)
+		if err != nil {
+			return err
+		}
+		n.rawNode = rawNode
+		return nil
 	}
-	full := fullNode{}
-	err := json.Unmarshal(data, &full)
-	if err != nil {
-		return err
-	}
-	n.Id = full.Id
-	n.Type = full.Type
-	n.Position = full.Position
-	n.NodeData = full.NodeData
-	rawNode, err := node.GetNodeByRef(full.Ref)
-	if err != nil {
-		return err
-	}
-	n.rawNode = rawNode
-	return nil
+
+	return fmt.Errorf("unknown node format: missing both 'pos' and 'position' fields")
 }
 
+// UnmarshalYAML deserializes YAML data into a Node.
+// It expects minified node format from YAML files.
 func (n *Node) UnmarshalYAML(data []byte) error {
 	minified := minifiedNode{}
 	err := yaml.Unmarshal(data, &minified)
@@ -96,6 +120,8 @@ func (n *Node) UnmarshalYAML(data []byte) error {
 	return n.unmarshalFromMinified(minified)
 }
 
+// unmarshalFromMinified populates a Node from its minified representation.
+// It retrieves the node definition, resolves properties dynamically, and applies saved values.
 func (n *Node) unmarshalFromMinified(minified minifiedNode) error {
 	n.Id = minified.ID
 	n.Ref = minified.Ref
@@ -109,9 +135,9 @@ func (n *Node) unmarshalFromMinified(minified minifiedNode) error {
 	n.Icon = rawNode.Icon()
 	n.Type = string(rawNode.Type())
 	n.Description = rawNode.Description()
-	ctx := node.PropertyContext{}
-	n.Properties = rawNode.GetProperties(ctx)
-	n.Output = rawNode.GetOutput(ctx)
+	n.Properties = rawNode.GetProperties(node.PropertyContext(minified.Properties))
+	n.Output = rawNode.GetOutput(node.PropertyContext(minified.Properties))
+	n.OutputHandles = rawNode.GetOutputHandles(node.PropertyContext(minified.Properties))
 	n.rawNode = rawNode
 	for i, property := range n.Properties {
 		if value, ok := minified.Properties[property.Key]; ok {
