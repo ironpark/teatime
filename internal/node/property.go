@@ -28,14 +28,14 @@ const (
 type InputType int
 
 const (
-	InputTypeText InputType = iota + 1 // Single line text input
-	InputTypeTextarea                  // Multi-line text input
-	InputTypeNumber                    // Number input
-	InputTypeRange                     // Slider input
-	InputTypeSelect                    // Dropdown select
-	InputTypeMultiSelect               // Multiple selection
-	InputTypeSwitch                    // Toggle switch
-	InputTypeCheckbox                  // Checkbox
+	InputTypeText        InputType = iota + 1 // Single line text input
+	InputTypeTextarea                         // Multi-line text input
+	InputTypeNumber                           // Number input
+	InputTypeRange                            // Slider input
+	InputTypeSelect                           // Dropdown select
+	InputTypeMultiSelect                      // Multiple selection
+	InputTypeSwitch                           // Toggle switch
+	InputTypeCheckbox                         // Checkbox
 )
 
 // InputConfig defines the configuration for input UI

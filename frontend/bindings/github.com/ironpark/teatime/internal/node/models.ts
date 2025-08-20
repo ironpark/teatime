@@ -109,11 +109,33 @@ export enum InputType {
     InputTypeCheckbox = 8,
 };
 
+/**
+ * NodeInfo contains metadata about a workflow node.
+ */
 export class NodeInfo {
+    /**
+     * Unique identifier for the node type
+     */
     "ref": string;
+
+    /**
+     * Human-readable name
+     */
     "name": string;
+
+    /**
+     * Brief description of node functionality
+     */
     "description": string;
+
+    /**
+     * Category of the node
+     */
     "type": NodeType;
+
+    /**
+     * Icon name (Lucide icon set)
+     */
     "icon": string;
 
     /** Creates a new NodeInfo instance. */
@@ -239,15 +261,33 @@ export class NodeProperty {
     }
 }
 
+/**
+ * NodeType represents the category of a workflow node.
+ */
 export enum NodeType {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = "",
 
+    /**
+     * NodeTypeTrigger initiates workflow execution
+     */
     NodeTypeTrigger = "trigger",
+
+    /**
+     * NodeTypeBranch controls workflow flow logic
+     */
     NodeTypeBranch = "branch",
+
+    /**
+     * NodeTypeAction performs operations or side effects
+     */
     NodeTypeAction = "action",
+
+    /**
+     * NodeTypeUtil provides utility functions
+     */
     NodeTypeUtil = "util",
 };
 

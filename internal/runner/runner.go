@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sync"
 
+	n "github.com/ironpark/teatime/internal/node"
 	"github.com/ironpark/teatime/internal/recipe"
 )
 
@@ -144,7 +145,7 @@ func executeNode(ctx context.Context, state *runState, node recipe.Node, callbac
 			nextResultChannel <- fmt.Errorf("next node %s has no raw node", nextNode.Id)
 			return
 		}
-		nextInput, err := rawNextNode.ResolveInput(state.states)
+		nextInput, err := n.ResolveInput(rawNextNode, state.states)
 		if err != nil {
 			callback(state.recipe, StateError, nextNode, nil, err)
 			nextResultChannel <- err

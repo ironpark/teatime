@@ -56,6 +56,14 @@ export function ListRecipes(): $CancellablePromise<$models.RecipeInfo[]> {
     });
 }
 
+export function RunRecipe(recipe: recipe$0.Recipe | null, startNodeId: string, properties: { [_: string]: any }): $CancellablePromise<void> {
+    return $Call.ByID(226350490, recipe, startNodeId, properties);
+}
+
+export function RunRecipeByID(id: string, startNodeId: string, properties: { [_: string]: any }): $CancellablePromise<void> {
+    return $Call.ByID(2955805230, id, startNodeId, properties);
+}
+
 export function SaveRecipe(id: string, recipe: recipe$0.Recipe | null): $CancellablePromise<recipe$0.Recipe | null> {
     return $Call.ByID(4266337316, id, recipe).then(($result: any) => {
         return $$createType6($result);
