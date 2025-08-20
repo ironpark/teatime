@@ -18,57 +18,32 @@ type CommandActionNode struct {
 
 func (r *CommandActionNode) Output() []node.NodeProperty {
 	return []node.NodeProperty{
-		{
-			Name:        "Output",
-			Description: "명령어 실행 결과입니다.",
-			Key:         "output",
-			Value:       "",
-			Type:        node.String,
-		},
-		{
-			Name:        "Exit Code",
-			Description: "명령어 종료 코드입니다.",
-			Key:         "exitCode",
-			Value:       "",
-			Type:        node.Int64,
-		},
-		{
-			Name:        "Error",
-			Description: "오류 메시지입니다.",
-			Key:         "error",
-			Value:       "",
-			Type:        node.String,
-			Optional:    true,
-		},
+		node.OutputProp(node.String, "output", "Output",
+			node.WithDescription("명령어 실행 결과입니다."),
+		),
+		node.OutputProp(node.Int64, "exitCode", "Exit Code",
+			node.WithDescription("명령어 종료 코드입니다."),
+		),
+		node.OutputProp(node.String, "error", "Error",
+			node.WithDescription("오류 메시지입니다."),
+		),
 	}
 }
 
 func (r *CommandActionNode) Properties() []node.NodeProperty {
 	return []node.NodeProperty{
-		{
-			Name:        "Command",
-			Description: "실행할 명령어를 입력하세요",
-			Optional:    false,
-			Key:         "command",
-			Value:       "",
-			Type:        node.String,
-		},
-		{
-			Name:        "Working Directory",
-			Description: "작업 디렉토리를 입력하세요",
-			Optional:    true,
-			Key:         "workdir",
-			Value:       "",
-			Type:        node.String,
-		},
-		{
-			Name:        "Timeout",
-			Description: "타임아웃 시간(초)",
-			Optional:    true,
-			Key:         "timeout",
-			Value:       "30",
-			Type:        node.Int64,
-		},
+		node.StringProp("command", "Command",
+			node.WithDescription("실행할 명령어를 입력하세요"),
+			node.Required(),
+		),
+		node.StringProp("workdir", "Working Directory",
+			node.WithDescription("작업 디렉토리를 입력하세요"),
+			node.Optional(),
+		),
+		node.IntProp("timeout", "Timeout",
+			node.WithDescription("타임아웃 시간(초)"),
+			node.OptionalWithDefault(int64(30)),
+		),
 	}
 }
 

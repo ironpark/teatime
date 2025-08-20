@@ -18,73 +18,41 @@ type SaveActionNode struct {
 
 func (r *SaveActionNode) Output() []node.NodeProperty {
 	return []node.NodeProperty{
-		{
-			Name:        "File Path",
-			Description: "저장된 파일 경로입니다.",
-			Key:         "savedPath",
-			Value:       "",
-			Type:        node.String,
-		},
-		{
-			Name:        "File Size",
-			Description: "파일 크기(바이트)입니다.",
-			Key:         "fileSize",
-			Value:       "",
-			Type:        node.Int64,
-		},
-		{
-			Name:        "Success",
-			Description: "저장 성공 여부입니다.",
-			Key:         "success",
-			Value:       "",
-			Type:        node.Bool,
-		},
+		node.OutputProp(node.String, "savedPath", "File Path",
+			node.WithDescription("저장된 파일 경로입니다."),
+		),
+		node.OutputProp(node.Int64, "fileSize", "File Size",
+			node.WithDescription("파일 크기(바이트)입니다."),
+		),
+		node.OutputProp(node.Bool, "success", "Success",
+			node.WithDescription("저장 성공 여부입니다."),
+		),
 	}
 }
 
 func (r *SaveActionNode) Properties() []node.NodeProperty {
 	return []node.NodeProperty{
-		{
-			Name:        "File Path",
-			Description: "저장할 파일 경로를 입력하세요",
-			Optional:    false,
-			Key:         "filePath",
-			Value:       "",
-			Type:        node.String,
-		},
-		{
-			Name:        "Content",
-			Description: "저장할 내용을 입력하세요",
-			Optional:    false,
-			Key:         "content",
-			Value:       "",
-			Type:        node.String,
-		},
-		{
-			Name:        "Encoding",
-			Description: "파일 인코딩",
-			Optional:    true,
-			Key:         "encoding",
-			Value:       "utf-8",
-			Type:        node.String,
-			Options:     []string{"utf-8", "utf-16", "ascii", "base64"},
-		},
-		{
-			Name:        "Append",
-			Description: "파일에 추가할지 여부",
-			Optional:    true,
-			Key:         "append",
-			Value:       "false",
-			Type:        node.Bool,
-		},
-		{
-			Name:        "Create Directory",
-			Description: "디렉토리가 없으면 생성할지 여부",
-			Optional:    true,
-			Key:         "createDir",
-			Value:       "true",
-			Type:        node.Bool,
-		},
+		node.StringProp("filePath", "File Path",
+			node.WithDescription("저장할 파일 경로를 입력하세요"),
+			node.Required(),
+		),
+		node.StringProp("content", "Content",
+			node.WithDescription("저장할 내용을 입력하세요"),
+			node.TextArea(10),
+			node.Required(),
+		),
+		node.SelectProp("encoding", "Encoding", []string{"utf-8", "utf-16", "ascii", "base64"},
+			node.WithDescription("파일 인코딩"),
+			node.OptionalWithDefault("utf-8"),
+		),
+		node.BoolProp("append", "Append",
+			node.WithDescription("파일에 추가할지 여부"),
+			node.OptionalWithDefault(false),
+		),
+		node.BoolProp("createDir", "Create Directory",
+			node.WithDescription("디렉토리가 없으면 생성할지 여부"),
+			node.OptionalWithDefault(true),
+		),
 	}
 }
 

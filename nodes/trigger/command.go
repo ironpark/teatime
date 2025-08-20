@@ -18,31 +18,22 @@ type CommandTriggerNode struct {
 
 func (r *CommandTriggerNode) Output() []node.NodeProperty {
 	output := []node.NodeProperty{
-		{
-			Name:        "Working Directory",
-			Description: "명령어가 호출된 디렉토리입니다.",
-			Key:         "workdir",
-			Type:        node.String,
-		},
-		{
-			Name:        "Timestamp",
-			Description: "호출시점의 날짜와 시간입니다.",
-			Key:         "timestamp",
-			Type:        node.Date,
-		},
+		node.OutputProp(node.String, "workdir", "Working Directory",
+			node.WithDescription("명령어가 호출된 디렉토리입니다."),
+		),
+		node.OutputProp(node.Date, "timestamp", "Timestamp",
+			node.WithDescription("호출시점의 날짜와 시간입니다."),
+		),
 	}
 	return append(output, r.customParams...)
 }
 
 func (r *CommandTriggerNode) Properties() []node.NodeProperty {
 	return []node.NodeProperty{
-		{
-			Name:        "명령어",
-			Description: "명령어를 입력하세요",
-			Optional:    true,
-			Key:         "cmd",
-			Type:        node.String,
-		},
+		node.StringProp("cmd", "명령어",
+			node.WithDescription("명령어를 입력하세요"),
+			node.Optional(),
+		),
 	}
 }
 

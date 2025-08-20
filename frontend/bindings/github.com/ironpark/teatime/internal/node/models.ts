@@ -320,8 +320,6 @@ export enum PropertyType {
     StringArray = 9,
     NumberArray = 10,
     BooleanArray = 11,
-    JSONArray = 12,
-    XMLArray = 13,
 };
 
 // Private type creation functions

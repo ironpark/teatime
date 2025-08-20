@@ -102,18 +102,6 @@ func Float64Ptr(v float64) *float64 {
 	return &v
 }
 
-func NewProperty(name string, value any, readOnly bool) *NodeProperty {
-	return &NodeProperty{
-		Type:        String,
-		Name:        name,
-		Description: "",
-		Optional:    false,
-		Key:         "",
-		Value:       value,
-		Options:     nil,
-		ReadOnly:    readOnly,
-	}
-}
 
 func (p *NodeProperty) ValidateValue(v any) error {
 	return ValidatePropertyValue(p.Type, v, p.Optional)
