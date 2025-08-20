@@ -42,11 +42,12 @@ func getDefaultIcon(nodeType NodeType) string {
 }
 
 // NodeResult is the result of a node execution.
-// TODO: Add a way to specify the next node to execute (edges)
+// It includes output data, error status, and the output handles to activate for routing.
 type NodeResult struct {
-	Output   map[string]any
-	Error    error
-	Continue bool
+	Output        map[string]any
+	Error         error
+	Continue      bool
+	OutputHandles []string // IDs of output handles to activate (e.g., ["true"], ["success", "log"])
 }
 
 // PropertyContext provides context for dynamic property resolution.

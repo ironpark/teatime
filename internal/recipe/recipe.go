@@ -28,12 +28,14 @@ type Recipe struct {
 }
 
 // FlowEdge represents a connection between two nodes in the workflow.
-// It defines the data flow from source node to target node.
+// It defines the data flow from source node to target node through specific handles.
 type FlowEdge struct {
-	ID     string `json:"id"`
-	Source string `json:"source"`
-	Target string `json:"target"`
-	Type   string `json:"type,omitempty"`
+	ID           string `json:"id"`
+	Source       string `json:"source"`
+	Target       string `json:"target"`
+	SourceHandle string `json:"sourceHandle"`         // Output handle ID from source node
+	TargetHandle string `json:"targetHandle"`         // Input handle ID to target node (optional)
+	Type         string `json:"type,omitempty"`
 }
 
 // Open loads a recipe from a YAML file at the specified path.
@@ -91,6 +93,43 @@ func (r *Recipe) GetConnectedNodes(id string) ([]Node, error) {
 				return nil, err
 			}
 			nodes = append(nodes, node)
+		}
+	}
+	return nodes, nil
+}
+
+// GetConnectedNodesByHandles returns nodes connected through specific output handles.
+// It only follows edges that match the specified output handle IDs.
+// If outputHandles is empty or contains "default", it returns all connected nodes for backward compatibility.
+func (r *Recipe) GetConnectedNodesByHandles(sourceId string, outputHandles []string) ([]Node, error) {
+	// Handle empty or default case
+	if len(outputHandles) == 0 || (len(outputHandles) == 1 && outputHandles[0] == "default") {
+		return r.GetConnectedNodes(sourceId)
+	}
+	
+	// Create a map for quick handle lookup
+	handleMap := make(map[string]bool)
+	for _, handle := range outputHandles {
+		handleMap[handle] = true
+	}
+	
+	nodes := []Node{}
+	for _, edge := range r.Edges {
+		if edge.Source == sourceId {
+			// If edge has no sourceHandle specified, treat as "default"
+			edgeHandle := edge.SourceHandle
+			if edgeHandle == "" {
+				edgeHandle = "default"
+			}
+			
+			// Check if this edge's handle is in the active handles
+			if handleMap[edgeHandle] {
+				node, err := r.GetNodeById(edge.Target)
+				if err != nil {
+					return nil, err
+				}
+				nodes = append(nodes, node)
+			}
 		}
 	}
 	return nodes, nil

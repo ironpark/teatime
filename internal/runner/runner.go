@@ -136,8 +136,8 @@ func executeNode(ctx context.Context, state *runState, node recipe.Node, callbac
 	// set node output to states
 	state.setNodeOutput(node.Id, result.Output)
 	callback(state.recipe, StateDone, node, result.Output, nil)
-	// run next nodes
-	nextNodes, err := state.recipe.GetConnectedNodes(node.Id)
+	// run next nodes using output handles for routing
+	nextNodes, err := state.recipe.GetConnectedNodesByHandles(node.Id, result.OutputHandles)
 	if err != nil {
 		callback(state.recipe, StateError, node, nil, err)
 		resultChannel <- err
