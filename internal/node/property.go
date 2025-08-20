@@ -120,6 +120,30 @@ func NewProperty(name string, value any, readOnly bool) *NodeProperty {
 	}
 }
 
+// isNumber checks if the value is any numeric type
+func isNumber(v any) bool {
+	switch v.(type) {
+	case float64, float32:
+		return true
+	case int64, int32, int16, int8, int:
+		return true
+	case uint64, uint32, uint16, uint8, uint:
+		return true
+	default:
+		return false
+	}
+}
+
+// isWholeNumber checks if a float64 value represents a whole number
+func isWholeNumber(f float64) bool {
+	return f == float64(int64(f))
+}
+
+// isPositiveWholeNumber checks if a float64 value represents a positive whole number
+func isPositiveWholeNumber(f float64) bool {
+	return f >= 0 && f == float64(uint64(f))
+}
+
 func (p *NodeProperty) ValidateValue(v any) error {
 	if v == nil {
 		if p.Optional {
@@ -141,7 +165,7 @@ func (p *NodeProperty) ValidateValue(v any) error {
 			// Valid integer types
 		case float64:
 			// JSON unmarshals numbers as float64, check if it's a whole number
-			if f := v.(float64); f != float64(int64(f)) {
+			if f := v.(float64); !isWholeNumber(f) {
 				return errors.New("invalid int64 value: not a whole number")
 			}
 		default:
@@ -154,22 +178,14 @@ func (p *NodeProperty) ValidateValue(v any) error {
 			// Valid unsigned integer types
 		case float64:
 			// JSON unmarshals numbers as float64, check if it's a positive whole number
-			f := v.(float64)
-			if f < 0 || f != float64(uint64(f)) {
+			if f := v.(float64); !isPositiveWholeNumber(f) {
 				return errors.New("invalid uint64 value: must be positive whole number")
 			}
 		default:
 			return errors.New("invalid uint64 value")
 		}
 	case Float64:
-		switch v.(type) {
-		case float64, float32:
-			// Valid float types
-		case int64, int32, int16, int8, int:
-			// Integer types can be converted to float64
-		case uint64, uint32, uint16, uint8, uint:
-			// Unsigned integer types can be converted to float64
-		default:
+		if !isNumber(v) {
 			return errors.New("invalid float64 value")
 		}
 	case String:
@@ -219,10 +235,7 @@ func (p *NodeProperty) ValidateValue(v any) error {
 			// Check if it's []any with all numbers (common from JSON)
 			if arr, ok := v.([]any); ok {
 				for _, item := range arr {
-					switch item.(type) {
-					case float64, float32, int64, int32, int16, int8, int, uint64, uint32, uint16, uint8, uint:
-						// Valid number types
-					default:
+					if !isNumber(item) {
 						return errors.New("invalid number array value: all elements must be numbers")
 					}
 				}
