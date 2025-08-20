@@ -74,6 +74,12 @@ func (r *BaseNode) Info() NodeInfo {
 	return r.nodeInfo
 }
 
+// ValidateProperties validates the properties of the node.
+// 기본적으로는 아무것도 하지 않지만 각 노드 구현에서 재정의 가능
+func (r *BaseNode) ValidateProperties(input map[string]any) error {
+	return nil
+}
+
 // Run executes the node logic. This method panics by default and must be
 // overridden by concrete implementations.
 func (r *BaseNode) Run(ctx context.Context, states map[string]any) (result NodeResult) {
@@ -82,25 +88,4 @@ func (r *BaseNode) Run(ctx context.Context, states map[string]any) (result NodeR
 		Error:    fmt.Errorf("%s [%s] not implemented please override Run(ctx, params) method", r.nodeInfo.Name, r.nodeInfo.Ref),
 		Continue: false,
 	}
-}
-
-func Validate(node Node, input map[string]any) error {
-	properties := node.Properties()
-	for _, property := range properties {
-		value, ok := input[property.Key]
-		// if property is optional and not provided, skip validation
-		if property.Optional && !ok {
-			// set default value
-			input[property.Key] = property.Value
-			continue
-		}
-		// if property is required and not provided, return error
-		if !ok {
-			return fmt.Errorf("property %s is required", property.Key)
-		}
-		if err := property.ValidateValue(value); err != nil {
-			return fmt.Errorf("property %s is invalid: %w", property.Key, err)
-		}
-	}
-	return nil
 }

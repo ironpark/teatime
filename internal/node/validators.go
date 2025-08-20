@@ -130,11 +130,31 @@ func ValidatePropertyValue(propertyType PropertyType, value any, optional bool) 
 		}
 		return errors.New("value is required")
 	}
-	
+
 	validator, ok := validators[propertyType]
 	if !ok {
 		return fmt.Errorf("invalid property type: %v", propertyType)
 	}
-	
+
 	return validator(value)
+}
+
+func ValidateProperties(properties []NodeProperty, input map[string]any) error {
+	for _, property := range properties {
+		value, ok := input[property.Key]
+		// if property is optional and not provided, skip validation
+		if property.Optional && !ok {
+			// set default value
+			input[property.Key] = property.Value
+			continue
+		}
+		// if property is required and not provided, return error
+		if !ok {
+			return fmt.Errorf("property %s is required", property.Key)
+		}
+		if err := property.ValidateValue(value); err != nil {
+			return fmt.Errorf("property %s is invalid: %w", property.Key, err)
+		}
+	}
+	return nil
 }

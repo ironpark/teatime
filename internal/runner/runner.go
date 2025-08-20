@@ -82,11 +82,17 @@ func startNode(ctx context.Context, state *runState, node recipe.Node, propertie
 	}
 	rawNode := node.GetRawNode()
 	// validate node input
-	err := rawNode.Validate(properties)
+	err := n.ValidateProperties(rawNode.Properties(), properties)
 	if err != nil {
 		callback(state.recipe, StateError, node, nil, err)
 		return err
 	}
+	err = rawNode.ValidateProperties(properties)
+	if err != nil {
+		callback(state.recipe, StateError, node, nil, err)
+		return err
+	}
+
 	state.setNodeInput(node.Id, properties)
 	state.waitGroup.Add(1)
 	// run node in goroutine
