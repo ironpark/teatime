@@ -6,7 +6,7 @@ import (
 	"github.com/samber/lo"
 )
 
-// Type checking helper functions for property validation
+// Type checking utility functions for property validation
 
 // isNumber checks if the value is any numeric type
 func isNumber(v any) bool {
