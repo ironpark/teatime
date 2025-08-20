@@ -1,6 +1,9 @@
 package node
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type PropertyType int
 
@@ -20,8 +23,6 @@ const (
 	StringArray
 	NumberArray
 	BooleanArray
-	JSONArray
-	XMLArray
 )
 
 // InputType defines how the property should be displayed in the UI
@@ -75,10 +76,6 @@ func (p PropertyType) String() string {
 		return "NumberArray"
 	case BooleanArray:
 		return "BooleanArray"
-	case JSONArray:
-		return "JSONArray"
-	case XMLArray:
-		return "XMLArray"
 	default:
 		return "Unknown"
 	}
@@ -123,24 +120,133 @@ func NewProperty(name string, value any, readOnly bool) *NodeProperty {
 	}
 }
 
-func (p *NodeProperty) Validate() error {
-	if p.Type == Invalid {
-		return errors.New("invalid property type")
+func (p *NodeProperty) ValidateValue(v any) error {
+	if v == nil {
+		if p.Optional {
+			return nil
+		}
+		return errors.New("value is required")
 	}
-
+	
 	switch p.Type {
-	case String:
-		if p.Options != nil {
-			return errors.New("string property cannot have options")
+	case Bool:
+		_, ok := v.(bool)
+		if !ok {
+			return errors.New("invalid boolean value")
 		}
 	case Int64:
-		if p.Options != nil {
-			return errors.New("int64 property cannot have options")
+		// Accept various number types that can be converted to int64
+		switch v.(type) {
+		case int64, int32, int16, int8, int:
+			// Valid integer types
+		case float64:
+			// JSON unmarshals numbers as float64, check if it's a whole number
+			if f := v.(float64); f != float64(int64(f)) {
+				return errors.New("invalid int64 value: not a whole number")
+			}
+		default:
+			return errors.New("invalid int64 value")
 		}
 	case Uint64:
-		if p.Options != nil {
-			return errors.New("uint64 property cannot have options")
+		// Accept various number types that can be converted to uint64
+		switch v.(type) {
+		case uint64, uint32, uint16, uint8, uint:
+			// Valid unsigned integer types
+		case float64:
+			// JSON unmarshals numbers as float64, check if it's a positive whole number
+			f := v.(float64)
+			if f < 0 || f != float64(uint64(f)) {
+				return errors.New("invalid uint64 value: must be positive whole number")
+			}
+		default:
+			return errors.New("invalid uint64 value")
 		}
+	case Float64:
+		switch v.(type) {
+		case float64, float32:
+			// Valid float types
+		case int64, int32, int16, int8, int:
+			// Integer types can be converted to float64
+		case uint64, uint32, uint16, uint8, uint:
+			// Unsigned integer types can be converted to float64
+		default:
+			return errors.New("invalid float64 value")
+		}
+	case String:
+		_, ok := v.(string)
+		if !ok {
+			return errors.New("invalid string value")
+		}
+	case JSON:
+		switch v.(type) {
+		case map[string]any, []any:
+			// Valid JSON types
+		default:
+			return errors.New("invalid json value")
+		}
+	case XML:
+		_, ok := v.(string)
+		if !ok {
+			return errors.New("invalid xml value")
+		}
+	case Date:
+		switch v.(type) {
+		case time.Time:
+			// Valid time type
+		case string:
+			// Allow string representation that can be parsed
+			// This is common when dates come from JSON
+		default:
+			return errors.New("invalid date value")
+		}
+	case StringArray:
+		_, ok := v.([]string)
+		if !ok {
+			// Check if it's []any with all strings (common from JSON)
+			if arr, ok := v.([]any); ok {
+				for _, item := range arr {
+					if _, ok := item.(string); !ok {
+						return errors.New("invalid string array value: all elements must be strings")
+					}
+				}
+			} else {
+				return errors.New("invalid string array value")
+			}
+		}
+	case NumberArray:
+		_, ok := v.([]float64)
+		if !ok {
+			// Check if it's []any with all numbers (common from JSON)
+			if arr, ok := v.([]any); ok {
+				for _, item := range arr {
+					switch item.(type) {
+					case float64, float32, int64, int32, int16, int8, int, uint64, uint32, uint16, uint8, uint:
+						// Valid number types
+					default:
+						return errors.New("invalid number array value: all elements must be numbers")
+					}
+				}
+			} else {
+				return errors.New("invalid number array value")
+			}
+		}
+	case BooleanArray:
+		_, ok := v.([]bool)
+		if !ok {
+			// Check if it's []any with all booleans (common from JSON)
+			if arr, ok := v.([]any); ok {
+				for _, item := range arr {
+					if _, ok := item.(bool); !ok {
+						return errors.New("invalid boolean array value: all elements must be booleans")
+					}
+				}
+			} else {
+				return errors.New("invalid boolean array value")
+			}
+		}
+	default:
+		return errors.New("invalid property type")
 	}
 	return nil
 }
+

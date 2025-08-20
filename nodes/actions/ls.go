@@ -28,14 +28,14 @@ func (r *LsActionNode) Output() []node.NodeProperty {
 			Description: "파일 목록입니다.",
 			Key:         "files",
 			Value:       "",
-			Type:        node.JSONArray,
+			Type:        node.StringArray,
 		},
 		{
 			Name:        "Directories",
 			Description: "디렉토리 목록입니다.",
 			Key:         "directories",
 			Value:       "",
-			Type:        node.JSONArray,
+			Type:        node.StringArray,
 		},
 		{
 			Name:        "Total Count",

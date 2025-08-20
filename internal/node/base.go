@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"fmt"
-	"strings"
 )
 
 // BaseNode provides a default implementation of the Node interface.
@@ -85,35 +84,23 @@ func (r *BaseNode) Run(ctx context.Context, states map[string]any) (result NodeR
 	}
 }
 
-func (r *BaseNode) ResolveInput(states map[string]any) (map[string]any, error) {
-	resolvedStates := make(map[string]any)
-	for key, value := range states {
-		switch v := value.(type) {
-		// it can be a expression, binding, or a value
-		// binding is @[bindingName]
-		// expression is {{expression}}
-		case string:
-			if strings.HasPrefix(v, "@[") && strings.HasSuffix(v, "]") {
-				// it is a binding
-				binding := strings.TrimSpace(v[2 : len(v)-1])
-				resolvedStates[key] = states[binding]
-			} else if strings.HasPrefix(v, "{{") && strings.HasSuffix(v, "}}") {
-				// it is a expression, evaluate it
-				expression := v[2 : len(v)-2]
-				result, err := Eval(expression, states, r.nodeInfo.Ref)
-				if err != nil {
-					return nil, fmt.Errorf("failed to evaluate expression for property %s: %w", key, err)
-				}
-				resolvedStates[key] = result
-			} else {
-				// it is a value
-				resolvedStates[key] = v
-			}
+func Validate(node Node, input map[string]any) error {
+	properties := node.Properties()
+	for _, property := range properties {
+		value, ok := input[property.Key]
+		// if property is optional and not provided, skip validation
+		if property.Optional && !ok {
+			// set default value
+			input[property.Key] = property.Value
+			continue
+		}
+		// if property is required and not provided, return error
+		if !ok {
+			return fmt.Errorf("property %s is required", property.Key)
+		}
+		if err := property.ValidateValue(value); err != nil {
+			return fmt.Errorf("property %s is invalid: %w", property.Key, err)
 		}
 	}
-	return resolvedStates, fmt.Errorf("%s [%s] not implemented please override ResolveInput(states) method", r.nodeInfo.Name, r.nodeInfo.Ref)
-}
-
-func (r *BaseNode) Validate(input map[string]any) error {
-	return fmt.Errorf("%s [%s] not implemented please override Validate(input) method", r.nodeInfo.Name, r.nodeInfo.Ref)
+	return nil
 }

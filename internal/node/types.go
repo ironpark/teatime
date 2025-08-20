@@ -69,6 +69,4 @@ type Node interface {
 	Info() NodeInfo
 	// Run executes the node with the given context and state.
 	Run(ctx context.Context, states map[string]any) (result NodeResult)
-	// Validate checks if the provided input is valid for this node.
-	Validate(input map[string]any) error
 }
