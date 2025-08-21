@@ -19,7 +19,8 @@
 		RangeInput, 
 		SwitchInput, 
 		ExpressionInput,
-		MultiSelectInput
+		MultiSelectInput,
+		ArgListInput
 	} from './inputs';
 	import type { RecipeStore } from '$lib/stores/recipe.svelte';
 
@@ -187,6 +188,8 @@
 													<KeyValuePairsInput {prop} onUpdate={updateProperty} />
 												{:else if prop.input.type === InputType.InputTypeDynamicList}
 													<DynamicListInput {prop} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeArgList}
+													<ArgListInput {prop} onUpdate={updateProperty} />
 												{:else}
 													<!-- Default to text input -->
 													<TextInput {prop} type="text" placeholder={prop.input.placeholder} onUpdate={updateProperty} />

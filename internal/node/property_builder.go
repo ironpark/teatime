@@ -220,6 +220,17 @@ func Toggle() PropertyOption {
 	}
 }
 
+// ArgList creates an argument list input
+func ArgList() PropertyOption {
+	return func(p *NodeProperty) {
+		if p.Input == nil {
+			p.Input = &InputConfig{}
+		}
+		p.Input.Type = InputTypeArgList
+		p.Input.Unique = true
+	}
+}
+
 // DynamicList creates a dynamic list input
 func DynamicList(uniqueSet bool) PropertyOption {
 	return func(p *NodeProperty) {

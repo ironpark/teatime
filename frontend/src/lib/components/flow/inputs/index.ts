@@ -7,3 +7,4 @@ export { default as TextareaInput } from './TextareaInput.svelte';
 export { default as RangeInput } from './RangeInput.svelte';
 export { default as SwitchInput } from './SwitchInput.svelte';
 export { default as ExpressionInput } from './ExpressionInput.svelte';
+export { default as ArgListInput } from './ArgListInput.svelte';

@@ -35,6 +35,7 @@ const (
 	InputTypeExpression                       // Expression input
 	InputTypeKeyValue                         // Key-value pairs input
 	InputTypeDynamicList                      // Dynamic list input
+	InputTypeArgList                          // Argument list input (Special types for trigger node)
 )
 
 // InputConfig defines the configuration for input UI

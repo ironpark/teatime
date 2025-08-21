@@ -127,6 +127,11 @@ export enum InputType {
      * Dynamic list input
      */
     InputTypeDynamicList = 11,
+
+    /**
+     * Argument list input (Special types for trigger node)
+     */
+    InputTypeArgList = 12,
 };
 
 /**
