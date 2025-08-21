@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Plus, X } from 'lucide-svelte';
+	import type { NodeProperty } from '$bindings/internal/node';
 
 	interface KeyValuePair {
 		key: string;
@@ -9,11 +10,11 @@
 	}
 
 	interface Props {
-		value: any;
-		onUpdate: (value: any) => void;
+		prop: NodeProperty;
+		onUpdate: (prop: NodeProperty, value: any) => void;
 	}
 
-	let { value = $bindable(), onUpdate }: Props = $props();
+	let { prop, onUpdate }: Props = $props();
 
 	function parseKeyValuePairs(value: any): KeyValuePair[] {
 		if (!value) return [{ key: '', value: '' }];
@@ -51,17 +52,17 @@
 				obj[pair.key] = pair.value;
 			}
 		});
-		onUpdate(obj);
+		onUpdate(prop, obj);
 	}
 
 	function addKeyValuePair() {
-		const currentPairs = parseKeyValuePairs(value);
+		const currentPairs = parseKeyValuePairs(prop.value);
 		currentPairs.push({ key: '', value: '' });
 		updateKeyValuePairs(currentPairs);
 	}
 
 	function removeKeyValuePair(index: number) {
-		const currentPairs = parseKeyValuePairs(value);
+		const currentPairs = parseKeyValuePairs(prop.value);
 		currentPairs.splice(index, 1);
 		if (currentPairs.length === 0) {
 			currentPairs.push({ key: '', value: '' });
@@ -69,7 +70,7 @@
 		updateKeyValuePairs(currentPairs);
 	}
 
-	const keyValuePairs = $derived(parseKeyValuePairs(value));
+	const keyValuePairs = $derived(parseKeyValuePairs(prop.value));
 </script>
 
 <div class="space-y-2">

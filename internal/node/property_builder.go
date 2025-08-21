@@ -287,9 +287,13 @@ func NewProp(propertyType PropertyType, key, name string, opts ...PropertyOption
 	case JSON, XML:
 		prop.Input.Type = InputTypeTextarea
 		prop.Input.Rows = 10
-	case StringArray:
-		prop.Input.Type = InputTypeMultiSelect
-		prop.Input.Multiple = true
+	case StringArray, NumberArray, BooleanArray:
+		prop.Input.Type = InputTypeDynamicList
+		prop.Input.Unique = false
+	case Date:
+		prop.Input.Type = InputTypeText
+	case Invalid:
+		prop.Input.Type = InputTypeText
 	}
 
 	// Apply options

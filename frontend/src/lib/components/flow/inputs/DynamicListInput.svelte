@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Plus, X } from 'lucide-svelte';
+	import type { NodeProperty } from '$bindings/internal/node';
 
 	interface Props {
-		value: any;
-		onUpdate: (value: any) => void;
-		itemType?: string; // 'text' | 'number' | 'textarea'
-		placeholder?: string;
-		unique?: boolean; // Ensure unique elements in the list
+		prop: NodeProperty;
+		onUpdate: (prop: NodeProperty, value: any) => void;
 	}
 
-	let { value, onUpdate, itemType = 'text', placeholder = 'Enter item', unique = false }: Props = $props();
+	let { prop, onUpdate }: Props = $props();
+
+	const itemType = $derived(prop.input?.placeholder === 'number' ? 'number' : prop.input?.placeholder === 'textarea' ? 'textarea' : 'text');
+	const placeholder = $derived(prop.input?.placeholder || 'Enter item');
+	const unique = $derived(prop.input?.unique || false);
 
 	function parseArrayValue(value: any): string[] {
 		if (!value) return [''];
@@ -51,21 +53,21 @@
 			});
 			// Apply unique constraint for numbers too
 			const finalNumbers = unique ? [...new Set(numberItems)] : numberItems;
-			onUpdate(finalNumbers);
+			onUpdate(prop, finalNumbers);
 		} else {
-			onUpdate(filteredItems);
+			onUpdate(prop, filteredItems);
 		}
 	}
 
 	function addItem() {
-		const currentItems = parseArrayValue(value);
+		const currentItems = parseArrayValue(prop.value);
 		currentItems.push('');
 		// Don't filter when adding new items - keep the empty string
-		onUpdate(currentItems);
+		onUpdate(prop, currentItems);
 	}
 
 	function removeItem(index: number) {
-		const currentItems = parseArrayValue(value);
+		const currentItems = parseArrayValue(prop.value);
 		currentItems.splice(index, 1);
 		if (currentItems.length === 0) {
 			currentItems.push('');
@@ -74,13 +76,13 @@
 	}
 
 	function handleItemChange(index: number, newValue: string) {
-		const currentItems = parseArrayValue(value);
+		const currentItems = parseArrayValue(prop.value);
 		currentItems[index] = newValue;
 		// Keep empty strings during editing to allow users to type
 		// Don't apply unique constraint during typing - only on blur
 		if (unique) {
 			// Just update without deduplication during typing
-			onUpdate(currentItems);
+			onUpdate(prop, currentItems);
 		} else {
 			updateArrayValue(currentItems, true);
 		}
@@ -89,12 +91,12 @@
 	function handleItemBlur() {
 		// Apply unique constraint when focus leaves the input
 		if (unique && hasDuplicates) {
-			const currentItems = parseArrayValue(value);
+			const currentItems = parseArrayValue(prop.value);
 			updateArrayValue(currentItems, false); // This will apply deduplication
 		}
 	}
 
-	const arrayItems = $derived(parseArrayValue(value));
+	const arrayItems = $derived(parseArrayValue(prop.value));
 	const effectivePlaceholder = $derived(unique ? `${placeholder} (unique values only)` : placeholder);
 	
 	// Check for duplicates when unique constraint is enabled

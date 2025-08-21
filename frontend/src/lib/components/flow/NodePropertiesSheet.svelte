@@ -2,19 +2,25 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Textarea } from '$lib/components/ui/textarea';
-	import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Settings } from 'lucide-svelte';
 	import type { Node } from '@xyflow/svelte';
 	import { InputType, type NodeProperty } from '$bindings/internal/node';
-	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
 	import { useSvelteFlow } from '@xyflow/svelte';
-	import KeyValuePairsInput from './KeyValuePairsInput.svelte';
-	import DynamicListInput from './DynamicListInput.svelte';
+	import { 
+		KeyValuePairsInput, 
+		DynamicListInput, 
+		SelectInput, 
+		TextInput, 
+		TextareaInput, 
+		RangeInput, 
+		SwitchInput, 
+		ExpressionInput,
+		MultiSelectInput
+	} from './inputs';
 	import type { RecipeStore } from '$lib/stores/recipe.svelte';
 
 	const { updateNodeData } = useSvelteFlow();
@@ -65,136 +71,6 @@
 		return typeMap[propType] || 'unknown';
 	}
 
-	// Dynamic property input component based on type
-	function renderPropertyInput(prop: NodeProperty): any {
-		// If input config is provided, use it
-		if (prop.input) {
-			const inputConfig = prop.input;
-			console.log('inputConfig',prop.key,prop.name, prop.type, inputConfig)
-			switch (inputConfig.type) {
-				case InputType.InputTypeRange:
-					return {
-						component: 'range',
-						min: inputConfig.min ?? 0,
-						max: inputConfig.max ?? 100,
-						step: inputConfig.step ?? 1
-					};
-				
-				case InputType.InputTypeTextarea:
-					return {
-						component: 'textarea',
-						rows: inputConfig.rows ?? 3,
-						placeholder: inputConfig.placeholder
-					};
-				
-				case InputType.InputTypeNumber:
-					return {
-						component: 'input',
-						type: 'number',
-						min: inputConfig.min,
-						max: inputConfig.max,
-						step: inputConfig.step,
-						placeholder: inputConfig.placeholder
-					};
-				
-				case InputType.InputTypeSelect:
-				case InputType.InputTypeMultiSelect:
-					return {
-						component: inputConfig.type === InputType.InputTypeMultiSelect ? 'multiselect' : 'select',
-						options: prop.options?.map((option: string) => ({
-							value: option,
-							label: option
-						})) ?? []
-					};
-				
-				case InputType.InputTypeSwitch:
-					return {
-						component: 'switch'
-					};
-				
-				case InputType.InputTypeCheckbox:
-					return {
-						component: 'checkbox'
-					};
-				case InputType.InputTypeExpression:
-					return {
-						component: 'expression'
-					};
-				case InputType.InputTypeKeyValue:
-					return {
-						component: 'keyvalue'
-					};
-				case InputType.InputTypeDynamicList:
-					return {
-						component: 'dynamiclist',
-						itemType: inputConfig.placeholder === 'number' ? 'number' : 
-								 inputConfig.placeholder === 'textarea' ? 'textarea' : 'text',
-						placeholder: inputConfig.placeholder,
-						unique: inputConfig.unique || false
-					};
-				case InputType.InputTypeText:
-				default:
-					return {
-						component: 'input',
-						type: 'text',
-						placeholder: inputConfig.placeholder
-					};
-			}
-		}
-		
-		// Fall back to options if provided
-		if (prop.options && prop.options.length > 0) {
-			return {
-				component: 'select',
-				options: prop.options.map((option: string) => ({
-					value: option,
-					label: option
-				}))
-			};
-		}
-		// 0: 'invalid',
-		// 	1: 'boolean',
-		// 	2: 'int64',
-		// 	3: 'uint64', 
-		// 	4: 'float64',
-		// 	5: 'string',
-		// 	6: 'json',
-		// 	7: 'xml',
-		// 	8: 'date',
-		// 	9: 'string[]',
-		// 	10: 'number[]',
-		// 	11: 'boolean[]'
-		// Fall back to type-based rendering
-		switch (prop.type) {
-			case 1: // Bool
-				return {
-					component: 'switch'
-				};
-			case 2: // Int64
-			case 3: // Uint64
-			case 4: // Float64
-				return {
-					component: 'input',
-					type: 'number'
-				};
-			case 5: // String
-			case 6: // JSON
-			case 7: // XML
-			case 8: // Date
-			case 9: // String[]
-			case 10: // Number[]
-			case 11: // Boolean[]
-				return {
-					component: 'textarea',
-					rows: 3
-				};
-			default: // String and others
-				return {
-					component: 'input',
-					type: 'text'
-				};
-		}
-	}
 	const titleCase = (str: any) => {
 		if (!str) return '';
 		if (typeof str === 'string') {
@@ -276,7 +152,6 @@
 							<!-- Dynamic Properties -->
 							{#if selectedNode.data.properties && Array.isArray(selectedNode.data.properties)}
 								{#each selectedNode.data.properties as prop (prop.key)}
-										{@const inputConfig = renderPropertyInput(prop)}
 										<div class="space-y-1.5">
 											<div class="flex items-center justify-between">
 												<Label for={`prop-${prop.key}`}>
@@ -293,102 +168,47 @@
 												<p class="text-xs text-muted-foreground">{prop.description}</p>
 											{/if}
 											
-											{#if inputConfig.component === 'switch'}
-												<div class="flex items-center space-x-2">
-													<Switch
-														id={`prop-${prop.key}`}
-														checked={prop.value === true || prop.value === 'true'}
-														onCheckedChange={(checked) => updateProperty(prop, checked.toString())}
-													/>
-													<Label for={`prop-${prop.key}`} class="text-sm">
-														{(prop.value === true || prop.value === 'true') ? 'Yes' : 'No'}
-													</Label>
-												</div>
-											{:else if inputConfig.component === 'range'}
-												<div class="space-y-2">
-													<div class="flex items-center justify-between">
-														<Input
-															id={`prop-${prop.key}`}
-															type="range"
-															bind:value={prop.value}
-															min={inputConfig.min}
-															max={inputConfig.max}
-															step={inputConfig.step}
-															oninput={(e) => updateProperty(prop, parseFloat(e.currentTarget.value))}
-															class="flex-1"
-														/>
-														<span class="ml-3 text-sm font-medium w-12 text-right">
-															{prop.value ?? 0}
-														</span>
-													</div>
-												</div>
-											{:else if inputConfig.component === 'textarea'}
-												<Textarea
-													id={`prop-${prop.key}`}
-													bind:value={prop.value}
-													oninput={(e) => updateProperty(prop, e.currentTarget.value)}
-													rows={inputConfig.rows}
-													placeholder={inputConfig.placeholder || `Enter ${prop.name || prop.key}`}
-												/>
-											{:else if inputConfig.component === 'input'}
-												<Input
-													id={`prop-${prop.key}`}
-													type={inputConfig.type}
-													bind:value={prop.value}
-													min={inputConfig.min}
-													max={inputConfig.max}
-													step={inputConfig.step}
-													oninput={(e) => updateProperty(prop, inputConfig.type === 'number' ? parseFloat(e.currentTarget.value) : e.currentTarget.value)}
-													placeholder={inputConfig.placeholder || `Enter ${prop.name || prop.key}`}
-												/>
-											{:else if inputConfig.component === 'select'}
-												<Select
-													type="single"
-													bind:value={prop.value}
-													onValueChange={(value) => {
-														updateProperty(prop, value);
-													}}
-												>
-													<SelectTrigger id={`prop-${prop.key}`}>
-														{prop.value || 'Select option'}
-													</SelectTrigger>
-													<SelectContent>
-														<SelectGroup>
-														{#each inputConfig.options as option}
-															<SelectItem value={option.value}>
-																{option.label}
-															</SelectItem>
-														{/each}
-														</SelectGroup>
-													</SelectContent>
-												</Select>
-											{:else if inputConfig.component === 'expression'}
-												<div class="space-y-2">
-													<Textarea
-														id={`prop-${prop.key}`}
-														bind:value={prop.value}
-														oninput={(e) => updateProperty(prop, e.currentTarget.value)}
-														rows={3}
-														placeholder="{'{'}expression{'}'} or @[binding]"
-														class="font-mono text-sm"
-													/>
-													<div class="text-xs text-muted-foreground">
-														Use {'{'}expression{'}'} for calculations or @[nodeName.output.field] for bindings
-													</div>
-												</div>
-											{:else if inputConfig.component === 'keyvalue'}
-												<KeyValuePairsInput bind:value={prop.value} onUpdate={(e)=>{
-													updateProperty(prop, e)
-													console.log('updateProperty', prop,e)
-												}} />
-											{:else if inputConfig.component === 'dynamiclist'}
-												<DynamicListInput 
-													value={prop.value} 
-													onUpdate={(value) => updateProperty(prop, value)}
-													itemType={inputConfig.itemType}
-													placeholder={inputConfig.placeholder || 'Enter item'}
-													unique={inputConfig.unique || false}
-												/>
+											{#if prop.input}
+												{#if prop.input.type === InputType.InputTypeSwitch}
+													<SwitchInput {prop} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeRange}
+													<RangeInput {prop} min={prop.input.min ?? 0} max={prop.input.max ?? 0} step={prop.input.step ?? 0} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeTextarea}
+													<TextareaInput {prop} rows={prop.input.rows} placeholder={prop.input.placeholder} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeNumber}
+													<TextInput {prop} type="number" min={prop.input.min ?? 0} max={prop.input.max ?? 0} step={prop.input.step ?? 0} placeholder={prop.input.placeholder} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeSelect}
+													<SelectInput {prop} options={prop.options?.map((option) => ({ value: option, label: option })) ?? []} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeMultiSelect}
+													<MultiSelectInput {prop} options={prop.options?.map((option) => ({ value: option, label: option })) ?? []} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeExpression}
+													<ExpressionInput {prop} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeKeyValue}
+													<KeyValuePairsInput {prop} onUpdate={updateProperty} />
+												{:else if prop.input.type === InputType.InputTypeDynamicList}
+													<DynamicListInput {prop} onUpdate={updateProperty} />
+												{:else}
+													<!-- Default to text input -->
+													<TextInput {prop} type="text" placeholder={prop.input.placeholder} onUpdate={updateProperty} />
+												{/if}
+											{:else if prop.options && prop.options.length > 0}
+												<!-- Fallback to select if options are provided -->
+												<SelectInput {prop} options={prop.options.map((option) => ({ value: option, label: option }))} onUpdate={updateProperty} />
+											{:else}
+												<!-- Fallback based on property type -->
+												{#if prop.type === 1}
+													<!-- Bool -->
+													<SwitchInput {prop} onUpdate={updateProperty} />
+												{:else if prop.type === 2 || prop.type === 3 || prop.type === 4}
+													<!-- Int64, Uint64, Float64 -->
+													<TextInput {prop} type="number" onUpdate={updateProperty} />
+												{:else if prop.type === 5 || prop.type === 6 || prop.type === 7 || prop.type === 8 || prop.type === 9 || prop.type === 10 || prop.type === 11}
+													<!-- String, JSON, XML, Date, Arrays -->
+													<TextareaInput {prop} rows={3} onUpdate={updateProperty} />
+												{:else}
+													<!-- Default -->
+													<TextInput {prop} type="text" onUpdate={updateProperty} />
+												{/if}
 											{/if}
 										</div>
 								{/each}
