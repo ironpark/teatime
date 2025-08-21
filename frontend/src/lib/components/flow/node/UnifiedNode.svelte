@@ -134,6 +134,14 @@
 	function handleTriggerClick() {
 		showTriggerDialog = true;
 	}
+
+	// Helper function to truncate long text values
+	function truncateText(text: string, maxLength: number = 50): string {
+		if (!text || text.length <= maxLength) {
+			return text;
+		}
+		return text.substring(0, maxLength) + '...';
+	}
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -226,11 +234,11 @@
 												<div class="flex items-center gap-1">
 													<Link class="h-3 w-3 text-blue-600" />
 													<span class="text-blue-700 text-xs font-medium">
-														{bindingInfo.nodeLabel}
+														{truncateText(bindingInfo.nodeLabel, 20)}
 													</span>
 													<span class="text-blue-600 text-xs">→</span>
 													<span class="text-blue-700 text-xs">
-														{bindingInfo.propertyName}
+														{truncateText(bindingInfo.propertyName, 15)}
 													</span>
 													<Badge variant="outline" class="text-[9px] px-1 py-0 bg-blue-50 text-blue-700 border-blue-200">
 														{bindingInfo.type}
@@ -247,7 +255,7 @@
 												{@const formatted = formatArgList(prop.value)}
 												{#if formatted}
 													<span class="text-gray-900 break-words font-mono text-xs">
-														{formatted}
+														{truncateText(formatted)}
 													</span>
 												{:else}
 													<span class="text-gray-400 italic">
@@ -256,12 +264,12 @@
 												{/if}
 											{:else}
 												<span class="text-gray-900 break-words">
-													{typeof prop.value === 'object' ? JSON.stringify(prop.value) : prop.value}
+													{truncateText(typeof prop.value === 'object' ? JSON.stringify(prop.value) : String(prop.value),25)}
 												</span>
 											{/if}
 										{:else if prop.options && prop.options.length > 0}
 											<span class="text-gray-500 italic">
-												[{prop.options.join(', ')}]
+												[{truncateText(prop.options.join(', '))}]
 											</span>
 										{:else}
 											<span class="text-gray-400 italic">
@@ -302,7 +310,9 @@
 </div>
 
 {#if handleType === 'target' || handleType === 'both'}
-	<Handle type="target" position={Position.Left} {isConnectable} />
+	<Handle type="target" position={Position.Left} 
+		style="left: 0px; width: 12px; height: 12px; background-color: rgba(255, 255, 255, 0.8); border-radius: 3px; border: 1px solid black; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);"
+		{isConnectable} />
 {/if}
 
 <!-- Multiple output handles - stack them vertically -->

@@ -5,10 +5,12 @@ go 1.24.0
 toolchain go1.24.4
 
 require (
+	github.com/anthropics/anthropic-sdk-go v1.9.1
 	github.com/expr-lang/expr v1.17.6
 	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/uuid v1.6.0
+	github.com/openai/openai-go/v2 v2.1.1
 	github.com/pressly/goose/v3 v3.24.3
 	github.com/samber/lo v1.51.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.25
@@ -51,6 +53,10 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect

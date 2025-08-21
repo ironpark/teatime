@@ -29,6 +29,10 @@
 
 	// Store argument values
 	let argValues = $state<Record<string, string | string[]>>({});
+	
+	// Execution state
+	let isExecuting = $state(false);
+	let errorMessage = $state<string | null>(null);
 
 	// Initialize argument values when dialog opens
 	$effect(() => {
@@ -42,10 +46,16 @@
 				}
 			}
 			argValues = newValues;
+			errorMessage = null; // Clear error when dialog opens
 		}
 	});
 
 	async function handleExecute() {
+		if (isExecuting) return;
+		
+		isExecuting = true;
+		errorMessage = null; // Clear previous error
+		
 		try {
 			// Convert argValues to the format expected by the backend
 			const formattedArgs: Record<string, any> = {};
@@ -69,7 +79,9 @@
 			onOpenChange(false);
 		} catch (error) {
 			console.error('Failed to execute trigger:', error);
-			// TODO: Show error message to user
+			errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+		} finally {
+			isExecuting = false;
 		}
 	}
 
@@ -95,8 +107,10 @@
 		return value || '';
 	}
 
-	// Check if all required arguments are filled
+	// Check if all required arguments are filled and not currently executing
 	const isValidForm = $derived.by(() => {
+		if (isExecuting) return false;
+		
 		for (const arg of args) {
 			if (arg.required) {
 				const value = argValues[arg.name];
@@ -252,17 +266,39 @@
 		{/if}
 		</div>
 
+		<!-- Error Message -->
+		{#if errorMessage}
+			<div class="mx-6 mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+				<div class="flex items-start gap-2">
+					<div class="w-4 h-4 text-destructive mt-0.5">⚠️</div>
+					<div class="flex-1">
+						<p class="text-sm font-medium text-destructive mb-1">Execution Failed</p>
+						<p class="text-xs text-destructive/80">{errorMessage}</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+
 		<Dialog.Footer class="flex items-center gap-2">
-			<Button variant="outline" onclick={handleCancel}>
+			<Button 
+				variant="outline" 
+				onclick={handleCancel}
+				disabled={isExecuting}
+			>
 				Cancel
 			</Button>
 			<Button 
 				onclick={handleExecute}
-				disabled={!isValidForm}
+				disabled={!isValidForm || isExecuting}
 				class="flex items-center gap-2"
 			>
-				<Play class="h-3 w-3" />
-				Execute
+				{#if isExecuting}
+					<div class="w-3 h-3 animate-spin rounded-full border border-current border-t-transparent"></div>
+					Executing...
+				{:else}
+					<Play class="h-3 w-3" />
+					Execute
+				{/if}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

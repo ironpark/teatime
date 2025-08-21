@@ -102,14 +102,14 @@ func startNode(ctx context.Context, state *runState, node recipe.Node, propertie
 	state.setNodeInput(node.Id, resolvedProperties)
 	state.waitGroup.Add(1)
 	// run node in goroutine
-	go executeNode(ctx, state, node, callback)
+	go executeNode(ctx, state, properties, node, callback)
 	return nil
 }
 
 // executeNode runs a node's logic after dependencies are satisfied.
 // It waits for dependencies, executes the node, stores outputs,
 // and triggers execution of connected downstream nodes.
-func executeNode(ctx context.Context, state *runState, node recipe.Node, callback Callback) {
+func executeNode(ctx context.Context, state *runState, resolvedProps map[string]any, node recipe.Node, callback Callback) {
 	defer state.waitGroup.Done()
 	callback(state.recipe, StateWait, node, nil, nil)
 	// wait dependencies
@@ -127,7 +127,7 @@ func executeNode(ctx context.Context, state *runState, node recipe.Node, callbac
 	resultChannel := state.getNodeResultChannel(node.Id)
 	callback(state.recipe, StateRun, node, nil, nil)
 	// run node
-	result := rawNode.Run(ctx, state.states, state.states)
+	result := rawNode.Run(ctx, resolvedProps, state.states)
 	if result.Error != nil {
 		callback(state.recipe, StateError, node, nil, result.Error)
 		resultChannel <- result.Error

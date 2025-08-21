@@ -4,22 +4,48 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/anthropics/anthropic-sdk-go"
+	anthropicOption "github.com/anthropics/anthropic-sdk-go/option"
+
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/node"
+	"github.com/openai/openai-go/v2"
+	"github.com/openai/openai-go/v2/option"
 )
+
+var anthropicModels = []string{
+	"claude-3-7-sonnet-latest",
+	"claude-3-7-sonnet-20250219",
+	"claude-3-5-haiku-latest",
+	"claude-3-5-haiku-20241022",
+	"claude-sonnet-4-20250514",
+	"claude-sonnet-4-0",
+	"claude-4-sonnet-20250514",
+	"claude-3-5-sonnet-latest",
+	"claude-3-5-sonnet-20241022",
+	"claude-3-5-sonnet-20240620",
+	"claude-opus-4-0",
+	"claude-opus-4-20250514",
+	"claude-4-opus-20250514",
+	"claude-opus-4-1-20250805",
+}
+
+var openaiModels = []string{
+	"gpt-5", "gpt-5-mini", "gpt-5-nano", "gpt-5-2025-08-07", "gpt-5-mini-2025-08-07", "gpt-5-nano-2025-08-07", "gpt-5-chat-latest", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini", "o3", "o3-mini", "o1", "o1-mini", "gpt-4o", "chatgpt-4o-latest", "gpt-4o-mini", "gpt-4-turbo", "gpt-4",
+}
 
 var (
 	providers       = []string{"openai", "anthropic", "openrouter", "custom"}
 	providerToModel = map[string][]string{
-		"openai":     []string{"gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4o", "gpt-4o-mini"},
-		"anthropic":  []string{"claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307", "claude-3-5-sonnet-20240620"},
+		"openai":     openaiModels,
+		"anthropic":  anthropicModels,
 		"openrouter": []string{"openai/gpt-4", "openai/gpt-3.5-turbo", "anthropic/claude-3-opus", "anthropic/claude-3-sonnet", "anthropic/claude-3-haiku", "meta-llama/llama-2-70b-chat"},
 		"custom":     []string{},
 	}
 	providerDefaultModel = map[string]string{
-		"openai":     "gpt-3.5-turbo",
+		"openai":     "gpt-4o-mini",
 		"anthropic":  "claude-3-haiku-20240307",
-		"openrouter": "openai/gpt-3.5-turbo",
+		"openrouter": "openai/gpt-4o-mini",
 		"custom":     "",
 	}
 	providerToBaseURL = map[string]string{
@@ -181,6 +207,8 @@ func (l *LLMActionNode) Run(ctx context.Context, resolvedProps node.PropertyCont
 			OutputHandles: []string{"error"},
 		}
 	}
+	fmt.Println("props", props)
+	fmt.Println("resolvedProps", resolvedProps)
 
 	if props.APIKey == "" {
 		return node.NodeResult{
@@ -217,11 +245,24 @@ func (l *LLMActionNode) Run(ctx context.Context, resolvedProps node.PropertyCont
 	if props.ResponseFormat == "" {
 		props.ResponseFormat = "text"
 	}
-
-	// TODO: Implement actual LLM API calls based on provider
-	// For now, return a mock response indicating the parameters were processed
-	response := fmt.Sprintf("Mock LLM Response\nProvider: %s\nModel: %s\nBaseURL: %s\nSystem: %s\nUser: %s\nTemp: %.1f, MaxTokens: %d, TopP: %.1f, Format: %s",
-		props.Provider, props.Model, props.BaseURL, props.SystemPrompt, props.UserPrompt, props.Temperature, props.MaxTokens, props.TopP, props.ResponseFormat)
+	var response string
+	var err error
+	switch props.Provider {
+	case "anthropic":
+		response, err = anthropicApi(ctx, props)
+	case "openai":
+		response, err = openaiApi(ctx, props)
+	}
+	if err != nil {
+		return node.NodeResult{
+			Output: map[string]any{
+				"response": "",
+			},
+			Error:         err,
+			Continue:      true,
+			OutputHandles: []string{"error"},
+		}
+	}
 
 	return node.NodeResult{
 		Output: map[string]any{
@@ -231,4 +272,50 @@ func (l *LLMActionNode) Run(ctx context.Context, resolvedProps node.PropertyCont
 		Continue:      true,
 		OutputHandles: []string{"success"},
 	}
+}
+
+func anthropicApi(ctx context.Context, props llmActionProps) (response string, err error) {
+
+	client := anthropic.NewClient(
+		anthropicOption.WithAPIKey(props.APIKey),
+	)
+	message, err := client.Messages.New(ctx, anthropic.MessageNewParams{
+		MaxTokens: props.MaxTokens,
+		Messages: []anthropic.MessageParam{
+			anthropic.NewAssistantMessage(anthropic.NewTextBlock(props.SystemPrompt)),
+			anthropic.NewUserMessage(anthropic.NewTextBlock(props.UserPrompt)),
+		},
+		System: []anthropic.TextBlockParam{
+			{Text: props.SystemPrompt},
+		},
+		Model:       anthropic.Model(props.Model),
+		Temperature: anthropic.Float(props.Temperature),
+		TopP:        anthropic.Float(props.TopP),
+	})
+	if err != nil {
+		return "", err
+	}
+	response = message.Content[0].Text
+	return
+}
+
+func openaiApi(ctx context.Context, props llmActionProps) (response string, err error) {
+	client := openai.NewClient(
+		option.WithAPIKey(props.APIKey),
+	)
+	chatCompletion, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.SystemMessage(props.SystemPrompt),
+			openai.UserMessage(props.UserPrompt),
+		},
+		Model:       openai.ChatModel(props.Model),
+		Temperature: openai.Float(props.Temperature),
+		TopP:        openai.Float(props.TopP),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	response = chatCompletion.Choices[0].Message.Content
+	return
 }

@@ -11,10 +11,11 @@ import (
 // unique identifiers and property values.
 type Node struct {
 	node2.NodeInfo
-	Id         string               `json:"id"`         // Reference ID of the node type
-	LocalId    string               `json:"localId"`    // Unique instance ID for this node
-	Properties []node2.NodeProperty `json:"properties"` // Input properties with current values
-	Output     []node2.NodeProperty `json:"output"`     // Output properties with current values
+	Id            string               `json:"id"`            // Reference ID of the node type
+	LocalId       string               `json:"localId"`       // Unique instance ID for this node
+	Properties    []node2.NodeProperty `json:"properties"`    // Input properties with current values
+	Output        []node2.NodeProperty `json:"output"`        // Output properties with current values
+	OutputHandles []node2.OutputHandle `json:"outputHandles"` // Output handles with current values
 }
 
 // nodeStore manages workflow node definitions and instances.
@@ -49,7 +50,7 @@ func (t *nodeStore) GetNodeInfos() []node2.NodeInfo {
 
 // GetNodeInfosByType returns information about nodes of the specified type.
 // The nodeType parameter should be one of the valid node types (e.g., "action", "trigger", "branch").
-// 
+//
 // Returns an empty slice if the nodeType is not recognized or if no nodes
 // of that type are registered.
 func (t *nodeStore) GetNodeInfosByType(nodeType string) []node2.NodeInfo {
@@ -86,10 +87,11 @@ func (t *nodeStore) CreateNode(nodeId string) Node {
 		return Node{}
 	}
 	return Node{
-		Id:         node.Ref(),
-		LocalId:    uuid.New().String(),
-		NodeInfo:   node.Info(),
-		Properties: node.GetProperties(node2.PropertyContext{}),
-		Output:     node.GetOutput(node2.PropertyContext{}),
+		Id:            node.Ref(),
+		LocalId:       uuid.New().String(),
+		NodeInfo:      node.Info(),
+		Properties:    node.GetProperties(node2.PropertyContext{}),
+		Output:        node.GetOutput(node2.PropertyContext{}),
+		OutputHandles: node.GetOutputHandles(node2.PropertyContext{}),
 	}
 }

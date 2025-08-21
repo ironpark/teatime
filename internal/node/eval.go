@@ -1,9 +1,11 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/expr-lang/expr"
 	"github.com/samber/lo"
@@ -40,7 +42,7 @@ func ResolveInput(properties []NodeProperty, states WorkflowState) (resolvedProp
 				if err != nil {
 					return nil, fmt.Errorf("failed to cast binding value for property %s:%s (%w)", key, binding, err)
 				}
-			} else if strings.HasPrefix(v, "{{") && strings.HasSuffix(v, "}}") {
+			} else if strings.HasPrefix(v, "{{") && strings.HasSuffix(v, "}}") && value.Input.Type != InputTypeTextarea {
 				// it is a expression, evaluate it
 				expression := v[2 : len(v)-2]
 				resolvedProperties[key], err = Eval(expression, states)
@@ -52,6 +54,7 @@ func ResolveInput(properties []NodeProperty, states WorkflowState) (resolvedProp
 				if re.MatchString(v) {
 					expressions := re.FindAllString(v, -1)
 					for _, expression := range expressions {
+						fmt.Println("evaluating expression", expression, expression[2:len(expression)-2])
 						evaluated, err := Eval(expression[2:len(expression)-2], states)
 						if err != nil {
 							return nil, fmt.Errorf("failed to evaluate expression for property %s:%s (%w)", key, expression, err)
@@ -144,7 +147,22 @@ func Eval(expression string, states WorkflowState) (any, error) {
 	env["toString"] = func(v any) string {
 		return fmt.Sprintf("%v", v)
 	}
-
+	env["toJson"] = func(v any) string {
+		json, err := json.Marshal(v)
+		if err != nil {
+			return ""
+		}
+		return string(json)
+	}
+	env["unixTimestamp"] = func() int64 {
+		return time.Now().Unix()
+	}
+	env["currentDate"] = func() string {
+		return time.Now().Format("2006-01-02")
+	}
+	env["currentDateTime"] = func() string {
+		return time.Now().Format("2006-01-02T15:04:05")
+	}
 	// Compile and run the expression
 	// Use AllowUndefinedVariables option to return nil for undefined variables
 	program, err := expr.Compile(expression,
