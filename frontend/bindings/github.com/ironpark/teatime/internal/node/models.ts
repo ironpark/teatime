@@ -41,6 +41,11 @@ export class InputConfig {
      */
     "multiple"?: boolean;
 
+    /**
+     * For dynamic list inputs - ensure unique elements
+     */
+    "unique"?: boolean;
+
     /** Creates a new InputConfig instance. */
     constructor($$source: Partial<InputConfig> = {}) {
         if (!("type" in $$source)) {
@@ -117,6 +122,11 @@ export enum InputType {
      * Key-value pairs input
      */
     InputTypeKeyValue = 10,
+
+    /**
+     * Dynamic list input
+     */
+    InputTypeDynamicList = 11,
 };
 
 /**

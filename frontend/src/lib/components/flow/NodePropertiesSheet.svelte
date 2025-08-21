@@ -7,25 +7,28 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Settings, Plus, X } from 'lucide-svelte';
+	import { Settings } from 'lucide-svelte';
 	import type { Node } from '@xyflow/svelte';
 	import { InputType, type NodeProperty } from '$bindings/internal/node';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
 	import { useSvelteFlow } from '@xyflow/svelte';
+	import KeyValuePairsInput from './KeyValuePairsInput.svelte';
+	import DynamicListInput from './DynamicListInput.svelte';
+	import type { RecipeStore } from '$lib/stores/recipe.svelte';
 
-	let { updateNodeData } = useSvelteFlow();
+	const { updateNodeData } = useSvelteFlow();
 	
 	interface Props {
+		recipeStore: RecipeStore;
 		selectedNodes: Node[];
-		onNodeUpdate: (nodeId: string, updates: any) => void;
 		open?: boolean;
 		onOpenChange?: (open: boolean) => void;
 	}
 
-	let { selectedNodes = $bindable([]), onNodeUpdate, open = $bindable(false), onOpenChange }: Props = $props();
-	const selectedNode = $derived(selectedNodes?.[0]);
-
+	let { selectedNodes = $bindable([]), open = $bindable(false), onOpenChange, recipeStore }: Props = $props();
+	const selectedNodeId = $derived(selectedNodes?.[0]?.id);
+	const selectedNode = $derived(recipeStore.nodes.find(n => n.id === selectedNodeId));
 	function updateNodeProperty(field: string, value: any) {
 		if (selectedNode) {
 			updateNodeData(selectedNode.id, { [field]: value });
@@ -67,7 +70,7 @@
 		// If input config is provided, use it
 		if (prop.input) {
 			const inputConfig = prop.input;
-			
+			console.log('inputConfig',prop.key,prop.name, prop.type, inputConfig)
 			switch (inputConfig.type) {
 				case InputType.InputTypeRange:
 					return {
@@ -120,6 +123,14 @@
 				case InputType.InputTypeKeyValue:
 					return {
 						component: 'keyvalue'
+					};
+				case InputType.InputTypeDynamicList:
+					return {
+						component: 'dynamiclist',
+						itemType: inputConfig.placeholder === 'number' ? 'number' : 
+								 inputConfig.placeholder === 'textarea' ? 'textarea' : 'text',
+						placeholder: inputConfig.placeholder,
+						unique: inputConfig.unique || false
 					};
 				case InputType.InputTypeText:
 				default:
@@ -192,61 +203,6 @@
 		return str;
 	}
 
-	// Key-Value pairs helper functions
-	interface KeyValuePair {
-		key: string;
-		value: string;
-	}
-
-	function parseKeyValuePairs(value: any): KeyValuePair[] {
-		if (!value) return [{ key: '', value: '' }];
-		
-		if (typeof value === 'string') {
-			try {
-				const parsed = JSON.parse(value);
-				return Object.entries(parsed).map(([key, value]) => ({ 
-					key, 
-					value: String(value) 
-				}));
-			} catch {
-				return [{ key: '', value: '' }];
-			}
-		}
-		
-		if (typeof value === 'object') {
-			return Object.entries(value).map(([key, value]) => ({ 
-				key, 
-				value: String(value) 
-			}));
-		}
-		
-		return [{ key: '', value: '' }];
-	}
-
-	function updateKeyValuePairs(prop: NodeProperty, pairs: KeyValuePair[]) {
-		const obj: Record<string, string> = {};
-		pairs.forEach(pair => {
-			if (pair.key) {
-				obj[pair.key] = pair.value;
-			}
-		});
-		updateProperty(prop, obj);
-	}
-
-	function addKeyValuePair(prop: NodeProperty) {
-		const currentPairs = parseKeyValuePairs(prop.value);
-		currentPairs.push({ key: '', value: '' });
-		updateKeyValuePairs(prop, currentPairs);
-	}
-
-	function removeKeyValuePair(prop: NodeProperty, index: number) {
-		const currentPairs = parseKeyValuePairs(prop.value);
-		currentPairs.splice(index, 1);
-		if (currentPairs.length === 0) {
-			currentPairs.push({ key: '', value: '' });
-		}
-		updateKeyValuePairs(prop, currentPairs);
-	}
 </script>
 
 <Sheet.Root open={open} onOpenChange={(val) => {
@@ -421,42 +377,18 @@
 													</div>
 												</div>
 											{:else if inputConfig.component === 'keyvalue'}
-												{@const keyValuePairs = parseKeyValuePairs(prop.value)}
-												<div class="space-y-2">
-													{#each keyValuePairs as pair, index}
-														<div class="flex items-center gap-2">
-															<Input
-																placeholder="Key"
-																bind:value={pair.key}
-																oninput={() => updateKeyValuePairs(prop, keyValuePairs)}
-																class="flex-1"
-															/>
-															<Input
-																placeholder="Value"
-																bind:value={pair.value}
-																oninput={() => updateKeyValuePairs(prop, keyValuePairs)}
-																class="flex-1"
-															/>
-															<Button
-																variant="ghost"
-																size="icon"
-																onclick={() => removeKeyValuePair(prop, index)}
-																class="h-8 w-8 text-red-500 hover:text-red-700"
-															>
-																<X class="h-4 w-4" />
-															</Button>
-														</div>
-													{/each}
-													<Button
-														variant="outline"
-														size="sm"
-														onclick={() => addKeyValuePair(prop)}
-														class="w-full"
-													>
-														<Plus class="h-4 w-4 mr-2" />
-														Add Pair
-													</Button>
-												</div>
+												<KeyValuePairsInput bind:value={prop.value} onUpdate={(e)=>{
+													updateProperty(prop, e)
+													console.log('updateProperty', prop,e)
+												}} />
+											{:else if inputConfig.component === 'dynamiclist'}
+												<DynamicListInput 
+													value={prop.value} 
+													onUpdate={(value) => updateProperty(prop, value)}
+													itemType={inputConfig.itemType}
+													placeholder={inputConfig.placeholder || 'Enter item'}
+													unique={inputConfig.unique || false}
+												/>
 											{/if}
 										</div>
 								{/each}

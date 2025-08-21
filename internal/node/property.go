@@ -34,6 +34,7 @@ const (
 	InputTypeCheckbox                         // Checkbox
 	InputTypeExpression                       // Expression input
 	InputTypeKeyValue                         // Key-value pairs input
+	InputTypeDynamicList                      // Dynamic list input
 )
 
 // InputConfig defines the configuration for input UI
@@ -45,6 +46,7 @@ type InputConfig struct {
 	Placeholder string    `json:"placeholder,omitempty"` // For text and textarea inputs
 	Rows        int       `json:"rows,omitempty"`        // For textarea input
 	Multiple    bool      `json:"multiple,omitempty"`    // For select inputs
+	Unique      bool      `json:"unique,omitempty"`      // For dynamic list inputs - ensure unique elements
 }
 
 func (p PropertyType) String() string {

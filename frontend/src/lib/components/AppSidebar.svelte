@@ -48,7 +48,8 @@
 </script>
 
 <Sidebar>
-	<SidebarHeader>
+	<!-- mac os 에서는 35px 이상 패딩 필요 -->
+	<SidebarHeader class="pt-[35px]">
 		<a href="/" class="hover:bg-accent flex items-center gap-2 rounded-lg p-2 transition-colors">
 			<div class="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
 				<span class="text-primary-foreground text-sm font-bold">T</span>

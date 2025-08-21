@@ -129,11 +129,8 @@
 
 	<!-- Node Properties Sheet -->
 	<NodePropertiesSheet 
+		recipeStore={recipeStore}
 		bind:selectedNodes={recipeStore.selectedNodes} 
-		onNodeUpdate={(nodeId, updates) => {
-			console.log('Node updated:', nodeId, updates);
-			recipeStore.updateNodeData(nodeId, updates);
-		}} 
 		bind:open={propertiesSheetOpen}
 		onOpenChange={(open) => {
 			propertiesSheetOpen = open;

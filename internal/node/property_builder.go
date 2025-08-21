@@ -220,6 +220,17 @@ func Toggle() PropertyOption {
 	}
 }
 
+// DynamicList creates a dynamic list input
+func DynamicList(uniqueSet bool) PropertyOption {
+	return func(p *NodeProperty) {
+		if p.Input == nil {
+			p.Input = &InputConfig{}
+		}
+		p.Input.Type = InputTypeDynamicList
+		p.Input.Unique = uniqueSet
+	}
+}
+
 // Validation helpers
 
 // WithMinLength sets minimum length validation (for strings)
