@@ -7,7 +7,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Settings } from 'lucide-svelte';
+	import { Settings, Plus, X } from 'lucide-svelte';
 	import type { Node } from '@xyflow/svelte';
 	import { InputType, type NodeProperty } from '$bindings/internal/node';
 	import { Switch } from '$lib/components/ui/switch';
@@ -113,7 +113,14 @@
 					return {
 						component: 'checkbox'
 					};
-				
+				case InputType.InputTypeExpression:
+					return {
+						component: 'expression'
+					};
+				case InputType.InputTypeKeyValue:
+					return {
+						component: 'keyvalue'
+					};
 				case InputType.InputTypeText:
 				default:
 					return {
@@ -134,23 +141,38 @@
 				}))
 			};
 		}
-
+		// 0: 'invalid',
+		// 	1: 'boolean',
+		// 	2: 'int64',
+		// 	3: 'uint64', 
+		// 	4: 'float64',
+		// 	5: 'string',
+		// 	6: 'json',
+		// 	7: 'xml',
+		// 	8: 'date',
+		// 	9: 'string[]',
+		// 	10: 'number[]',
+		// 	11: 'boolean[]'
 		// Fall back to type-based rendering
 		switch (prop.type) {
 			case 1: // Bool
 				return {
 					component: 'switch'
 				};
-			case 2: // Float32
-			case 3: // Float64
-			case 4: // Int64
+			case 2: // Int64
+			case 3: // Uint64
+			case 4: // Float64
 				return {
 					component: 'input',
 					type: 'number'
 				};
+			case 5: // String
 			case 6: // JSON
 			case 7: // XML
-			case 9: // Text
+			case 8: // Date
+			case 9: // String[]
+			case 10: // Number[]
+			case 11: // Boolean[]
 				return {
 					component: 'textarea',
 					rows: 3
@@ -168,6 +190,62 @@
 			return str.charAt(0).toUpperCase() + str.slice(1);
 		}
 		return str;
+	}
+
+	// Key-Value pairs helper functions
+	interface KeyValuePair {
+		key: string;
+		value: string;
+	}
+
+	function parseKeyValuePairs(value: any): KeyValuePair[] {
+		if (!value) return [{ key: '', value: '' }];
+		
+		if (typeof value === 'string') {
+			try {
+				const parsed = JSON.parse(value);
+				return Object.entries(parsed).map(([key, value]) => ({ 
+					key, 
+					value: String(value) 
+				}));
+			} catch {
+				return [{ key: '', value: '' }];
+			}
+		}
+		
+		if (typeof value === 'object') {
+			return Object.entries(value).map(([key, value]) => ({ 
+				key, 
+				value: String(value) 
+			}));
+		}
+		
+		return [{ key: '', value: '' }];
+	}
+
+	function updateKeyValuePairs(prop: NodeProperty, pairs: KeyValuePair[]) {
+		const obj: Record<string, string> = {};
+		pairs.forEach(pair => {
+			if (pair.key) {
+				obj[pair.key] = pair.value;
+			}
+		});
+		updateProperty(prop, obj);
+	}
+
+	function addKeyValuePair(prop: NodeProperty) {
+		const currentPairs = parseKeyValuePairs(prop.value);
+		currentPairs.push({ key: '', value: '' });
+		updateKeyValuePairs(prop, currentPairs);
+	}
+
+	function removeKeyValuePair(prop: NodeProperty, index: number) {
+		const currentPairs = parseKeyValuePairs(prop.value);
+		currentPairs.splice(index, 1);
+		if (currentPairs.length === 0) {
+			currentPairs.push({ key: '', value: '' });
+		}
+		updateKeyValuePairs(prop, currentPairs);
 	}
 </script>
 
@@ -242,7 +320,6 @@
 							<!-- Dynamic Properties -->
 							{#if selectedNode.data.properties && Array.isArray(selectedNode.data.properties)}
 								{#each selectedNode.data.properties as prop (prop.key)}
-									{#if !prop.optional || prop.value}
 										{@const inputConfig = renderPropertyInput(prop)}
 										<div class="space-y-1.5">
 											<div class="flex items-center justify-between">
@@ -329,9 +406,59 @@
 														</SelectGroup>
 													</SelectContent>
 												</Select>
+											{:else if inputConfig.component === 'expression'}
+												<div class="space-y-2">
+													<Textarea
+														id={`prop-${prop.key}`}
+														bind:value={prop.value}
+														oninput={(e) => updateProperty(prop, e.currentTarget.value)}
+														rows={3}
+														placeholder="{'{'}expression{'}'} or @[binding]"
+														class="font-mono text-sm"
+													/>
+													<div class="text-xs text-muted-foreground">
+														Use {'{'}expression{'}'} for calculations or @[nodeName.output.field] for bindings
+													</div>
+												</div>
+											{:else if inputConfig.component === 'keyvalue'}
+												{@const keyValuePairs = parseKeyValuePairs(prop.value)}
+												<div class="space-y-2">
+													{#each keyValuePairs as pair, index}
+														<div class="flex items-center gap-2">
+															<Input
+																placeholder="Key"
+																bind:value={pair.key}
+																oninput={() => updateKeyValuePairs(prop, keyValuePairs)}
+																class="flex-1"
+															/>
+															<Input
+																placeholder="Value"
+																bind:value={pair.value}
+																oninput={() => updateKeyValuePairs(prop, keyValuePairs)}
+																class="flex-1"
+															/>
+															<Button
+																variant="ghost"
+																size="icon"
+																onclick={() => removeKeyValuePair(prop, index)}
+																class="h-8 w-8 text-red-500 hover:text-red-700"
+															>
+																<X class="h-4 w-4" />
+															</Button>
+														</div>
+													{/each}
+													<Button
+														variant="outline"
+														size="sm"
+														onclick={() => addKeyValuePair(prop)}
+														class="w-full"
+													>
+														<Plus class="h-4 w-4 mr-2" />
+														Add Pair
+													</Button>
+												</div>
 											{/if}
 										</div>
-									{/if}
 								{/each}
 							{/if}
 						</div>
