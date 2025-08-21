@@ -63,14 +63,6 @@ func TestEval(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "use $ref variable",
-			expression: "$ref",
-			states:     map[string]any{},
-			ref:        "current-node",
-			want:       "current-node",
-			wantErr:    false,
-		},
-		{
 			name:       "len function with string",
 			expression: `len("hello")`,
 			states:     map[string]any{},
@@ -194,7 +186,7 @@ func TestEval(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Eval(tt.expression, tt.states, tt.ref)
+			got, err := Eval(tt.expression, tt.states)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Eval() error = %v, wantErr %v", err, tt.wantErr)
 				return

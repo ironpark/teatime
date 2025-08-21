@@ -185,7 +185,7 @@ func (r *recipesStore) CreateRecipe(name, description string) (id string, recipe
 			RecipePath:  recipePath,
 			Tags:        genTags(recipe),
 			NodeTypes:   genNodeTypes(recipe),
-			NodeCount:   int64(len(recipe.Nodes)),
+			NodeCount:   0,
 		})
 		if err != nil {
 			// Clean up file if database insert fails
@@ -343,7 +343,7 @@ func (r *recipesStore) GetExecutionsByRecipe(recipeID string) ([]database.Execut
 }
 
 func genNodeTypes(recipe *rc.Recipe) string {
-	if len(recipe.Nodes) == 0 {
+	if recipe == nil || len(recipe.Nodes) == 0 {
 		return ""
 	}
 	types := lo.Uniq(lo.Map(recipe.Nodes, func(node rc.Node, _ int) string {
@@ -357,7 +357,7 @@ func genNodeTypes(recipe *rc.Recipe) string {
 }
 
 func genTags(recipe *rc.Recipe) string {
-	if len(recipe.Nodes) == 0 {
+	if recipe == nil || len(recipe.Nodes) == 0 {
 		return ""
 	}
 	tags := lo.Uniq(lo.Map(recipe.Nodes, func(node rc.Node, _ int) string {

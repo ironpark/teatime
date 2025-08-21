@@ -107,6 +107,16 @@ export enum InputType {
      * Checkbox
      */
     InputTypeCheckbox = 8,
+
+    /**
+     * Expression input
+     */
+    InputTypeExpression = 9,
+
+    /**
+     * Key-value pairs input
+     */
+    InputTypeKeyValue = 10,
 };
 
 /**

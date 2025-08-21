@@ -1,10 +1,5 @@
 package node
 
-import (
-	"context"
-	"fmt"
-)
-
 // BaseNode provides a default implementation of the Node interface.
 // It should be embedded in concrete node implementations.
 type BaseNode struct {
@@ -26,14 +21,14 @@ func NewBaseNode(ref string, nodeType NodeType, name string, description string,
 	if icon != "" {
 		nodeInfo.Icon = icon
 	}
-	
+
 	// If no output handles specified, create a default one
 	if outputHandles == nil {
 		outputHandles = []OutputHandle{
 			{ID: "default"},
 		}
 	}
-	
+
 	return BaseNode{
 		nodeInfo:      nodeInfo,
 		properties:    properties,
@@ -128,16 +123,6 @@ func (r *BaseNode) GetOutputHandles(ctx PropertyContext) []OutputHandle {
 
 // ValidateProperties validates the input properties for the node.
 // Default implementation does nothing, but concrete nodes can override this for custom validation.
-func (r *BaseNode) ValidateProperties(input map[string]any) error {
+func (r *BaseNode) ValidateProperties(input PropertyContext) error {
 	return nil
-}
-
-// Run executes the node logic. This method panics by default and must be
-// overridden by concrete implementations.
-func (r *BaseNode) Run(ctx context.Context, states map[string]any) (result NodeResult) {
-	return NodeResult{
-		Output:   nil,
-		Error:    fmt.Errorf("%s [%s] not implemented please override Run(ctx, params) method", r.nodeInfo.Name, r.nodeInfo.Ref),
-		Continue: false,
-	}
 }

@@ -43,22 +43,21 @@
 		}
 	}
 
+	// Helper function to get property type display
 	function getPropertyTypeDisplay(propType: number): string {
 		const typeMap: Record<number, string> = {
+			0: 'invalid',
 			1: 'boolean',
-			2: 'number',
-			3: 'int32',
-			4: 'int64',
+			2: 'int64',
+			3: 'uint64', 
+			4: 'float64',
 			5: 'string',
 			6: 'json',
 			7: 'xml',
 			8: 'date',
-			9: 'text',
-			10: 'string[]',
-			11: 'number[]',
-			12: 'boolean[]',
-			13: 'json[]',
-			14: 'xml[]'
+			9: 'string[]',
+			10: 'number[]',
+			11: 'boolean[]'
 		};
 		return typeMap[propType] || 'unknown';
 	}

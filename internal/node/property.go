@@ -32,6 +32,8 @@ const (
 	InputTypeMultiSelect                      // Multiple selection
 	InputTypeSwitch                           // Toggle switch
 	InputTypeCheckbox                         // Checkbox
+	InputTypeExpression                       // Expression input
+	InputTypeKeyValue                         // Key-value pairs input
 )
 
 // InputConfig defines the configuration for input UI
@@ -101,7 +103,6 @@ type NodeProperty struct {
 func Float64Ptr(v float64) *float64 {
 	return &v
 }
-
 
 func (p *NodeProperty) ValidateValue(v any) error {
 	return ValidatePropertyValue(p.Type, v, p.Optional)

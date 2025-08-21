@@ -27,7 +27,7 @@
 	const config = nodeConfigs[nodeType as keyof typeof nodeConfigs] || nodeConfigs.util
 	// Get icon from data
 	const iconString = $derived.by(() => data.nodeIcon || data.icon || null);
-
+	console.log(data);
 	// Get properties array if available (filter out optional properties without values)
 	const properties = $derived.by(() => {
 		if (Array.isArray(data.properties)) {
@@ -46,6 +46,15 @@
 		return [];
 	});
 
+	// Get output handles array if available
+	const outputHandles = $derived.by(() => {
+		if (Array.isArray(data.outputHandles)) {
+			return data.outputHandles as Array<{id: string, label?: string, description?: string}>;
+		}
+		// Return default handle if no output handles are specified
+		return [{id: 'default', label: 'Output'}];
+	});
+
 	// Determine handle type based on node type
 	const handleType = $derived.by(() => {
 		if (nodeType === 'trigger') return 'source';
@@ -57,28 +66,22 @@
 	// Helper function to get property type display
 	function getPropertyTypeDisplay(propType: number): string {
 		const typeMap: Record<number, string> = {
+			0: 'invalid',
 			1: 'boolean',
-			2: 'number',
-			3: 'number',
-			4: 'number',
+			2: 'int64',
+			3: 'uint64', 
+			4: 'float64',
 			5: 'string',
 			6: 'json',
 			7: 'xml',
 			8: 'date',
-			9: 'text',
-			10: 'string[]',
-			11: 'number[]',
-			12: 'boolean[]',
-			13: 'json[]',
-			14: 'xml[]'
+			9: 'string[]',
+			10: 'number[]',
+			11: 'boolean[]'
 		};
 		return typeMap[propType] || 'unknown';
 	}
 </script>
-
-{#if handleType === 'target' || handleType === 'both'}
-	<Handle type="target" position={Position.Left} {isConnectable} />
-{/if}
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
@@ -189,9 +192,36 @@
 			</div>
 		{/if}
 
+
+
 	</div>
 </div>
 
-{#if handleType === 'source' || handleType === 'both'}
-	<Handle type="source" position={Position.Right} {isConnectable} />
+{#if handleType === 'target' || handleType === 'both'}
+	<Handle type="target" position={Position.Left} {isConnectable} />
 {/if}
+
+<!-- Multiple output handles - stack them vertically -->
+
+{#each outputHandles as handle, index}
+	{#if handle.label == 'Else'}
+		<Handle 
+			id={handle.id}	
+			type="source" 
+			position={Position.Bottom}>
+			<div class="flex flex-col items-center justify-center absolute top-3 left-0">
+				<span class="text-xs text-zinc-800 bg-gray-100 rounded-md px-1 py-0.5">{handle.label || handle.id}</span>
+			</div>
+		</Handle>
+	{:else}
+		<Handle 
+			id={handle.id}
+			type="source" 
+			position={Position.Right} 
+			style="top: {40 + (index * 55)}px; width: 12px; height: 12px; background-color: rgba(255, 255, 255, 0.8); border-radius: 3px; border: 1px solid black; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);">
+			<div class="flex flex-col items-center justify-center absolute top-3 left-0">
+				<span class="text-xs text-zinc-800 bg-gray-100 rounded-md px-1 py-0.5">{handle.label || handle.id}</span>
+			</div>
+		</Handle>
+	{/if}
+{/each}

@@ -1,6 +1,10 @@
 package branch
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/node"
 )
 
@@ -13,29 +17,10 @@ func init() {
 			"조건에 따라 워크플로우를 분기하는 브랜치 노드입니다.",
 			"GitBranch",
 			[]node.NodeProperty{
-				node.StringProp("leftValue", "Left Value",
-					node.WithDescription("비교할 왼쪽 값"),
+				node.BoolProp("expression", "Expression",
+					node.WithDescription("조건 표현식 예: {{node1.output.value > 10}}"),
 					node.Required(),
-				),
-				node.SelectProp("operator", "Operator", []string{"==", "!=", ">", "<", ">=", "<=", "contains", "startsWith", "endsWith", "regex", "isEmpty", "isNotEmpty"},
-					node.WithDescription("비교 연산자"),
-					node.RequiredWithDefault("=="),
-				),
-				node.StringProp("rightValue", "Right Value",
-					node.WithDescription("비교할 오른쪽 값"),
-					node.Required(),
-				),
-				node.SelectProp("dataType", "Data Type", []string{"string", "number", "boolean", "json"},
-					node.WithDescription("데이터 타입"),
-					node.OptionalWithDefault("string"),
-				),
-				node.BoolProp("caseSensitive", "Case Sensitive",
-					node.WithDescription("대소문자 구분 (문자열 비교 시)"),
-					node.OptionalWithDefault(true),
-				),
-				node.SelectProp("defaultBranch", "Default Branch", []string{"true", "false", "error"},
-					node.WithDescription("조건이 실패할 때 기본 분기"),
-					node.OptionalWithDefault("false"),
+					node.Expression(),
 				),
 			},
 			[]node.NodeProperty{
@@ -45,19 +30,57 @@ func init() {
 				node.OutputProp(node.Bool, "conditionResult", "Condition Result",
 					node.WithDescription("조건 평가 결과"),
 				),
-				node.OutputProp(node.JSON, "outputValue", "Output Value",
-					node.WithDescription("분기에서 출력된 값"),
-				),
 			},
 			[]node.OutputHandle{
-				{ID: "true", Label: "True", Description: "조건이 참일 때 실행"},
-				{ID: "false", Label: "False", Description: "조건이 거짓일 때 실행"},
+				{ID: "true", Label: "Then", Description: "조건이 참일 때 실행"},
+				{ID: "false", Label: "Else", Description: "조건이 거짓일 때 실행"},
 			},
 		),
 	})
 }
 
-// 조건에 따라 워크플로우를 분기하는 브랜치 노드
+type conditionalBranchProps struct {
+	Expression bool `mapstructure:"expression"`
+}
+
+// ConditionalBranchNode evaluates a condition and routes workflow execution based on the result.
 type ConditionalBranchNode struct {
 	node.BaseNode
+}
+
+// Run executes the conditional branch logic.
+func (c *ConditionalBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+	// Extract parameters using mapstructure
+	var props conditionalBranchProps
+	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
+		return node.NodeResult{
+			Error:         fmt.Errorf("failed to decode properties: %w", err),
+			Continue:      false,
+			OutputHandles: []string{"false"},
+		}
+	}
+
+	// Use the resolved boolean value directly
+	conditionResult := props.Expression
+
+	// Determine output handle and branch taken
+	var outputHandle string
+	var branchTaken string
+	if conditionResult {
+		outputHandle = "true"
+		branchTaken = "true"
+	} else {
+		outputHandle = "false"
+		branchTaken = "false"
+	}
+
+	return node.NodeResult{
+		Output: map[string]any{
+			"branchTaken":     branchTaken,
+			"conditionResult": conditionResult,
+		},
+		Error:         nil,
+		Continue:      true,
+		OutputHandles: []string{outputHandle},
+	}
 }

@@ -4,6 +4,7 @@ package node
 
 import (
 	"context"
+	"fmt"
 )
 
 // NodeType represents the category of a workflow node.
@@ -55,6 +56,44 @@ type NodeResult struct {
 // dynamically adjust their properties and outputs.
 type PropertyContext map[string]any
 
+// WorkflowState represents the global state of a workflow execution.
+// It stores all node inputs and outputs with structured keys for easy access.
+type WorkflowState map[string]any
+
+// GetOutput retrieves an output value from a specific node.
+func (ws WorkflowState) GetOutput(nodeId string, key string) any {
+	return ws[fmt.Sprintf("%s.output.%s", nodeId, key)]
+}
+
+// GetInput retrieves an input value from a specific node.
+func (ws WorkflowState) GetInput(nodeId string, key string) any {
+	return ws[fmt.Sprintf("%s.input.%s", nodeId, key)]
+}
+
+// SetOutput sets an output value for a specific node.
+func (ws WorkflowState) SetOutput(nodeId string, key string, value any) {
+	ws[fmt.Sprintf("%s.output.%s", nodeId, key)] = value
+}
+
+// SetOutputs sets multiple output values for a specific node.
+func (ws WorkflowState) SetOutputs(nodeId string, outputs map[string]any) {
+	for key, value := range outputs {
+		ws.SetOutput(nodeId, key, value)
+	}
+}
+
+// SetInput sets an input value for a specific node.
+func (ws WorkflowState) SetInput(nodeId string, key string, value any) {
+	ws[fmt.Sprintf("%s.input.%s", nodeId, key)] = value
+}
+
+// SetInputs sets multiple input values for a specific node.
+func (ws WorkflowState) SetInputs(nodeId string, inputs map[string]any) {
+	for key, value := range inputs {
+		ws.SetInput(nodeId, key, value)
+	}
+}
+
 // OutputHandle represents a connection point from a node.
 // Nodes can have multiple output handles for different execution paths.
 type OutputHandle struct {
@@ -87,7 +126,7 @@ type Node interface {
 	// Info returns the complete metadata for the node.
 	Info() NodeInfo
 	// Run executes the node with the given context and state.
-	Run(ctx context.Context, states map[string]any) (result NodeResult)
+	Run(ctx context.Context, resolvedProperties PropertyContext, states WorkflowState) (result NodeResult)
 	// ValidateProperties validates the properties of the node.
-	ValidateProperties(input map[string]any) error
+	ValidateProperties(input PropertyContext) error
 }

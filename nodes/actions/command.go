@@ -1,6 +1,11 @@
 package actions
 
 import (
+	"context"
+	"fmt"
+	"os/exec"
+	"time"
+
 	"github.com/ironpark/teatime/internal/node"
 )
 
@@ -37,14 +42,78 @@ func init() {
 					node.WithDescription("오류 메시지입니다."),
 				),
 			},
-			nil, // Use default output handle
+			[]node.OutputHandle{
+				{
+					ID:          "success",
+					Label:       "Success",
+					Description: "Success output handle",
+				},
+				{
+					ID:          "error",
+					Label:       "Error",
+					Description: "Error output handle",
+				},
+			},
 		),
 	})
 }
 
-// 명령어를 실행하는 액션 노드
+// CommandActionNode executes system commands and captures their output.
 type CommandActionNode struct {
 	node.BaseNode
-	customParams []node.NodeProperty
 }
 
+// Run executes the configured system command and returns the result.
+func (c *CommandActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+	// Extract command parameters
+	command, ok := resolvedProps["command"].(string)
+	if !ok || command == "" {
+		return node.NodeResult{
+			Error:         fmt.Errorf("command is required"),
+			Continue:      false,
+			OutputHandles: []string{"default"},
+		}
+	}
+
+	workdir, _ := resolvedProps["workdir"].(string)
+	timeoutSecs, _ := resolvedProps["timeout"].(int64)
+	if timeoutSecs <= 0 {
+		timeoutSecs = 30
+	}
+
+	// Create command context with timeout
+	cmdCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSecs)*time.Second)
+	defer cancel()
+
+	// Execute command
+	cmd := exec.CommandContext(cmdCtx, "sh", "-c", command)
+	if workdir != "" {
+		cmd.Dir = workdir
+	}
+
+	output, err := cmd.CombinedOutput()
+	exitCode := 0
+	errorMsg := ""
+	var handles []string
+	if err != nil {
+		errorMsg = err.Error()
+		if exitError, ok := err.(*exec.ExitError); ok {
+			exitCode = exitError.ExitCode()
+		} else {
+			exitCode = 1
+		}
+		handles = []string{"error"}
+	} else {
+		handles = []string{"success"}
+	}
+	return node.NodeResult{
+		Output: map[string]any{
+			"output":   string(output),
+			"exitCode": int64(exitCode),
+			"error":    errorMsg,
+		},
+		Error:         nil,
+		Continue:      true,
+		OutputHandles: handles,
+	}
+}

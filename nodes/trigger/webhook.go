@@ -1,6 +1,11 @@
 package trigger
 
 import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/node"
 )
 
@@ -13,8 +18,20 @@ func init() {
 			"Webhook을 통해 워크플로우를 실행하는 트리거 노드입니다.",
 			"Webhook",
 			[]node.NodeProperty{
-				node.StringProp("url", "URL",
-					node.WithDescription("Webhook URL을 입력하세요"),
+				node.StringProp("path", "Path",
+					node.WithDescription("Webhook 경로 (예: /webhook/my-trigger)"),
+					node.Required(),
+				),
+				node.SelectProp("method", "HTTP Method", []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
+					node.WithDescription("허용할 HTTP 메서드"),
+					node.OptionalWithDefault("POST"),
+				),
+				node.BoolProp("requireAuth", "Require Authentication",
+					node.WithDescription("인증 필요 여부"),
+					node.OptionalWithDefault(false),
+				),
+				node.StringProp("secret", "Secret",
+					node.WithDescription("Webhook 검증을 위한 시크릿 키"),
 					node.Optional(),
 				),
 			},
@@ -22,16 +39,194 @@ func init() {
 				node.OutputProp(node.Date, "timestamp", "Timestamp",
 					node.WithDescription("호출시점의 날짜와 시간입니다."),
 				),
+				node.OutputProp(node.String, "method", "HTTP Method",
+					node.WithDescription("요청 HTTP 메서드입니다."),
+				),
+				node.OutputProp(node.String, "path", "Request Path",
+					node.WithDescription("요청 경로입니다."),
+				),
+				node.OutputProp(node.JSON, "headers", "Headers",
+					node.WithDescription("요청 헤더들입니다."),
+				),
+				node.OutputProp(node.JSON, "query", "Query Parameters",
+					node.WithDescription("쿼리 파라미터들입니다."),
+				),
 				node.OutputProp(node.JSON, "body", "Request Body",
 					node.WithDescription("요청 바디입니다."),
 				),
+				node.OutputProp(node.String, "remoteAddr", "Remote Address",
+					node.WithDescription("요청자 IP 주소입니다."),
+				),
 			},
-			nil, // Use default output handle
+			[]node.OutputHandle{
+				{
+					ID:          "success",
+					Label:       "Triggered",
+					Description: "Webhook successfully triggered",
+				},
+				{
+					ID:          "unauthorized",
+					Label:       "Unauthorized",
+					Description: "Authentication failed",
+				},
+			},
 		),
 	})
 }
 
-// Webhook을 통해 워크플로우를 실행하는 트리거 노드
+type webhookTriggerProps struct {
+	Path        string `mapstructure:"path"`
+	Method      string `mapstructure:"method"`
+	RequireAuth bool   `mapstructure:"requireAuth"`
+	Secret      string `mapstructure:"secret"`
+}
+
+// WebhookTriggerNode triggers workflow execution via HTTP webhooks.
 type WebhookTriggerNode struct {
 	node.BaseNode
+}
+
+// Run executes the webhook trigger logic.
+// This is called when an HTTP request is received on the configured path.
+func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+	// Extract parameters using mapstructure
+	var props webhookTriggerProps
+	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
+		return node.NodeResult{
+			Error:         fmt.Errorf("failed to decode properties: %w", err),
+			Continue:      false,
+			OutputHandles: []string{"success"},
+		}
+	}
+
+	// Get current timestamp
+	timestamp := time.Now()
+
+	// Extract request information from states (would be populated by the HTTP server)
+	method := ""
+	if m, ok := states["method"].(string); ok {
+		method = m
+	}
+
+	path := ""
+	if p, ok := states["path"].(string); ok {
+		path = p
+	}
+
+	headers := make(map[string]any)
+	if h, ok := states["headers"].(map[string]any); ok {
+		headers = h
+	}
+
+	query := make(map[string]any)
+	if q, ok := states["query"].(map[string]any); ok {
+		query = q
+	}
+
+	body := make(map[string]any)
+	if b, ok := states["body"].(map[string]any); ok {
+		body = b
+	}
+
+	remoteAddr := ""
+	if r, ok := states["remoteAddr"].(string); ok {
+		remoteAddr = r
+	}
+
+	// Check authentication if required
+	if props.RequireAuth {
+		authenticated := false
+
+		// Check for secret in different places
+		if props.Secret != "" {
+			// Check Authorization header
+			if auth, ok := headers["authorization"].(string); ok && auth == "Bearer "+props.Secret {
+				authenticated = true
+			}
+			// Check X-Secret header
+			if secret, ok := headers["x-secret"].(string); ok && secret == props.Secret {
+				authenticated = true
+			}
+			// Check secret query parameter
+			if secret, ok := query["secret"].(string); ok && secret == props.Secret {
+				authenticated = true
+			}
+		}
+
+		if !authenticated {
+			return node.NodeResult{
+				Output: map[string]any{
+					"timestamp":  timestamp,
+					"method":     method,
+					"path":       path,
+					"headers":    headers,
+					"query":      query,
+					"body":       body,
+					"remoteAddr": remoteAddr,
+				},
+				Error:         fmt.Errorf("authentication failed"),
+				Continue:      true,
+				OutputHandles: []string{"unauthorized"},
+			}
+		}
+	}
+
+	// Check if method is allowed
+	if props.Method != "" && method != "" && method != props.Method {
+		return node.NodeResult{
+			Output: map[string]any{
+				"timestamp":  timestamp,
+				"method":     method,
+				"path":       path,
+				"headers":    headers,
+				"query":      query,
+				"body":       body,
+				"remoteAddr": remoteAddr,
+			},
+			Error:         fmt.Errorf("method %s not allowed, expected %s", method, props.Method),
+			Continue:      true,
+			OutputHandles: []string{"unauthorized"},
+		}
+	}
+
+	return node.NodeResult{
+		Output: map[string]any{
+			"timestamp":  timestamp,
+			"method":     method,
+			"path":       path,
+			"headers":    headers,
+			"query":      query,
+			"body":       body,
+			"remoteAddr": remoteAddr,
+		},
+		Error:         nil,
+		Continue:      true,
+		OutputHandles: []string{"success"},
+	}
+}
+
+// GetWebhookPath returns the webhook path for HTTP server registration.
+func (w *WebhookTriggerNode) GetWebhookPath() string {
+	props := w.GetProperties(node.PropertyContext{})
+	for _, prop := range props {
+		if prop.Key == "path" {
+			if path, ok := prop.Value.(string); ok {
+				return path
+			}
+		}
+	}
+	return ""
+}
+
+// GetAllowedMethod returns the allowed HTTP method.
+func (w *WebhookTriggerNode) GetAllowedMethod() string {
+	props := w.GetProperties(node.PropertyContext{})
+	for _, prop := range props {
+		if prop.Key == "method" {
+			if method, ok := prop.Value.(string); ok {
+				return method
+			}
+		}
+	}
+	return "POST"
 }

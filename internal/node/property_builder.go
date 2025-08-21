@@ -128,6 +128,26 @@ func Multiple() PropertyOption {
 	}
 }
 
+// Expression creates an expression input
+func Expression() PropertyOption {
+	return func(p *NodeProperty) {
+		if p.Input == nil {
+			p.Input = &InputConfig{}
+		}
+		p.Input.Type = InputTypeExpression
+	}
+}
+
+// KeyValue creates a key-value pairs input
+func KeyValue() PropertyOption {
+	return func(p *NodeProperty) {
+		if p.Input == nil {
+			p.Input = &InputConfig{}
+		}
+		p.Input.Type = InputTypeKeyValue
+	}
+}
+
 // Common preset options for convenience
 
 // RequiredWithDefault sets a property as required with a default value
@@ -155,7 +175,7 @@ func RangeSlider(min, max float64) PropertyOption {
 		p.Input.Type = InputTypeRange
 		p.Input.Min = &min
 		p.Input.Max = &max
-		
+
 		// Auto-calculate step based on range
 		step := (max - min) / 100
 		if p.Type == Int64 || p.Type == Uint64 {
@@ -244,7 +264,7 @@ func NewProp(propertyType PropertyType, key, name string, opts ...PropertyOption
 		Optional: false, // Required by default
 		Input:    &InputConfig{},
 	}
-	
+
 	// Set default input type based on property type
 	switch propertyType {
 	case Bool:
@@ -260,12 +280,12 @@ func NewProp(propertyType PropertyType, key, name string, opts ...PropertyOption
 		prop.Input.Type = InputTypeMultiSelect
 		prop.Input.Multiple = true
 	}
-	
+
 	// Apply options
 	for _, opt := range opts {
 		opt(&prop)
 	}
-	
+
 	return prop
 }
 

@@ -6,6 +6,7 @@ toolchain go1.24.4
 
 require (
 	github.com/expr-lang/expr v1.17.6
+	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/uuid v1.6.0
 	github.com/pressly/goose/v3 v3.24.3

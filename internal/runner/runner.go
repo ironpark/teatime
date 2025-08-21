@@ -81,14 +81,19 @@ func startNode(ctx context.Context, state *runState, node recipe.Node, propertie
 		return nil
 	}
 	rawNode := node.GetRawNode()
-	// validate node input
-	propCtx := n.PropertyContext(properties)
-	err := n.ValidateProperties(rawNode.GetProperties(propCtx), properties)
+	resolvedProperties, err := n.ResolveInput(node.Properties, state.states)
 	if err != nil {
 		callback(state.recipe, StateError, node, nil, err)
 		return err
 	}
-	err = rawNode.ValidateProperties(properties)
+	// validate node input
+	err = n.ValidateProperties(node.Properties, resolvedProperties)
+	if err != nil {
+		callback(state.recipe, StateError, node, nil, err)
+		return err
+	}
+
+	err = rawNode.ValidateProperties(resolvedProperties)
 	if err != nil {
 		callback(state.recipe, StateError, node, nil, err)
 		return err
@@ -122,7 +127,7 @@ func executeNode(ctx context.Context, state *runState, node recipe.Node, callbac
 	resultChannel := state.getNodeResultChannel(node.Id)
 	callback(state.recipe, StateRun, node, nil, nil)
 	// run node
-	result := rawNode.Run(ctx, state.states)
+	result := rawNode.Run(ctx, state.states, state.states)
 	if result.Error != nil {
 		callback(state.recipe, StateError, node, nil, result.Error)
 		resultChannel <- result.Error
@@ -152,7 +157,7 @@ func executeNode(ctx context.Context, state *runState, node recipe.Node, callbac
 			nextResultChannel <- fmt.Errorf("next node %s has no raw node", nextNode.Id)
 			return
 		}
-		nextInput, err := n.ResolveInput(rawNextNode, state.states)
+		nextInput, err := n.ResolveInput(nextNode.Properties, state.states)
 		if err != nil {
 			callback(state.recipe, StateError, nextNode, nil, err)
 			nextResultChannel <- err

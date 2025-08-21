@@ -16,9 +16,8 @@ import (
 //   - Plain values: returned as-is
 //
 // Returns a map of resolved property values ready for node execution.
-func ResolveInput(node Node, states map[string]any) (resolvedProperties map[string]any, err error) {
+func ResolveInput(properties []NodeProperty, states WorkflowState) (resolvedProperties map[string]any, err error) {
 	re := regexp.MustCompile(`{{.*}}`)
-	properties := node.GetProperties(PropertyContext(states))
 	propertiesMap := lo.Reduce(properties, func(acc map[string]NodeProperty, property NodeProperty, _ int) map[string]NodeProperty {
 		acc[property.Key] = property
 		return acc
@@ -41,7 +40,7 @@ func ResolveInput(node Node, states map[string]any) (resolvedProperties map[stri
 			} else if strings.HasPrefix(v, "{{") && strings.HasSuffix(v, "}}") {
 				// it is a expression, evaluate it
 				expression := v[2 : len(v)-2]
-				resolvedProperties[key], err = Eval(expression, states, node.Ref())
+				resolvedProperties[key], err = Eval(expression, states)
 				if err != nil {
 					return nil, fmt.Errorf("failed to evaluate expression for property %s:%s (%w)", key, expression, err)
 				}
@@ -50,7 +49,7 @@ func ResolveInput(node Node, states map[string]any) (resolvedProperties map[stri
 				if re.MatchString(v) {
 					expressions := re.FindAllString(v, -1)
 					for _, expression := range expressions {
-						evaluated, err := Eval(expression[2:len(expression)-2], states, node.Ref())
+						evaluated, err := Eval(expression[2:len(expression)-2], states)
 						if err != nil {
 							return nil, fmt.Errorf("failed to evaluate expression for property %s:%s (%w)", key, expression, err)
 						}
@@ -78,13 +77,12 @@ func ResolveInput(node Node, states map[string]any) (resolvedProperties map[stri
 //   - Direct key-value pairs for other workflow data
 //
 // Built-in functions include: len(), strContains(), toLowerCase(), toUpperCase(), toString()
-// Special variables: $ref contains the current node's reference ID
-func Eval(expression string, states map[string]any, ref string) (any, error) {
+func Eval(expression string, states WorkflowState) (any, error) {
 	expression = strings.TrimSpace(expression)
-	
+
 	// Create evaluation environment with states and built-in variables
 	env := make(map[string]any)
-	
+
 	// Parse states and create nested structure for better access
 	for key, value := range states {
 		parts := strings.Split(key, ".")
@@ -93,7 +91,7 @@ func Eval(expression string, states map[string]any, ref string) (any, error) {
 			nodeId := parts[0]
 			nodeType := parts[1]
 			property := parts[2]
-			
+
 			// Create nested structure if not exists
 			if _, ok := env[nodeId]; !ok {
 				env[nodeId] = make(map[string]any)
@@ -111,10 +109,7 @@ func Eval(expression string, states map[string]any, ref string) (any, error) {
 			env[key] = value
 		}
 	}
-	
-	// Add special variables
-	env["$ref"] = ref
-	
+
 	// Add built-in functions
 	env["len"] = func(v any) int {
 		switch val := v.(type) {
@@ -128,7 +123,7 @@ func Eval(expression string, states map[string]any, ref string) (any, error) {
 			return 0
 		}
 	}
-	
+
 	// Add all functions to env - expr will recognize them
 	// Use strContains to avoid conflict with expr's "contains" operator
 	env["strContains"] = func(str, substr string) bool {
@@ -136,24 +131,24 @@ func Eval(expression string, states map[string]any, ref string) (any, error) {
 	}
 	env["toLowerCase"] = strings.ToLower
 	env["toUpperCase"] = strings.ToUpper
-	
+
 	env["toString"] = func(v any) string {
 		return fmt.Sprintf("%v", v)
 	}
-	
+
 	// Compile and run the expression
 	// Use AllowUndefinedVariables option to return nil for undefined variables
-	program, err := expr.Compile(expression, 
+	program, err := expr.Compile(expression,
 		expr.Env(env),
 		expr.AllowUndefinedVariables())
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile expression: %w", err)
 	}
-	
+
 	result, err := expr.Run(program, env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
-	
+
 	return result, nil
 }
