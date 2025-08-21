@@ -152,6 +152,7 @@ func ValidateProperties(properties []NodeProperty, input map[string]any) error {
 		if !ok {
 			return fmt.Errorf("property %s is required", property.Key)
 		}
+		fmt.Printf("property %s: %v, value type: %T\n", property.Key, value, value)
 		if err := property.ValidateValue(value); err != nil {
 			return fmt.Errorf("property %s is invalid: %w", property.Key, err)
 		}

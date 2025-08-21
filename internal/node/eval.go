@@ -36,7 +36,10 @@ func ResolveInput(properties []NodeProperty, states WorkflowState) (resolvedProp
 				if !ok {
 					return nil, fmt.Errorf("binding %s not found in states", binding)
 				}
-				resolvedProperties[key] = bindingValue
+				resolvedProperties[key], err = value.Cast(bindingValue)
+				if err != nil {
+					return nil, fmt.Errorf("failed to cast binding value for property %s:%s (%w)", key, binding, err)
+				}
 			} else if strings.HasPrefix(v, "{{") && strings.HasSuffix(v, "}}") {
 				// it is a expression, evaluate it
 				expression := v[2 : len(v)-2]
@@ -58,11 +61,17 @@ func ResolveInput(properties []NodeProperty, states WorkflowState) (resolvedProp
 					}
 					resolvedProperties[key] = v
 				} else {
-					resolvedProperties[key] = v
+					resolvedProperties[key], err = value.Cast(v)
+					if err != nil {
+						return nil, fmt.Errorf("failed to cast value for property %s:%s (%w)", key, v, err)
+					}
 				}
 			}
 		default:
-			resolvedProperties[key] = v
+			resolvedProperties[key], err = value.Cast(v)
+			if err != nil {
+				return nil, fmt.Errorf("failed to cast value for property %s:%s (%w)", key, v, err)
+			}
 		}
 	}
 	return resolvedProperties, nil

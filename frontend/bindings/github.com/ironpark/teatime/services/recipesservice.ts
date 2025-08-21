@@ -32,6 +32,13 @@ export function DeleteRecipe(id: string): $CancellablePromise<void> {
     return $Call.ByID(4118010790, id);
 }
 
+/**
+ * ExecuteTriggerNode executes a single trigger node with provided arguments
+ */
+export function ExecuteTriggerNode(recipeID: string, nodeID: string, properties: { [_: string]: any }, args: { [_: string]: any }): $CancellablePromise<void> {
+    return $Call.ByID(2828047122, recipeID, nodeID, properties, args);
+}
+
 export function GetAvailableNodes(): $CancellablePromise<node$0.NodeInfo[]> {
     return $Call.ByID(1184928677).then(($result: any) => {
         return $$createType4($result);

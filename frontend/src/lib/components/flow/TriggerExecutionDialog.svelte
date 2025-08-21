@@ -6,6 +6,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Play, Settings } from 'lucide-svelte';
 	import type { NodeProperty } from '$bindings/internal/node';
+	import { ExecuteTriggerNode } from '$bindings/services/recipesservice';
 
 	interface CommandArg {
 		name: string;
@@ -20,9 +21,11 @@
 		nodeLabel: string;
 		args: CommandArg[];
 		properties: NodeProperty[];
+		recipeID: string;
+		nodeID: string;
 	}
 
-	let { open, onOpenChange, nodeLabel, args, properties }: Props = $props();
+	let { open, onOpenChange, nodeLabel, args, properties, recipeID, nodeID }: Props = $props();
 
 	// Store argument values
 	let argValues = $state<Record<string, string | string[]>>({});
@@ -42,10 +45,32 @@
 		}
 	});
 
-	function handleExecute() {
-		// TODO: Implement actual trigger execution
-		console.log('Execute trigger with args:', argValues);
-		onOpenChange(false);
+	async function handleExecute() {
+		try {
+			// Convert argValues to the format expected by the backend
+			const formattedArgs: Record<string, any> = {};
+			for (const [key, value] of Object.entries(argValues)) {
+				if (value !== '' && !(Array.isArray(value) && value.length === 0)) {
+					formattedArgs[key] = value;
+				}
+			}
+			
+			// Convert properties to the format expected by the backend
+			const formattedProperties: Record<string, any> = {};
+			for (const prop of properties) {
+				if (prop.value !== undefined && prop.value !== null) {
+					formattedProperties[prop.key] = prop.value;
+				}
+			}
+			
+			console.log('Executing trigger with properties:', formattedProperties, 'args:', formattedArgs);
+			await ExecuteTriggerNode(recipeID, nodeID, formattedProperties, formattedArgs);
+			console.log('Trigger executed successfully');
+			onOpenChange(false);
+		} catch (error) {
+			console.error('Failed to execute trigger:', error);
+			// TODO: Show error message to user
+		}
 	}
 
 	function handleCancel() {

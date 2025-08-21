@@ -49,7 +49,7 @@ func (state *runState) getNodeResultChannel(nodeId string) chan error {
 	defer state.lock.Unlock()
 
 	if state.nodeResults[nodeId] == nil {
-		state.nodeResults[nodeId] = make(chan error)
+		state.nodeResults[nodeId] = make(chan error, 1)
 	}
 	return state.nodeResults[nodeId]
 }

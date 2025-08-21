@@ -1,5 +1,10 @@
 package node
 
+import (
+	"encoding/json"
+	"strconv"
+)
+
 type PropertyType int
 
 const (
@@ -100,6 +105,42 @@ type NodeProperty struct {
 	Options []string `json:"options"`
 	// not editable
 	ReadOnly bool `json:"readOnly"`
+}
+
+func (p *NodeProperty) Cast(v any) (any, error) {
+	vStr, isString := v.(string)
+	if isString {
+		switch p.Type {
+		case String:
+			return v, nil
+		case Int64, Uint64:
+			i, err := strconv.ParseInt(vStr, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			return i, nil
+		case Float64:
+			f, err := strconv.ParseFloat(vStr, 64)
+			if err != nil {
+				return nil, err
+			}
+			return f, nil
+		case Bool:
+			b, err := strconv.ParseBool(vStr)
+			if err != nil {
+				return nil, err
+			}
+			return b, nil
+		case JSON:
+			var jsonValue any
+			err := json.Unmarshal([]byte(vStr), &jsonValue)
+			if err != nil {
+				return nil, err
+			}
+			return jsonValue, nil
+		}
+	}
+	return v, nil
 }
 
 // Helper functions for creating float64 pointers

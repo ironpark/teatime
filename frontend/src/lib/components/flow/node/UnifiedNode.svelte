@@ -11,6 +11,7 @@
 	import { getContext } from 'svelte';
 	import { isBinding, getBindingDisplay } from '../utils/binding';
 	import TriggerExecutionDialog from '../TriggerExecutionDialog.svelte';
+	import type { RecipeStore } from '$lib/stores/recipe.svelte';
 
 	let { data, type: nodeType, selected = false, isConnectable = true, id }: NodeProps = $props();
 
@@ -26,6 +27,12 @@
 		onEdit: (nodeId: string) => void;
 		onDoubleClick: (nodeId: string) => void;
 	}>('nodeHandlers');
+	
+	// Get recipe context
+	const recipeContext = getContext<{
+		recipeStore: RecipeStore;
+		recipeID: string;
+	}>('recipe');
 	
 	const { getNodes } = useSvelteFlow();
 	const nodes = $derived(getNodes());
@@ -324,12 +331,14 @@
 {/each}
 
 <!-- Trigger Execution Dialog -->
-{#if nodeType === 'trigger'}
+{#if nodeType === 'trigger' && recipeContext}
 	<TriggerExecutionDialog
 		open={showTriggerDialog}
 		onOpenChange={(open) => showTriggerDialog = open}
-		nodeLabel={data.label || 'Untitled Trigger'}
+		nodeLabel={(data as any)?.label || 'Untitled Trigger'}
 		args={getTriggerArgs()}
 		properties={properties}
+		recipeID={recipeContext?.recipeID || ''}
+		nodeID={id}
 	/>
 {/if}

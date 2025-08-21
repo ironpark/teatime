@@ -152,3 +152,27 @@ func (s *RecipesService) DeleteRecipe(id string) error {
 func (s *RecipesService) Sync() error {
 	return s.store.Sync()
 }
+
+// ExecuteTriggerNode executes a single trigger node with provided arguments
+func (s *RecipesService) ExecuteTriggerNode(recipeID, nodeID string, properties map[string]any, args map[string]any) error {
+	recipe, err := s.store.GetRecipe(recipeID)
+	if err != nil {
+		return fmt.Errorf("failed to get recipe: %w", err)
+	}
+
+	triggerNode, err := recipe.GetNodeById(nodeID)
+	if err != nil {
+		return fmt.Errorf("failed to get node: %w", err)
+	}
+
+	if triggerNode.Type != string(node.NodeTypeTrigger) {
+		return fmt.Errorf("node %s is not a trigger node", nodeID)
+	}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "args", args)
+	fmt.Println("args", args, "properties", properties)
+	// Execute the trigger node
+	return runner.Run(ctx, recipe, nodeID, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
+		fmt.Printf("Recipe: %s, Node: %s, State: %s, Output: %v, Error: %v\n", recipe.Name, node.Id, state, output, err)
+	})
+}
