@@ -10,6 +10,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { getContext } from 'svelte';
 	import { isBinding, getBindingDisplay } from '../utils/binding';
+	import TriggerExecutionDialog from '../TriggerExecutionDialog.svelte';
 
 	let { data, type: nodeType, selected = false, isConnectable = true, id }: NodeProps = $props();
 
@@ -28,6 +29,9 @@
 	
 	const { getNodes } = useSvelteFlow();
 	const nodes = $derived(getNodes());
+
+	// Trigger execution dialog state
+	let showTriggerDialog = $state(false);
 
 	// Get node configuration
 	const config = nodeConfigs[nodeType as keyof typeof nodeConfigs] || nodeConfigs.util
@@ -100,6 +104,29 @@
 		
 		return argNames.join(',');
 	}
+
+	// Helper function to parse trigger arguments for dialog
+	function getTriggerArgs(): Array<{name: string, required: boolean, list: boolean, description: string}> {
+		if (nodeType !== 'trigger' || !properties) return [];
+		
+		const argsProperty = properties.find(prop => prop.key === 'args');
+		if (!argsProperty || !argsProperty.value || !Array.isArray(argsProperty.value)) {
+			return [];
+		}
+		
+		return argsProperty.value
+			.filter(arg => typeof arg === 'object' && arg !== null && arg.name)
+			.map(arg => ({
+				name: arg.name,
+				required: Boolean(arg.required),
+				list: Boolean(arg.list),
+				description: arg.description || ''
+			}));
+	}
+
+	function handleTriggerClick() {
+		showTriggerDialog = true;
+	}
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -155,8 +182,7 @@
 				class="w-full mt-2 h-7"
 				onclick={(e) => {
 					e.stopPropagation();
-					// TODO: Implement trigger execution
-					console.log('Execute trigger:', id);
+					handleTriggerClick();
 				}}
 			>
 				<Play class="h-3 w-3 mr-1" />
@@ -296,3 +322,14 @@
 		</Handle>
 	{/if}
 {/each}
+
+<!-- Trigger Execution Dialog -->
+{#if nodeType === 'trigger'}
+	<TriggerExecutionDialog
+		open={showTriggerDialog}
+		onOpenChange={(open) => showTriggerDialog = open}
+		nodeLabel={data.label || 'Untitled Trigger'}
+		args={getTriggerArgs()}
+		properties={properties}
+	/>
+{/if}
