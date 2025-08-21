@@ -112,7 +112,7 @@ export class NodeData {
     "nodeType": string;
     "description": string;
     "properties": node$0.NodeProperty[];
-    "output": node$0.NodeProperty[];
+    "outputs": node$0.NodeProperty[];
     "outputHandles": node$0.OutputHandle[];
 
     /** Creates a new NodeData instance. */
@@ -138,8 +138,8 @@ export class NodeData {
         if (!("properties" in $$source)) {
             this["properties"] = [];
         }
-        if (!("output" in $$source)) {
-            this["output"] = [];
+        if (!("outputs" in $$source)) {
+            this["outputs"] = [];
         }
         if (!("outputHandles" in $$source)) {
             this["outputHandles"] = [];
@@ -159,8 +159,8 @@ export class NodeData {
         if ("properties" in $$parsedSource) {
             $$parsedSource["properties"] = $$createField6_0($$parsedSource["properties"]);
         }
-        if ("output" in $$parsedSource) {
-            $$parsedSource["output"] = $$createField7_0($$parsedSource["output"]);
+        if ("outputs" in $$parsedSource) {
+            $$parsedSource["outputs"] = $$createField7_0($$parsedSource["outputs"]);
         }
         if ("outputHandles" in $$parsedSource) {
             $$parsedSource["outputHandles"] = $$createField8_0($$parsedSource["outputHandles"]);

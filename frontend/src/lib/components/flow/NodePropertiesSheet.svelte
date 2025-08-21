@@ -22,6 +22,9 @@
 		MultiSelectInput,
 		ArgListInput
 	} from './inputs';
+	import BindingSelector from './BindingSelector.svelte';
+	import BindingDisplay from './BindingDisplay.svelte';
+	import { isBinding, getBindingOptions, type BindingOption } from './utils/binding';
 	import type { RecipeStore } from '$lib/stores/recipe.svelte';
 
 	const { updateNodeData } = useSvelteFlow();
@@ -36,6 +39,9 @@
 	let { selectedNodes = $bindable([]), open = $bindable(false), onOpenChange, recipeStore }: Props = $props();
 	const selectedNodeId = $derived(selectedNodes?.[0]?.id);
 	const selectedNode = $derived(recipeStore.nodes.find(n => n.id === selectedNodeId));
+	
+	// Binding state management
+	let showBindingSelector = $state<{[key: string]: boolean}>({});
 	function updateNodeProperty(field: string, value: any) {
 		if (selectedNode) {
 			updateNodeData(selectedNode.id, { [field]: value });
@@ -50,6 +56,38 @@
 				properties[index] = { ...properties[index], value };
 				updateNodeData(selectedNode.id, { properties });
 			}
+		}
+	}
+
+	// Binding functions
+	function toggleBindingMode(prop: NodeProperty) {
+		if (isBinding(prop.value)) {
+			// Clear binding - restore to default value
+			const defaultValue = getDefaultValueForType(prop.type);
+			updateProperty(prop, defaultValue);
+		} else {
+			// Enter binding mode
+			showBindingSelector = { ...showBindingSelector, [prop.key]: true };
+		}
+	}
+
+	function selectBinding(prop: NodeProperty, option: BindingOption) {
+		updateProperty(prop, option.bindingValue);
+		showBindingSelector = { ...showBindingSelector, [prop.key]: false };
+	}
+
+	function cancelBinding(propKey: string) {
+		showBindingSelector = { ...showBindingSelector, [propKey]: false };
+	}
+
+	function getDefaultValueForType(type: number): any {
+		// Based on PropertyType enum
+		switch (type) {
+			case 1: return false; // Bool
+			case 2: case 3: case 4: return 0; // Int64, Uint64, Float64
+			case 5: case 6: case 7: case 8: return ''; // String, JSON, XML, Date
+			case 9: case 10: case 11: return []; // Arrays
+			default: return '';
 		}
 	}
 
@@ -157,19 +195,43 @@
 											<div class="flex items-center justify-between">
 												<Label for={`prop-${prop.key}`}>
 													{prop.name || prop.key}
+													<!-- <Badge variant="outline" class="text-[12px] px-2 rounded-sm">
+														{getPropertyTypeDisplay(prop.type)}
+													</Badge> -->
 													{#if !prop.optional}
 														<span class="text-red-500 ml-1">*</span>
 													{/if}
+													
 												</Label>
-												<Badge variant="outline" class="text-[10px] px-1 py-0">
-													{getPropertyTypeDisplay(prop.type)}
-												</Badge>
+												<div class="flex items-center gap-2">
+													<!-- Binding Button -->
+													<BindingSelector 
+														{prop} 
+														currentNodeId={selectedNode.id} 
+														nodes={recipeStore.nodes} 
+														edges={recipeStore.edges} 
+														onToggleBinding={toggleBindingMode} 
+													/>
+												</div>
 											</div>
 											{#if prop.description}
 												<p class="text-xs text-muted-foreground">{prop.description}</p>
 											{/if}
 											
-											{#if prop.input}
+											<!-- Binding Display and Selector -->
+											<BindingDisplay 
+												{prop} 
+												currentNodeId={selectedNode.id} 
+												nodes={recipeStore.nodes} 
+												edges={recipeStore.edges} 
+												onUpdate={updateProperty}
+												showBindingSelector={showBindingSelector[prop.key] || false}
+												onSelectBinding={(option) => selectBinding(prop, option)}
+												onCancelBinding={() => cancelBinding(prop.key)}
+											/>
+											
+											<!-- Show input controls only if not bound -->
+											{#if !isBinding(prop.value) && prop.input}
 												{#if prop.input.type === InputType.InputTypeSwitch}
 													<SwitchInput {prop} onUpdate={updateProperty} />
 												{:else if prop.input.type === InputType.InputTypeRange}
@@ -194,10 +256,10 @@
 													<!-- Default to text input -->
 													<TextInput {prop} type="text" placeholder={prop.input.placeholder} onUpdate={updateProperty} />
 												{/if}
-											{:else if prop.options && prop.options.length > 0}
+											{:else if !isBinding(prop.value) && prop.options && prop.options.length > 0}
 												<!-- Fallback to select if options are provided -->
 												<SelectInput {prop} options={prop.options.map((option) => ({ value: option, label: option }))} onUpdate={updateProperty} />
-											{:else}
+											{:else if !isBinding(prop.value)}
 												<!-- Fallback based on property type -->
 												{#if prop.type === 1}
 													<!-- Bool -->

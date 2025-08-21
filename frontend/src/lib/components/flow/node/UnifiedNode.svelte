@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
+	import { Handle, Position, type NodeProps, useSvelteFlow } from '@xyflow/svelte';
 	import { nodeConfigs } from './nodeConfigs';
 	import type { NodeProperty } from '$bindings/internal/node/models';
-	import { HelpCircle, Package, Edit } from 'lucide-svelte';
+	import { InputType } from '$bindings/internal/node/models';
+	import { HelpCircle, Package, Edit, Link, Play } from 'lucide-svelte';
 	import LucideIcon from '$lib/components/LucideIcon.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import { getContext } from 'svelte';
+	import { isBinding, getBindingDisplay } from '../utils/binding';
 
 	let { data, type: nodeType, selected = false, isConnectable = true, id }: NodeProps = $props();
 
@@ -17,11 +20,14 @@
 		if (nodeType === 'util') return 'Utility';
 		return 'Unknown';
 	});
-	// Get handlers from context
+	// Get handlers from context and nodes from SvelteFlow
 	const handlers = getContext<{
 		onEdit: (nodeId: string) => void;
 		onDoubleClick: (nodeId: string) => void;
 	}>('nodeHandlers');
+	
+	const { getNodes } = useSvelteFlow();
+	const nodes = $derived(getNodes());
 
 	// Get node configuration
 	const config = nodeConfigs[nodeType as keyof typeof nodeConfigs] || nodeConfigs.util
@@ -37,7 +43,6 @@
 		}
 		return [];
 	});
-
 	// Get outputs array if available
 	const outputs = $derived.by(() => {
 		if (Array.isArray(data.outputs)) {
@@ -80,6 +85,20 @@
 			11: 'boolean[]'
 		};
 		return typeMap[propType] || 'unknown';
+	}
+
+	// Helper function to format ArgList value as --a,--b,--c
+	function formatArgList(value: any): string {
+		if (!value || !Array.isArray(value)) return '';
+		
+		const argNames: string[] = [];
+		for (const arg of value) {
+			if (typeof arg === 'object' && arg !== null && arg.name && typeof arg.name === 'string') {
+				argNames.push(arg.name.startsWith('--') ? arg.name : `--${arg.name}`);
+			}
+		}
+		
+		return argNames.join(',');
 	}
 </script>
 
@@ -128,6 +147,22 @@
 		{#if data.description}
 			<p class="text-xs text-muted-foreground">{data.description}</p>
 		{/if}
+		
+		{#if nodeType === 'trigger'}
+			<Button 
+				variant="default" 
+				size="sm" 
+				class="w-full mt-2 h-7"
+				onclick={(e) => {
+					e.stopPropagation();
+					// TODO: Implement trigger execution
+					console.log('Execute trigger:', id);
+				}}
+			>
+				<Play class="h-3 w-3 mr-1" />
+				Run Trigger
+			</Button>
+		{/if}
 
 		{#if properties.length > 0}
 			<div class="space-y-2">
@@ -151,10 +186,46 @@
 										{prop.name || prop.key}:
 									</span>
 									<div class="flex-1">
-										{#if prop.value}
-											<span class="text-gray-900 break-words">
-												{prop.value}
-											</span>
+										{#if isBinding(prop.value)}
+											<!-- Show binding information -->
+											{@const bindingInfo = getBindingDisplay(prop.value, nodes)}
+											{#if bindingInfo}
+												<div class="flex items-center gap-1">
+													<Link class="h-3 w-3 text-blue-600" />
+													<span class="text-blue-700 text-xs font-medium">
+														{bindingInfo.nodeLabel}
+													</span>
+													<span class="text-blue-600 text-xs">→</span>
+													<span class="text-blue-700 text-xs">
+														{bindingInfo.propertyName}
+													</span>
+													<Badge variant="outline" class="text-[9px] px-1 py-0 bg-blue-50 text-blue-700 border-blue-200">
+														{bindingInfo.type}
+													</Badge>
+												</div>
+											{:else}
+												<span class="text-orange-600 text-xs">
+													⚠️ Invalid binding
+												</span>
+											{/if}
+										{:else if prop.value}
+											<!-- Special formatting for ArgList -->
+											{#if prop.type === 6 && prop.input?.type === InputType.InputTypeArgList}
+												{@const formatted = formatArgList(prop.value)}
+												{#if formatted}
+													<span class="text-gray-900 break-words font-mono text-xs">
+														{formatted}
+													</span>
+												{:else}
+													<span class="text-gray-400 italic">
+														No arguments
+													</span>
+												{/if}
+											{:else}
+												<span class="text-gray-900 break-words">
+													{typeof prop.value === 'object' ? JSON.stringify(prop.value) : prop.value}
+												</span>
+											{/if}
 										{:else if prop.options && prop.options.length > 0}
 											<span class="text-gray-500 italic">
 												[{prop.options.join(', ')}]

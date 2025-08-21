@@ -24,4 +24,7 @@
 	{step}
 	oninput={(e) => onUpdate(prop, type === 'number' ? parseFloat(e.currentTarget.value) : e.currentTarget.value)}
 	placeholder={placeholder || `Enter ${prop.name || prop.key}`}
+	autocapitalize="none"
+	autocorrect="off"
+	spellcheck="false"
 />

@@ -130,7 +130,7 @@
 						oninput={(e) => updateArg(index, 'name', e.currentTarget.value)}
 						placeholder="--option or -o"
 						class="h-7 text-xs"
-						autocapitalize="off"
+						autocapitalize="none"
 						autocorrect="off"
 						spellcheck="false"
 					/>
@@ -171,6 +171,9 @@
 					placeholder="Describe what this argument does..."
 					rows={2}
 					class="text-xs resize-none"
+					autocapitalize="none"
+					autocorrect="off"
+					spellcheck="false"
 				/>
 			</div>
 		</div>

@@ -81,12 +81,18 @@
 				bind:value={pair.key}
 				oninput={() => updateKeyValuePairs(keyValuePairs)}
 				class="flex-1"
+				autocapitalize="none"
+				autocorrect="off"
+				spellcheck="false"
 			/>
 			<Input
 				placeholder="Value"
 				bind:value={pair.value}
 				oninput={() => updateKeyValuePairs(keyValuePairs)}
 				class="flex-1"
+				autocapitalize="none"
+				autocorrect="off"
+				spellcheck="false"
 			/>
 			<Button
 				variant="ghost"

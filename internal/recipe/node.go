@@ -20,7 +20,7 @@ type NodeData struct {
 	NodeType      string              `json:"nodeType"`
 	Description   string              `json:"description"`
 	Properties    []node.NodeProperty `json:"properties"`
-	Output        []node.NodeProperty `json:"output"`
+	Outputs       []node.NodeProperty `json:"outputs"`
 	OutputHandles []node.OutputHandle `json:"outputHandles"`
 }
 
@@ -82,7 +82,7 @@ func (n *Node) UnmarshalJSON(data []byte) error {
 		return n.unmarshalFromMinified(minified)
 	}
 
-	// Check for full format (has "position" field)  
+	// Check for full format (has "position" field)
 	if _, hasPosition := temp["position"]; hasPosition {
 		type fullNode struct {
 			Id       string   `json:"id"`
@@ -136,7 +136,7 @@ func (n *Node) unmarshalFromMinified(minified minifiedNode) error {
 	n.Type = string(rawNode.Type())
 	n.Description = rawNode.Description()
 	n.Properties = rawNode.GetProperties(node.PropertyContext(minified.Properties))
-	n.Output = rawNode.GetOutput(node.PropertyContext(minified.Properties))
+	n.Outputs = rawNode.GetOutput(node.PropertyContext(minified.Properties))
 	n.OutputHandles = rawNode.GetOutputHandles(node.PropertyContext(minified.Properties))
 	n.rawNode = rawNode
 	for i, property := range n.Properties {

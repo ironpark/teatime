@@ -86,7 +86,7 @@ func (s *RecipesService) CreateNode(ref string, x, y int) (rc.Node, error) {
 			NodeType:    string(createdNode.Type()),
 			Description: createdNode.Description(),
 			Properties:  createdNode.GetProperties(node.PropertyContext{}),
-			Output:      createdNode.GetOutput(node.PropertyContext{}),
+			Outputs:     createdNode.GetOutput(node.PropertyContext{}),
 		},
 	}, nil
 }

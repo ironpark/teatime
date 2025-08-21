@@ -60,9 +60,17 @@ func init() {
 	})
 }
 
+// CommandArg represents a command line argument definition
+type CommandArg struct {
+	Name        string `json:"name" mapstructure:"name"`               // 옵션이름
+	Required    bool   `json:"required" mapstructure:"required"`       // 필수여부
+	List        bool   `json:"list" mapstructure:"list"`               // 리스트여부
+	Description string `json:"description" mapstructure:"description"` // 설명
+}
+
 type commandTriggerProps struct {
-	Description string         `mapstructure:"description"`
-	Args        map[string]any `mapstructure:"args"`
+	Description string       `mapstructure:"description"`
+	Args        []CommandArg `mapstructure:"args"`
 }
 
 // CommandTriggerNode triggers workflow execution via CLI commands.
@@ -78,32 +86,70 @@ func (c *CommandTriggerNode) GetOutput(ctx node.PropertyContext) []node.NodeProp
 	output = append(output, baseOutput...)
 
 	// Get args from context to generate dynamic outputs
-	if args, ok := ctx["args"].(map[string]any); ok {
-		for argKey, argValue := range args {
-			// Determine the property type based on the value type
+	if argsValue, ok := ctx["args"]; ok {
+		var commandArgs []CommandArg
+		
+		// Handle different types of args values
+		switch v := argsValue.(type) {
+		case []CommandArg:
+			commandArgs = v
+		case []any:
+			// Convert from any slice (from JSON unmarshaling)
+			for _, item := range v {
+				if argMap, ok := item.(map[string]any); ok {
+					arg := CommandArg{
+						Name:        getStringFromMap(argMap, "name"),
+						Required:    getBoolFromMap(argMap, "required"),
+						List:        getBoolFromMap(argMap, "list"),
+						Description: getStringFromMap(argMap, "description"),
+					}
+					commandArgs = append(commandArgs, arg)
+				}
+			}
+		}
+
+		// Create output properties for each configured argument
+		for _, arg := range commandArgs {
+			if arg.Name == "" {
+				continue // Skip empty argument definitions
+			}
+
+			// Determine property type based on argument configuration
 			var propType node.PropertyType
-			switch argValue.(type) {
-			case bool:
-				propType = node.Bool
-			case int, int32, int64, float32, float64:
-				propType = node.Float64
-			case string:
-				propType = node.String
-			case []interface{}, []string:
-				propType = node.StringArray
-			default:
-				propType = node.JSON
+			if arg.List {
+				propType = node.StringArray // List arguments are string arrays
+			} else {
+				propType = node.String // Single arguments are strings
 			}
 
 			// Create output property for this argument
-			argOutput := node.OutputProp(propType, argKey, argKey,
-				node.WithDescription(fmt.Sprintf("CLI argument: %s", argKey)),
+			argOutput := node.OutputProp(propType, arg.Name, arg.Name,
+				node.WithDescription(fmt.Sprintf("CLI argument: %s - %s", arg.Name, arg.Description)),
 			)
 			output = append(output, argOutput)
 		}
 	}
 
 	return output
+}
+
+// Helper functions for type conversion from map[string]any
+func getStringFromMap(m map[string]any, key string) string {
+	if v, ok := m[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func getBoolFromMap(m map[string]any, key string) bool {
+	if v, ok := m[key]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+	}
+	return false
 }
 
 // Run executes the command trigger logic.
@@ -138,10 +184,17 @@ func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	// Merge CLI arguments with defined arguments from props
 	finalArgs := make(map[string]any)
 
-	// Start with defined arguments (defaults from node configuration)
+	// Start with defined arguments (set defaults based on configuration)
 	if props.Args != nil {
-		for k, v := range props.Args {
-			finalArgs[k] = v
+		for _, arg := range props.Args {
+			if arg.Name != "" {
+				// Set default value based on argument type
+				if arg.List {
+					finalArgs[arg.Name] = []string{} // Default empty array for list arguments
+				} else {
+					finalArgs[arg.Name] = "" // Default empty string for single arguments
+				}
+			}
 		}
 	}
 
@@ -174,16 +227,33 @@ func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 }
 
 // GetExpectedArgs returns the argument definitions for CLI help and validation.
-func (c *CommandTriggerNode) GetExpectedArgs() map[string]any {
+func (c *CommandTriggerNode) GetExpectedArgs() []CommandArg {
 	props := c.GetProperties(node.PropertyContext{})
 	for _, prop := range props {
 		if prop.Key == "args" {
-			if args, ok := prop.Value.(map[string]any); ok {
-				return args
+			// Handle different types of args values
+			switch v := prop.Value.(type) {
+			case []CommandArg:
+				return v
+			case []any:
+				// Convert from any slice (from JSON unmarshaling)
+				var commandArgs []CommandArg
+				for _, item := range v {
+					if argMap, ok := item.(map[string]any); ok {
+						arg := CommandArg{
+							Name:        getStringFromMap(argMap, "name"),
+							Required:    getBoolFromMap(argMap, "required"),
+							List:        getBoolFromMap(argMap, "list"),
+							Description: getStringFromMap(argMap, "description"),
+						}
+						commandArgs = append(commandArgs, arg)
+					}
+				}
+				return commandArgs
 			}
 		}
 	}
-	return make(map[string]any)
+	return []CommandArg{}
 }
 
 // GetDescription returns the command description.
