@@ -19,8 +19,7 @@
 		placeholder="{'{'}expression{'}'} or @[binding]"
 		class="font-mono text-sm"
 		autocapitalize="none"
-		autocorrect="off"
-		spellcheck="false"
+		spellcheck={false}
 	/>
 	<div class="text-xs text-muted-foreground">
 		Use {'{'}expression{'}'} for calculations or @[nodeName.output.field] for bindings

@@ -23,6 +23,15 @@ type Credential struct {
 	LastUsedAt    sql.NullTime
 }
 
+type EnvironmentVariable struct {
+	ID          string
+	Name        string
+	Value       string
+	Description sql.NullString
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
 type Execution struct {
 	ID               string
 	RecipeID         string

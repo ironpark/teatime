@@ -131,8 +131,7 @@
 						placeholder="--option or -o"
 						class="h-7 text-xs"
 						autocapitalize="none"
-						autocorrect="off"
-						spellcheck="false"
+						spellcheck={false}
 					/>
 				</div>
 				
@@ -172,8 +171,7 @@
 					rows={2}
 					class="text-xs resize-none"
 					autocapitalize="none"
-					autocorrect="off"
-					spellcheck="false"
+					spellcheck={false}
 				/>
 			</div>
 		</div>

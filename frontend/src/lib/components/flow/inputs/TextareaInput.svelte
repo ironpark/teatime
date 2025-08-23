@@ -19,6 +19,5 @@
 	{rows}
 	placeholder={placeholder || `Enter ${prop.name || prop.key}`}
 	autocapitalize="none"
-	autocorrect="off"
-	spellcheck="false"
+	spellcheck={false}
 />

@@ -41,6 +41,118 @@ export class CreatedRecipe {
     }
 }
 
+/**
+ * EnvironmentVariableCreateRequest represents the data needed to create a new environment variable.
+ */
+export class EnvironmentVariableCreateRequest {
+    "name": string;
+    "value": string;
+    "description": string;
+
+    /** Creates a new EnvironmentVariableCreateRequest instance. */
+    constructor($$source: Partial<EnvironmentVariableCreateRequest> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("value" in $$source)) {
+            this["value"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EnvironmentVariableCreateRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EnvironmentVariableCreateRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EnvironmentVariableCreateRequest($$parsedSource as Partial<EnvironmentVariableCreateRequest>);
+    }
+}
+
+/**
+ * EnvironmentVariableInfo represents basic environment variable information.
+ */
+export class EnvironmentVariableInfo {
+    "id": string;
+    "name": string;
+    "value": string;
+    "description": string;
+    "created_at": string;
+    "updated_at": string;
+
+    /** Creates a new EnvironmentVariableInfo instance. */
+    constructor($$source: Partial<EnvironmentVariableInfo> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("value" in $$source)) {
+            this["value"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = "";
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EnvironmentVariableInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EnvironmentVariableInfo {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EnvironmentVariableInfo($$parsedSource as Partial<EnvironmentVariableInfo>);
+    }
+}
+
+/**
+ * EnvironmentVariableUpdateRequest represents the data needed to update an existing environment variable.
+ */
+export class EnvironmentVariableUpdateRequest {
+    "id": string;
+    "name": string;
+    "value": string;
+    "description": string;
+
+    /** Creates a new EnvironmentVariableUpdateRequest instance. */
+    constructor($$source: Partial<EnvironmentVariableUpdateRequest> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("value" in $$source)) {
+            this["value"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EnvironmentVariableUpdateRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EnvironmentVariableUpdateRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new EnvironmentVariableUpdateRequest($$parsedSource as Partial<EnvironmentVariableUpdateRequest>);
+    }
+}
+
 export class RecipeInfo {
     "ID": string;
     "Name": string;
@@ -111,6 +223,152 @@ export class RecipeInfo {
             $$parsedSource["NodeTypes"] = $$createField11_0($$parsedSource["NodeTypes"]);
         }
         return new RecipeInfo($$parsedSource as Partial<RecipeInfo>);
+    }
+}
+
+/**
+ * SecretCreateRequest represents the data needed to create a new secret.
+ */
+export class SecretCreateRequest {
+    "name": string;
+    "description": string;
+    "value": string;
+
+    /** Creates a new SecretCreateRequest instance. */
+    constructor($$source: Partial<SecretCreateRequest> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("value" in $$source)) {
+            this["value"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SecretCreateRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SecretCreateRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SecretCreateRequest($$parsedSource as Partial<SecretCreateRequest>);
+    }
+}
+
+/**
+ * SecretInfo represents basic secret information without sensitive data.
+ * Used for listing and displaying secrets in the UI safely.
+ */
+export class SecretInfo {
+    "id": string;
+    "name": string;
+    "description": string;
+    "storage_type": string;
+    "created_at": string;
+    "updated_at": string;
+    "last_used_at": string;
+
+    /** Creates a new SecretInfo instance. */
+    constructor($$source: Partial<SecretInfo> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("storage_type" in $$source)) {
+            this["storage_type"] = "";
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = "";
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = "";
+        }
+        if (!("last_used_at" in $$source)) {
+            this["last_used_at"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SecretInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SecretInfo {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SecretInfo($$parsedSource as Partial<SecretInfo>);
+    }
+}
+
+/**
+ * SecretUpdateRequest represents the data needed to update an existing secret.
+ */
+export class SecretUpdateRequest {
+    "id": string;
+    "name": string;
+    "description": string;
+    "value": string;
+
+    /** Creates a new SecretUpdateRequest instance. */
+    constructor($$source: Partial<SecretUpdateRequest> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+        if (!("value" in $$source)) {
+            this["value"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SecretUpdateRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SecretUpdateRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SecretUpdateRequest($$parsedSource as Partial<SecretUpdateRequest>);
+    }
+}
+
+/**
+ * SecretValueResponse contains a decrypted secret value.
+ * Used for retrieving specific secret values for workflow execution.
+ */
+export class SecretValueResponse {
+    "value": string;
+    "found": boolean;
+
+    /** Creates a new SecretValueResponse instance. */
+    constructor($$source: Partial<SecretValueResponse> = {}) {
+        if (!("value" in $$source)) {
+            this["value"] = "";
+        }
+        if (!("found" in $$source)) {
+            this["found"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SecretValueResponse instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SecretValueResponse {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SecretValueResponse($$parsedSource as Partial<SecretValueResponse>);
     }
 }
 

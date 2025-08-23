@@ -5,7 +5,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import { Settings, Globe, Palette, Monitor, Sun, Moon, Zap } from 'lucide-svelte';
+	import { Settings, Globe, Palette, Monitor, Sun, Moon, Zap, Key, Shield } from 'lucide-svelte';
 	import { settingsStore, type UISettings } from '$lib/stores/settings.svelte';
 	import { mode } from 'mode-watcher';
 
@@ -184,6 +184,7 @@
 		</div>
 	</main>
 </div>
+
 
 <style>
 	/* Custom scrollbar */

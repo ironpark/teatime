@@ -14,7 +14,7 @@
 		SidebarMenuSubButton,
 		SidebarMenuSubItem
 	} from '$ui/sidebar';
-	import { Home, Settings, ChefHat, Play } from 'lucide-svelte';
+	import { Home, Settings, ChefHat, Play, Key } from 'lucide-svelte';
 	import { page } from '$app/state';
 
 	function isActive(url: string) {
@@ -38,6 +38,11 @@
 			}
 		],
 		navSecondary: [
+			{
+				title: 'Secrets & Environments',
+				url: '/secrets',
+				icon: Key
+			},
 			{
 				title: 'Settings',
 				url: '/settings',

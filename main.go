@@ -35,6 +35,8 @@ func main() {
 		Services: []application.Service{
 			application.NewService(services.NewRecipesService(store)),
 			application.NewService(services.NewSettingsService(store)),
+			application.NewService(services.NewSecretsService(store)),
+			application.NewService(services.NewEnvironmentVariablesService(store)),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
