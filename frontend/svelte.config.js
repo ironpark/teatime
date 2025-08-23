@@ -27,6 +27,17 @@ const config = {
 			"$bindings/*": "./bindings/github.com/ironpark/teatime/*",
 			"$bindings": "./bindings/github.com/ironpark/teatime",
 		}
+	},
+	compilerOptions: {
+		warningFilter: (warning) => {
+			if (warning.code.includes('a11y')) {
+				return false;
+			}
+			if(warning.filename?.includes('node_modules') || warning.filename?.includes('@sveltejs')) {
+				return false;
+			}
+			return true;
+		}
 	}
 };
 

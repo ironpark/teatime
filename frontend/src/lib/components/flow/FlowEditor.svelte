@@ -101,10 +101,27 @@
 	function handleNodeDrag(targetNode: Node, nodes: Node[], event: MouseEvent | TouchEvent) {
 		console.log('Node dragged:', targetNode, nodes, event);
 	}
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if ((event.key === 'Delete' || event.key === 'Backspace') && recipeStore.selectedNodes.length > 0) {
+			event.preventDefault();
+			deleteSelectedNodes();
+		}
+	}
+
+	function deleteSelectedNodes() {
+		if (recipeStore.selectedNodes.length === 0) return;
+		
+		recipeStore.selectedNodes.forEach(node => {
+			recipeStore.deleteNode(node.id);
+		});
+		// Clear selection after deletion
+		recipeStore.selectedNodes = [];
+	}
 </script>
 
 <SvelteFlowProvider>
-	<div class="relative flex-1">
+	<div class="relative flex-1 focus:outline-none" onkeydown={handleKeyDown} tabindex="0" role="application">
 		<SvelteFlow
 			bind:nodes={recipeStore.nodes}
 			bind:edges={recipeStore.edges}

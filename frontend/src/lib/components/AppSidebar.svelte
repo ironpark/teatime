@@ -30,12 +30,12 @@
 				title: 'Recipes',
 				url: '/',
 				icon: ChefHat
-			},
-			{
-				title: 'Execution',
-				url: '/execution',
-				icon: Play
 			}
+			// {
+			// 	title: 'Execution',
+			// 	url: '/execution',
+			// 	icon: Play
+			// }
 		],
 		navSecondary: [
 			{
