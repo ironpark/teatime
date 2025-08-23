@@ -14,7 +14,7 @@
 		SidebarMenuSubButton,
 		SidebarMenuSubItem
 	} from '$ui/sidebar';
-	import { Home, Settings, ChefHat, Play, Key } from 'lucide-svelte';
+	import { Home, ChefHat, Play, Cog, Database } from 'lucide-svelte';
 	import { page } from '$app/state';
 
 	function isActive(url: string) {
@@ -39,14 +39,14 @@
 		],
 		navSecondary: [
 			{
-				title: 'Secrets & Environments',
-				url: '/secrets',
-				icon: Key
+				title: 'Application',
+				url: '/settings',
+				icon: Cog
 			},
 			{
-				title: 'Settings',
-				url: '/settings',
-				icon: Settings
+				title: 'Configuration',
+				url: '/secrets',
+				icon: Database
 			}
 		]
 	};
@@ -90,7 +90,7 @@
 		</SidebarGroup>
 
 		<SidebarGroup>
-			<SidebarGroupLabel>Tools</SidebarGroupLabel>
+			<SidebarGroupLabel>Settings</SidebarGroupLabel>
 			<SidebarGroupContent>
 				<SidebarMenu>
 					{#each data.navSecondary as item}

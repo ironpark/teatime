@@ -3,12 +3,19 @@
 	import { SidebarTrigger } from '$lib/components/ui/sidebar';
 	import { Separator } from '$lib/components/ui/separator';
 
+    type Props = {
+        title?: string;
+        icon?: any;
+        children: any;
+        actions?: () => any;
+    };
+
     let {
         title,
         icon,
         children,
         actions
-    } = $props();
+    }: Props = $props();
 
 </script>
 

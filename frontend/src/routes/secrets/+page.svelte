@@ -7,7 +7,6 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import AppBase from '$lib/layouts/AppBase.svelte';
 	import { 
 		Plus, 
@@ -15,9 +14,9 @@
 		Trash2, 
 		Eye, 
 		EyeOff, 
-		Key, 
 		Shield,
-		Settings
+		Settings,
+		Database
 	} from 'lucide-svelte';
 	import { 
 		ListSecrets, 
@@ -56,7 +55,6 @@
 	let editingEnv = $state<EnvironmentVariableInfo | null>(null);
 	let deletingEnv = $state<EnvironmentVariableInfo | null>(null);
 	let showValue = $state(false);
-	let activeTab = $state<'secrets' | 'environments'>('secrets');
 	
 	// Form state
 	let formData = $state({
@@ -288,112 +286,110 @@
 </script>
 
 <svelte:head>
-	<title>Secrets & Environments - Teatime</title>
+	<title>Configuration - Teatime</title>
 </svelte:head>
 
-<AppBase title="Secrets & Environments" icon={Key}>
-	{#snippet actions()}
-		{#if activeTab === 'secrets'}
-			<Button onclick={openCreateDialog} class="gap-2">
-				<Plus class="h-4 w-4" />
-				Add Secret
-			</Button>
-		{:else}
-			<Button onclick={openCreateEnvDialog} class="gap-2">
-				<Plus class="h-4 w-4" />
-				Add Environment
-			</Button>
-		{/if}
-	{/snippet}
+<AppBase title="Configuration" icon={Database}>
 	
-	<Tabs.Root value={activeTab} onValueChange={(value) => activeTab = value as 'secrets' | 'environments'}>
-		<Tabs.List class="grid w-full grid-cols-2">
-			<Tabs.Trigger value="secrets" class="flex items-center gap-2">
-				<Shield class="w-4 h-4" />
-				Secrets
-			</Tabs.Trigger>
-			<Tabs.Trigger value="environments" class="flex items-center gap-2">
-				<Settings class="w-4 h-4" />
-				Environment Variables
-			</Tabs.Trigger>
-		</Tabs.List>
-		
-		<Tabs.Content value="secrets" class="space-y-4">
+	<div class="space-y-8">
+		<!-- Secrets Section -->
+		<div class="space-y-4">
 			<div class="space-y-2">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2">
+						<Shield class="w-5 h-5 text-green-500" />
+						<h2 class="text-lg font-semibold">Secrets</h2>
+					</div>
+					<Button onclick={openCreateDialog} class="gap-2">
+						<Plus class="h-4 w-4" />
+						Add Secret
+					</Button>
+				</div>
 				<p class="text-muted-foreground">Securely store API keys, tokens, and other sensitive data in the system keychain.</p>
 			</div>
 			
 			<div class="rounded-md border">
-		<Table.Root>
-			<Table.Header>
-				<Table.Row>
-					<Table.Head>Name</Table.Head>
-					<Table.Head>Last Used</Table.Head>
-					<Table.Head>Created</Table.Head>
-					<Table.Head class="w-[100px]">Actions</Table.Head>
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#if loading}
-					<Table.Row>
-						<Table.Cell colspan={4} class="text-center py-8 text-muted-foreground">
-							Loading secrets...
-						</Table.Cell>
-					</Table.Row>
-				{:else if secrets.length === 0}
-					<Table.Row>
-						<Table.Cell colspan={4} class="text-center py-8 text-muted-foreground">
-							No secrets found. Create your first secret to get started.
-						</Table.Cell>
-					</Table.Row>
-				{:else}
-					{#each secrets as secret}
+				<Table.Root>
+					<Table.Header>
 						<Table.Row>
-							<Table.Cell class="font-medium">
-								<div class="space-y-1">
-									<div class="flex items-center gap-2">
-										<Shield class="w-4 h-4 text-green-500" />
-										<span>{secret.name}</span>
-									</div>
-									{#if secret.description}
-										<div class="text-xs text-muted-foreground ml-6">{secret.description}</div>
-									{/if}
-								</div>
-							</Table.Cell>
-							<Table.Cell class="text-muted-foreground">
-								{formatDate(secret.last_used_at)}
-							</Table.Cell>
-							<Table.Cell class="text-muted-foreground">
-								{formatDate(secret.created_at)}
-							</Table.Cell>
-							<Table.Cell>
-								<div class="flex items-center gap-1">
-									<Button
-										variant="ghost"
-										size="sm"
-										onclick={() => openEditDialog(secret)}
-										class="h-8 w-8 p-0"
-									>
-										<Edit class="h-4 w-4" />
-									</Button>
-									<button
-										class="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-gray-100 rounded flex items-center justify-center"
-										onclick={() => openDeleteDialog(secret)}
-									>
-										<Trash2 class="h-4 w-4" />
-									</button>
-								</div>
-							</Table.Cell>
+							<Table.Head>Name</Table.Head>
+							<Table.Head>Last Used</Table.Head>
+							<Table.Head>Created</Table.Head>
+							<Table.Head class="w-[100px]">Actions</Table.Head>
 						</Table.Row>
-					{/each}
-				{/if}
-			</Table.Body>
-		</Table.Root>
-	</div>
-		</Tabs.Content>
+					</Table.Header>
+					<Table.Body>
+						{#if loading}
+							<Table.Row>
+								<Table.Cell colspan={4} class="text-center py-8 text-muted-foreground">
+									Loading secrets...
+								</Table.Cell>
+							</Table.Row>
+						{:else if secrets.length === 0}
+							<Table.Row>
+								<Table.Cell colspan={4} class="text-center py-8 text-muted-foreground">
+									No secrets found. Create your first secret to get started.
+								</Table.Cell>
+							</Table.Row>
+						{:else}
+							{#each secrets as secret}
+								<Table.Row>
+									<Table.Cell class="font-medium">
+										<div class="space-y-1">
+											<div class="flex items-center gap-2">
+												<Shield class="w-4 h-4 text-green-500" />
+												<span>{secret.name}</span>
+											</div>
+											{#if secret.description}
+												<div class="text-xs text-muted-foreground ml-6">{secret.description}</div>
+											{/if}
+										</div>
+									</Table.Cell>
+									<Table.Cell class="text-muted-foreground">
+										{formatDate(secret.last_used_at)}
+									</Table.Cell>
+									<Table.Cell class="text-muted-foreground">
+										{formatDate(secret.created_at)}
+									</Table.Cell>
+									<Table.Cell>
+										<div class="flex items-center gap-1">
+											<Button
+												variant="ghost"
+												size="sm"
+												onclick={() => openEditDialog(secret)}
+												class="h-8 w-8 p-0"
+											>
+												<Edit class="h-4 w-4" />
+											</Button>
+											<button
+												class="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-gray-100 rounded flex items-center justify-center"
+												onclick={() => openDeleteDialog(secret)}
+											>
+												<Trash2 class="h-4 w-4" />
+											</button>
+										</div>
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						{/if}
+					</Table.Body>
+				</Table.Root>
+			</div>
+		</div>
 		
-		<Tabs.Content value="environments" class="space-y-4">
+		<!-- Environment Variables Section -->
+		<div class="space-y-4">
 			<div class="space-y-2">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2">
+						<Settings class="w-5 h-5 text-blue-500" />
+						<h2 class="text-lg font-semibold">Environment Variables</h2>
+					</div>
+					<Button onclick={openCreateEnvDialog} class="gap-2">
+						<Plus class="h-4 w-4" />
+						Add Environment
+					</Button>
+				</div>
 				<p class="text-muted-foreground">Manage environment variables for non-sensitive configuration data.</p>
 			</div>
 			
@@ -403,13 +399,14 @@
 						<Table.Row>
 							<Table.Head>Name</Table.Head>
 							<Table.Head>Value</Table.Head>
+							<Table.Head>Created</Table.Head>
 							<Table.Head class="w-[100px]">Actions</Table.Head>
 						</Table.Row>
 					</Table.Header>
 					<Table.Body>
 						{#if environments.length === 0}
 							<Table.Row>
-								<Table.Cell colspan={3} class="text-center py-8 text-muted-foreground">
+								<Table.Cell colspan={4} class="text-center py-8 text-muted-foreground">
 									No environment variables found. Create your first environment variable to get started.
 								</Table.Cell>
 							</Table.Row>
@@ -429,6 +426,9 @@
 									</Table.Cell>
 									<Table.Cell class="text-muted-foreground font-mono text-sm">
 										{env.value}
+									</Table.Cell>
+									<Table.Cell class="text-muted-foreground">
+										{formatDate(env.created_at)}
 									</Table.Cell>
 									<Table.Cell>
 										<div class="flex items-center gap-1">
@@ -454,8 +454,8 @@
 					</Table.Body>
 				</Table.Root>
 			</div>
-		</Tabs.Content>
-	</Tabs.Root>
+		</div>
+	</div>
 </AppBase>
 <!-- Create Dialog -->
 <Dialog.Root open={showCreateDialog} onOpenChange={(open) => showCreateDialog = open}>

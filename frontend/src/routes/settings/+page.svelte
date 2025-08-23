@@ -1,11 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { SidebarTrigger } from '$lib/components/ui/sidebar';
-	import { Separator } from '$lib/components/ui/separator';
+	import AppBase from '$lib/layouts/AppBase.svelte';
 	import { Label } from '$lib/components/ui/label';
-	import { Switch } from '$lib/components/ui/switch';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import { Settings, Globe, Palette, Monitor, Sun, Moon, Zap, Key, Shield } from 'lucide-svelte';
+	import { Globe, Palette, Monitor, Sun, Moon, Cog } from 'lucide-svelte';
 	import { settingsStore, type UISettings } from '$lib/stores/settings.svelte';
 	import { mode } from 'mode-watcher';
 
@@ -39,9 +37,6 @@
 		await settingsStore.updateTheme(theme);
 	}
 
-	async function updateAutoStart(autoStart: boolean) {
-		await settingsStore.updateAutoStart(autoStart);
-	}
 
 	function getLanguageLabel(value: string) {
 		return languages.find((lang) => lang.value === value)?.label || value;
@@ -53,24 +48,10 @@
 </script>
 
 <svelte:head>
-	<title>Settings - Teatime</title>
+	<title>Application - Teatime</title>
 </svelte:head>
 
-<div class="settings-page bg-background flex h-screen w-full flex-col">
-	<!-- Header -->
-	<header class="bg-card border-b">
-		<div class="flex h-16 items-center gap-2 px-4">
-			<SidebarTrigger />
-			<Separator orientation="vertical" class="mr-2 h-4" />
-			<div class="flex items-center gap-2">
-				<Settings class="text-muted-foreground h-5 w-5" />
-				<h1 class="text-lg font-semibold">Settings</h1>
-			</div>
-		</div>
-	</header>
-
-	<!-- Main content -->
-	<main class="flex-1 overflow-y-auto p-6">
+<AppBase title="Application" icon={Cog}>
 		<div class="space-y-8">
 			<!-- Language Settings -->
 			<section class="space-y-6">
@@ -182,26 +163,4 @@
 				</div>
 			</section>
 		</div>
-	</main>
-</div>
-
-
-<style>
-	/* Custom scrollbar */
-	.overflow-y-auto::-webkit-scrollbar {
-		width: 6px;
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-track {
-		background: transparent;
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-thumb {
-		background-color: hsl(var(--border));
-		border-radius: 3px;
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-		background-color: hsl(var(--muted-foreground));
-	}
-</style>
+</AppBase>
