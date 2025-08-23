@@ -11,13 +11,102 @@ import (
 )
 
 func init() {
+	// File Delete Node
+	node.RegisterNode(&FileDeleteActionNode{
+		BaseNode: node.NewBaseNode(
+			"teatime.action.file.delete",
+			node.NodeTypeAction,
+			"File Delete",
+			"파일 또는 디렉토리를 삭제합니다.",
+			"Trash2",
+			[]node.NodeProperty{
+				node.StringProp("path", "Path",
+					node.WithDescription("삭제할 파일 또는 디렉토리의 경로를 입력하세요"),
+					node.WithPlaceholder("/path/to/file.txt or /path/to/directory"),
+					node.Required(),
+				),
+				node.BoolProp("recursive", "Recursive",
+					node.WithDescription("디렉토리를 재귀적으로 삭제할지 여부"),
+					node.OptionalWithDefault(false),
+				),
+			},
+			[]node.NodeProperty{
+				node.OutputProp(node.String, "deletedPath", "Deleted Path",
+					node.WithDescription("삭제된 파일 또는 디렉토리의 경로입니다."),
+				),
+				node.OutputProp(node.Bool, "wasDirectory", "Was Directory",
+					node.WithDescription("삭제된 경로가 디렉토리였는지 여부입니다."),
+				),
+			},
+			[]node.OutputHandle{
+				{
+					ID:          "success",
+					Label:       "Success",
+					Description: "File/directory deleted successfully",
+				},
+				{
+					ID:          "error",
+					Label:       "Error",
+					Description: "Failed to delete file/directory",
+				},
+			},
+		),
+	})
+
+	// File Move Node
+	node.RegisterNode(&FileMoveActionNode{
+		BaseNode: node.NewBaseNode(
+			"teatime.action.file.move",
+			node.NodeTypeAction,
+			"File Move",
+			"파일 또는 디렉토리를 이동하거나 이름을 변경합니다.",
+			"Move",
+			[]node.NodeProperty{
+				node.StringProp("sourcePath", "Source Path",
+					node.WithDescription("이동할 파일 또는 디렉토리의 경로를 입력하세요"),
+					node.WithPlaceholder("/path/to/source"),
+					node.Required(),
+				),
+				node.StringProp("destinationPath", "Destination Path",
+					node.WithDescription("목적지 경로를 입력하세요"),
+					node.WithPlaceholder("/path/to/destination"),
+					node.Required(),
+				),
+				node.BoolProp("createDirs", "Create Directories",
+					node.WithDescription("목적지 디렉토리가 없을 경우 자동으로 생성할지 여부"),
+					node.OptionalWithDefault(false),
+				),
+			},
+			[]node.NodeProperty{
+				node.OutputProp(node.String, "sourcePath", "Source Path",
+					node.WithDescription("원본 경로입니다."),
+				),
+				node.OutputProp(node.String, "destinationPath", "Destination Path",
+					node.WithDescription("목적지 경로입니다."),
+				),
+			},
+			[]node.OutputHandle{
+				{
+					ID:          "success",
+					Label:       "Success",
+					Description: "File/directory moved successfully",
+				},
+				{
+					ID:          "error",
+					Label:       "Error",
+					Description: "Failed to move file/directory",
+				},
+			},
+		),
+	})
+
 	// File Read Node
 	node.RegisterNode(&FileReadActionNode{
 		BaseNode: node.NewBaseNode(
 			"teatime.action.file.read",
 			node.NodeTypeAction,
 			"File Read",
-			"파일을 읽어서 내용을 반환하는 액션 노드입니다.",
+			"파일을 읽어서 내용을 반환합니다.",
 			"FileText",
 			[]node.NodeProperty{
 				node.StringProp("path", "File Path",
@@ -62,7 +151,7 @@ func init() {
 			"teatime.action.file.write",
 			node.NodeTypeAction,
 			"File Write",
-			"내용을 파일에 저장하는 액션 노드입니다.",
+			"내용을 파일에 저장합니다.",
 			"Save",
 			[]node.NodeProperty{
 				node.StringProp("path", "File Path",
@@ -295,6 +384,185 @@ func (f *FileWriteActionNode) Run(ctx context.Context, resolvedProps node.Proper
 		Output: map[string]any{
 			"path":         props.Path,
 			"bytesWritten": int64(bytesWritten),
+		},
+		Error:         nil,
+		Continue:      true,
+		OutputHandles: []string{"success"},
+	}
+}
+
+// FileDeleteActionNode deletes files and directories.
+type FileDeleteActionNode struct {
+	node.BaseNode
+}
+
+type fileDeleteProps struct {
+	Path      string `mapstructure:"path"`
+	Recursive bool   `mapstructure:"recursive"`
+}
+
+func (f *FileDeleteActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+	var props fileDeleteProps
+	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
+		return node.NodeResult{
+			Error:         err,
+			Continue:      false,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	if props.Path == "" {
+		return node.NodeResult{
+			Output: map[string]any{
+				"deletedPath":  "",
+				"wasDirectory": false,
+			},
+			Error:         fmt.Errorf("path is required"),
+			Continue:      true,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	// Check if path exists and if it's a directory
+	fileInfo, err := os.Stat(props.Path)
+	if err != nil {
+		return node.NodeResult{
+			Output: map[string]any{
+				"deletedPath":  props.Path,
+				"wasDirectory": false,
+			},
+			Error:         fmt.Errorf("failed to stat path: %w", err),
+			Continue:      true,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	isDirectory := fileInfo.IsDir()
+
+	// Delete the file or directory
+	if isDirectory && props.Recursive {
+		err = os.RemoveAll(props.Path)
+	} else if isDirectory && !props.Recursive {
+		err = os.Remove(props.Path) // Will fail if directory is not empty
+	} else {
+		err = os.Remove(props.Path)
+	}
+
+	if err != nil {
+		return node.NodeResult{
+			Output: map[string]any{
+				"deletedPath":  props.Path,
+				"wasDirectory": isDirectory,
+			},
+			Error:         fmt.Errorf("failed to delete: %w", err),
+			Continue:      true,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	return node.NodeResult{
+		Output: map[string]any{
+			"deletedPath":  props.Path,
+			"wasDirectory": isDirectory,
+		},
+		Error:         nil,
+		Continue:      true,
+		OutputHandles: []string{"success"},
+	}
+}
+
+// FileMoveActionNode moves/renames files and directories.
+type FileMoveActionNode struct {
+	node.BaseNode
+}
+
+type fileMoveProps struct {
+	SourcePath      string `mapstructure:"sourcePath"`
+	DestinationPath string `mapstructure:"destinationPath"`
+	CreateDirs      bool   `mapstructure:"createDirs"`
+}
+
+func (f *FileMoveActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+	var props fileMoveProps
+	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
+		return node.NodeResult{
+			Error:         err,
+			Continue:      false,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	if props.SourcePath == "" {
+		return node.NodeResult{
+			Output: map[string]any{
+				"sourcePath":      "",
+				"destinationPath": props.DestinationPath,
+			},
+			Error:         fmt.Errorf("source path is required"),
+			Continue:      true,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	if props.DestinationPath == "" {
+		return node.NodeResult{
+			Output: map[string]any{
+				"sourcePath":      props.SourcePath,
+				"destinationPath": "",
+			},
+			Error:         fmt.Errorf("destination path is required"),
+			Continue:      true,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	// Create destination directories if requested
+	if props.CreateDirs {
+		destDir := filepath.Dir(props.DestinationPath)
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			return node.NodeResult{
+				Output: map[string]any{
+					"sourcePath":      props.SourcePath,
+					"destinationPath": props.DestinationPath,
+				},
+				Error:         fmt.Errorf("failed to create destination directories: %w", err),
+				Continue:      true,
+				OutputHandles: []string{"error"},
+			}
+		}
+	}
+
+	// Check if source exists
+	if _, err := os.Stat(props.SourcePath); err != nil {
+		return node.NodeResult{
+			Output: map[string]any{
+				"sourcePath":      props.SourcePath,
+				"destinationPath": props.DestinationPath,
+			},
+			Error:         fmt.Errorf("source path does not exist: %w", err),
+			Continue:      true,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	// Move/rename the file or directory
+	err := os.Rename(props.SourcePath, props.DestinationPath)
+	if err != nil {
+		return node.NodeResult{
+			Output: map[string]any{
+				"sourcePath":      props.SourcePath,
+				"destinationPath": props.DestinationPath,
+			},
+			Error:         fmt.Errorf("failed to move: %w", err),
+			Continue:      true,
+			OutputHandles: []string{"error"},
+		}
+	}
+
+	return node.NodeResult{
+		Output: map[string]any{
+			"sourcePath":      props.SourcePath,
+			"destinationPath": props.DestinationPath,
 		},
 		Error:         nil,
 		Continue:      true,

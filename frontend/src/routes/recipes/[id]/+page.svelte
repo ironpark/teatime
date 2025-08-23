@@ -13,12 +13,6 @@
 	const recipeId = page.params.id || '';
 	const isNewRecipe = false;
 	const recipeStore = new RecipeStore(recipeId);
-	// Recipe loading state
-	// 	let loading = $state(true);
-	// let error = $state(null as string | null);
-	// let currentRecipe = $state(null as any);
-
-	// Load recipe data from the store
 
 	function handleSelectionChange(selection: { nodes: Node[]; edges: Edge[] }) {
 		recipeStore.selectedNodes = selection.nodes;
@@ -28,73 +22,6 @@
 	function deleteSelected() {
 		// recipeStore.deleteSelected();
 	}
-
-	// async function saveRecipe() {
-	// 	try {
-	// 		let recipe;
-			
-	// 		if (isNewRecipe) {
-	// 			// Create new recipe
-	// 			const result = await RecipesService.CreateRecipe(
-	// 				recipeStore.info.name || 'Untitled Recipe',
-	// 				recipeStore.info.description || 'No description'
-	// 			);
-				
-	// 			if (!result || !result.Recipe) {
-	// 				alert('Failed to create recipe. Please try again.');
-	// 				return;
-	// 			}
-				
-	// 			recipe = result.Recipe;
-	// 			currentRecipe = recipe;
-				
-	// 			// Update URL to reflect the new recipe ID (remove 'new')
-	// 			goto(`/recipes/${result.ID}`, { replaceState: true });
-	// 		} else {
-	// 			// Update existing recipe
-	// 			if (!currentRecipe) {
-	// 				alert('Recipe not found. Please try again.');
-	// 				return;
-	// 			}
-				
-	// 			recipe = { ...currentRecipe };
-	// 		}
-			
-	// 		// Update the recipe with current workflow data
-	// 		recipe.name = recipeStore.info.name || 'Untitled Recipe';
-	// 		recipe.description = recipeStore.info.description || 'No description';
-			
-	// 		recipe.nodes = recipeStore.nodes;
-			
-	// 		recipe.edges = edges.map(edge => ({
-	// 			id: edge.id,
-	// 			source: edge.source,
-	// 			target: edge.target,
-	// 			sourceHandle: edge.sourceHandle || '',
-	// 			targetHandle: edge.targetHandle || ''
-	// 		}));
-			
-	// 		// Save the recipe
-	// 		if (isNewRecipe) {
-	// 			await RecipesService.SaveRecipe(recipe);
-	// 		} else {
-	// 			await RecipesService.UpdateRecipe(recipeId, recipe);
-	// 		}
-			
-	// 		console.log('Recipe saved:', recipe);
-	// 		alert(`Recipe ${isNewRecipe ? 'created' : 'updated'} successfully!`);
-			
-	// 		// Only redirect to recipes list if it was a new recipe
-	// 		if (isNewRecipe) {
-	// 			goto('/recipes');
-	// 		}
-			
-	// 	} catch (error) {
-	// 		console.error('Failed to save recipe:', error);
-	// 		alert('Failed to save recipe. Please try again.');
-	// 	}
-	// }
-
 
 </script>
 

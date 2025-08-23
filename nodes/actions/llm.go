@@ -62,7 +62,7 @@ func init() {
 			"teatime.action.llm",
 			node.NodeTypeAction,
 			"LLM",
-			"LLM을 통해 텍스트를 생성하는 액션 노드입니다.",
+			"LLM을 통해 텍스트를 생성합니다.",
 			"Bot",
 			[]node.NodeProperty{
 				node.SelectProp("provider", "Provider", providers,

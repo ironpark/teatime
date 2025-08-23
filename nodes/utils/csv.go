@@ -18,7 +18,7 @@ func init() {
 			"teatime.util.csv.parse",
 			node.NodeTypeUtil,
 			"CSV Parse",
-			"CSV 문자열을 파싱하여 배열로 변환하는 유틸리티 노드입니다.",
+			"CSV 문자열을 파싱하여 배열로 변환합니다.",
 			"Table",
 			[]node.NodeProperty{
 				node.StringProp("csvString", "CSV String",
@@ -73,7 +73,7 @@ func init() {
 			"teatime.util.csv.generate",
 			node.NodeTypeUtil,
 			"CSV Generate",
-			"배열 데이터를 CSV 문자열로 변환하는 유틸리티 노드입니다.",
+			"배열 데이터를 CSV 문자열로 변환합니다.",
 			"FileSpreadsheet",
 			[]node.NodeProperty{
 				node.JSONProp("data", "Data",

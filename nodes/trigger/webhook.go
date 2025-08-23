@@ -15,7 +15,7 @@ func init() {
 			"teatime.trigger.webhook",
 			node.NodeTypeTrigger,
 			"Webhook",
-			"Webhook을 통해 워크플로우를 실행하는 트리거 노드입니다.",
+			"Webhook을 통해 워크플로우를 실행합니다.",
 			"Webhook",
 			[]node.NodeProperty{
 				node.StringProp("path", "Path",

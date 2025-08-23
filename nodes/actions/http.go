@@ -23,7 +23,7 @@ func init() {
 			"teatime.action.http",
 			node.NodeTypeAction,
 			"HTTP Request",
-			"HTTP 요청을 보내고 응답을 받는 액션 노드입니다.",
+			"HTTP 요청을 보내고 응답을 받습니다.",
 			"Globe",
 			[]node.NodeProperty{
 				node.StringProp("url", "URL",

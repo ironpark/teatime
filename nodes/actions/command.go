@@ -15,7 +15,7 @@ func init() {
 			"teatime.action.command",
 			node.NodeTypeAction,
 			"Command",
-			"시스템 명령어를 실행하는 액션 노드입니다.",
+			"시스템 명령어를 실행합니다.",
 			"Terminal",
 			[]node.NodeProperty{
 				node.StringProp("command", "Command",

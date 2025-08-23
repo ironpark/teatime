@@ -14,7 +14,7 @@ func init() {
 			"teatime.branch.conditional",
 			node.NodeTypeBranch,
 			"Conditional",
-			"조건에 따라 워크플로우를 분기하는 브랜치 노드입니다.",
+			"조건에 따라 워크플로우를 분기합니다.",
 			"GitBranch",
 			[]node.NodeProperty{
 				node.BoolProp("expression", "Expression",

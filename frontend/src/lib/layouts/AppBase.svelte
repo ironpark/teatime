@@ -2,25 +2,31 @@
 	import { onMount } from 'svelte';
 	import { SidebarTrigger } from '$lib/components/ui/sidebar';
 	import { Separator } from '$lib/components/ui/separator';
-
+	import { cn } from '$lib/utils';
     type Props = {
         title?: string;
         icon?: any;
         children: any;
         actions?: () => any;
+        class?: string;
+        mainClass?: string;
     };
 
     let {
         title,
         icon,
         children,
-        actions
+        actions,
+        class: className,
+        mainClass: mainClassName
     }: Props = $props();
 
+    const classes = cn('settings-page bg-background flex h-screen w-full flex-col', className);
+    const mainClasses = cn('flex-1 overflow-y-auto p-6', mainClassName);
 </script>
 
 
-<div class="settings-page bg-background flex h-screen w-full flex-col">
+<div class={classes}>
 	<!-- Header -->
 	<header class="bg-card border-b">
 		<div class="flex h-16 items-center gap-2 px-4">
@@ -43,7 +49,7 @@
 	</header>
 
 	<!-- Main content -->
-	<main class="flex-1 overflow-y-auto p-6">
+	<main class={mainClasses}>
         {@render children?.()}
 	</main>
 </div>

@@ -17,7 +17,7 @@ func init() {
 			"teatime.action.save",
 			node.NodeTypeAction,
 			"Save",
-			"파일을 저장하는 액션 노드입니다.",
+			"파일을 저장합니다.",
 			"Save",
 			[]node.NodeProperty{
 				node.StringProp("filePath", "File Path",

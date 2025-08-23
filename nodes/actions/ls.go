@@ -18,7 +18,7 @@ func init() {
 			"teatime.action.ls",
 			node.NodeTypeAction,
 			"ls",
-			"디렉토리의 파일 및 하위 디렉토리 목록을 조회하는 액션 노드입니다.",
+			"디렉토리의 파일 및 하위 디렉토리 목록을 조회합니다.",
 			"FolderOpen",
 			[]node.NodeProperty{
 				node.StringProp("path", "Directory Path",

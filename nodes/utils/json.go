@@ -19,7 +19,7 @@ func init() {
 			"teatime.util.json.parse",
 			node.NodeTypeUtil,
 			"JSON Parse",
-			"JSON 문자열을 파싱하여 객체로 변환하는 유틸리티 노드입니다.",
+			"JSON 문자열을 파싱하여 객체로 변환합니다.",
 			"Braces",
 			[]node.NodeProperty{
 				node.StringProp("jsonString", "JSON String",
@@ -63,7 +63,7 @@ func init() {
 			"teatime.util.json.stringify",
 			node.NodeTypeUtil,
 			"JSON Stringify",
-			"객체를 JSON 문자열로 변환하는 유틸리티 노드입니다.",
+			"객체를 JSON 문자열로 변환합니다.",
 			"Code",
 			[]node.NodeProperty{
 				node.JSONProp("object", "Object",
