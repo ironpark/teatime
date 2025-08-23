@@ -17,6 +17,7 @@
 	import NodePropertiesSheet from './NodePropertiesSheet.svelte';
 	import { setContext } from 'svelte';
 	import type { RecipeStore } from '$lib/stores/recipe.svelte';
+	import { settingsStore } from '$lib/stores/settings.svelte';
 	interface Props {
 		recipeStore: RecipeStore;
 		onNodesChange?: (nodes: Node[]) => void;
@@ -116,6 +117,7 @@
 			snapGrid={[15, 15]}
 			defaultEdgeOptions={{ type: 'smoothstep' }}
 			proOptions={{ hideAttribution: true }}
+			colorMode={settingsStore.theme}
 		>
 			<Controls />
 			<Background variant={BackgroundVariant.Dots} />

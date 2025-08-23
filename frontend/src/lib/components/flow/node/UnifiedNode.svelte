@@ -148,17 +148,17 @@
 <div
 	class={`transition-all duration-200 ${properties.length > 0 || outputs.length > 0 ? 'min-w-[240px]' : config?.minWidth || 'w-48'} 
 		${selected ? 'ring-primary shadow-lg ring-2' : 'shadow-sm'} 
-		${config?.color?.border || 'border-gray-200'} 
-		rounded-lg border bg-white p-3`}
+		${config?.color?.border || 'border-border'} 
+		rounded-lg border bg-card text-card-foreground p-3`}
 	ondblclick={() => handlers?.onDoubleClick?.(id)}
 >
 	<div class="mb-2 flex items-center justify-between">
 		<div class="flex items-center gap-2">
-			<div class={`rounded p-1 ${config?.color?.iconBg || 'bg-gray-100'}`}>
+			<div class={`rounded p-1 ${config?.color?.iconBg || 'bg-muted'}`}>
 				{#if iconString}
-					<LucideIcon name={iconString as any} class={`h-4 w-4 ${config?.color?.iconText || 'text-gray-600'}`} />
+					<LucideIcon name={iconString as any} class={`h-4 w-4 ${config?.color?.iconText || 'text-muted-foreground'}`} />
 				{:else}
-					<Package class={`h-4 w-4 ${config?.color?.iconText || 'text-gray-600'}`} />
+					<Package class={`h-4 w-4 ${config?.color?.iconText || 'text-muted-foreground'}`} />
 				{/if}
 			</div>
 			<span class="text-sm font-medium">{data.name} {typeName}</span>
@@ -172,7 +172,7 @@
 			<Button 
 				variant="ghost" 
 				size="icon" 
-				class="h-6 w-6 hover:bg-gray-100"
+				class="h-6 w-6"
 				onclick={(e) => {
 					e.stopPropagation();
 					handlers?.onEdit?.(id);
@@ -210,20 +210,20 @@
 				<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Properties</div>
 				<div class="space-y-1">
 					{#each properties as prop}
-						<div class="rounded bg-gray-50 p-1.5 text-xs">
+						<div class="rounded bg-muted/50 p-1.5 text-xs">
 							<div class="flex items-center justify-between gap-2">
 								<div class="flex items-center gap-2 flex-1">
 									{#if prop.description}
 									<Tooltip.Root>
 										<Tooltip.Trigger>
-											<HelpCircle class="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+											<HelpCircle class="h-3 w-3 text-muted-foreground hover:text-foreground cursor-help" />
 										</Tooltip.Trigger>
 										<Tooltip.Content>
 											<p class="text-xs max-w-[200px]">{prop.description}</p>
 										</Tooltip.Content>
 									</Tooltip.Root>
 									{/if}
-									<span class="font-medium text-gray-700 min-w-[60px]">
+									<span class="font-medium text-foreground min-w-[60px]">
 										{prop.name || prop.key}:
 									</span>
 									<div class="flex-1">
@@ -240,12 +240,12 @@
 													<span class="text-blue-700 text-xs">
 														{truncateText(bindingInfo.propertyName, 15)}
 													</span>
-													<Badge variant="outline" class="text-[9px] px-1 py-0 bg-blue-50 text-blue-700 border-blue-200">
+													<Badge variant="outline" class="text-[9px] px-1 py-0">
 														{bindingInfo.type}
 													</Badge>
 												</div>
 											{:else}
-												<span class="text-orange-600 text-xs">
+												<span class="text-destructive text-xs">
 													⚠️ Invalid binding
 												</span>
 											{/if}
@@ -254,25 +254,25 @@
 											{#if prop.type === 6 && prop.input?.type === InputType.InputTypeArgList}
 												{@const formatted = formatArgList(prop.value)}
 												{#if formatted}
-													<span class="text-gray-900 break-words font-mono text-xs">
+													<span class="text-foreground break-words font-mono text-xs">
 														{truncateText(formatted)}
 													</span>
 												{:else}
-													<span class="text-gray-400 italic">
+													<span class="text-muted-foreground italic">
 														No arguments
 													</span>
 												{/if}
 											{:else}
-												<span class="text-gray-900 break-words">
+												<span class="text-foreground break-words">
 													{truncateText(typeof prop.value === 'object' ? JSON.stringify(prop.value) : String(prop.value),25)}
 												</span>
 											{/if}
 										{:else if prop.options && prop.options.length > 0}
-											<span class="text-gray-500 italic">
+											<span class="text-muted-foreground italic">
 												[{truncateText(prop.options.join(', '))}]
 											</span>
 										{:else}
-											<span class="text-gray-400 italic">
+											<span class="text-muted-foreground italic">
 												Not set
 											</span>
 										{/if}
@@ -293,9 +293,9 @@
 				<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Outputs</div>
 				<div class="space-y-1">
 					{#each outputs as output}
-						<div class="flex items-center justify-between rounded bg-blue-50 px-1.5 py-1 text-xs">
-							<span class="font-medium text-blue-900">{output.name || output.key}</span>
-							<span class="text-blue-600 text-[10px]">
+						<div class="flex items-center justify-between rounded bg-blue-50 dark:bg-blue-950/50 px-1.5 py-1 text-xs">
+							<span class="font-medium text-blue-900 dark:text-blue-100">{output.name || output.key}</span>
+							<span class="text-blue-600 dark:text-blue-400 text-[10px]">
 								{getPropertyTypeDisplay(output.type)}
 							</span>
 						</div>
@@ -311,7 +311,7 @@
 
 {#if handleType === 'target' || handleType === 'both'}
 	<Handle type="target" position={Position.Left} 
-		style="left: 0px; width: 12px; height: 12px; background-color: rgba(255, 255, 255, 0.8); border-radius: 3px; border: 1px solid black; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);"
+		class="!w-3 !h-3 !bg-card !border-border !border !rounded-sm !shadow-sm"
 		{isConnectable} />
 {/if}
 
@@ -322,9 +322,10 @@
 		<Handle 
 			id={handle.id}	
 			type="source" 
-			position={Position.Bottom}>
+			position={Position.Bottom}
+			class="!w-3 !h-3 !bg-card !border-border !border !rounded-sm !shadow-sm">
 			<div class="flex flex-col items-center justify-center absolute top-3 left-0">
-				<span class="text-xs text-zinc-800 bg-gray-100 rounded-md px-1 py-0.5">{handle.label || handle.id}</span>
+				<span class="text-xs text-foreground bg-muted rounded-md px-1 py-0.5">{handle.label || handle.id}</span>
 			</div>
 		</Handle>
 	{:else}
@@ -332,9 +333,10 @@
 			id={handle.id}
 			type="source" 
 			position={Position.Right} 
-			style="top: {40 + (index * 55)}px; width: 12px; height: 12px; background-color: rgba(255, 255, 255, 0.8); border-radius: 3px; border: 1px solid black; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);">
+			style="top: {40 + (index * 55)}px;"
+			class="!w-3 !h-3 !bg-card !border-border !border !rounded-sm !shadow-sm">
 			<div class="flex flex-col items-center justify-center absolute top-3 left-0">
-				<span class="text-xs text-zinc-800 bg-gray-100 rounded-md px-1 py-0.5">{handle.label || handle.id}</span>
+				<span class="text-xs text-foreground bg-muted rounded-md px-1 py-0.5">{handle.label || handle.id}</span>
 			</div>
 		</Handle>
 	{/if}
