@@ -2,15 +2,15 @@
   import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
-  import { SidebarTrigger } from '$lib/components/ui/sidebar';
-  import { Separator } from '$lib/components/ui/separator';
+  import AppBase from '$lib/layouts/AppBase.svelte';
   import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '$lib/components/ui/dialog';
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
   import { 
     Plus, 
     Search, 
-    ChefHat
+    ChefHat,
+    Edit
   } from 'lucide-svelte';
   import { goto } from '$app/navigation';
   import { RecipesService } from '$bindings/services';
@@ -21,11 +21,18 @@
   let searchTerm = $state('');
   let loading = $state(true);
   
-  // Dialog state
-  let dialogOpen = $state(false);
+  // Create Dialog state
+  let createDialogOpen = $state(false);
   let newRecipeName = $state('');
   let newRecipeDescription = $state('');
   let creating = $state(false);
+
+  // Edit Dialog state
+  let editDialogOpen = $state(false);
+  let editingRecipe = $state<RecipeInfo | null>(null);
+  let editName = $state('');
+  let editDescription = $state('');
+  let updating = $state(false);
 
   onMount(() => {
     loadRecipes();
@@ -45,7 +52,7 @@
   }
 
   function createNewRecipe() {
-    dialogOpen = true;
+    createDialogOpen = true;
   }
 
   async function handleCreateRecipe() {
@@ -62,7 +69,7 @@
         // Reset form and close dialog
         newRecipeName = '';
         newRecipeDescription = '';
-        dialogOpen = false;
+        createDialogOpen = false;
         
         // Reload recipes to show the new one
         await loadRecipes();
@@ -81,11 +88,59 @@
   function cancelCreateRecipe() {
     newRecipeName = '';
     newRecipeDescription = '';
-    dialogOpen = false;
+    createDialogOpen = false;
   }
 
-  function editRecipe(recipe: RecipeInfo) {
+  function handleCardClick(recipe: RecipeInfo) {
     goto(`/recipes/${recipe.ID}`);
+  }
+
+  function handleEditDetails(recipe: RecipeInfo) {
+    editingRecipe = recipe;
+    editName = recipe.Name;
+    editDescription = recipe.Description;
+    editDialogOpen = true;
+  }
+
+  async function handleUpdateRecipe() {
+    if (!editingRecipe || !editName.trim()) return;
+    
+    try {
+      updating = true;
+      // Get the full recipe data
+      const fullRecipe = await RecipesService.GetRecipe(editingRecipe.ID);
+      if (!fullRecipe) {
+        alert('Failed to load recipe for update');
+        return;
+      }
+      
+      // Update the name and description
+      fullRecipe.name = editName.trim();
+      fullRecipe.description = editDescription.trim();
+      
+      await RecipesService.UpdateRecipe(editingRecipe.ID, fullRecipe);
+      
+      // Reset form and close dialog
+      editName = '';
+      editDescription = '';
+      editingRecipe = null;
+      editDialogOpen = false;
+      
+      // Reload recipes to show the updated one
+      await loadRecipes();
+    } catch (error) {
+      console.error('Failed to update recipe:', error);
+      alert('Failed to update recipe. Please try again.');
+    } finally {
+      updating = false;
+    }
+  }
+
+  function cancelEditRecipe() {
+    editName = '';
+    editDescription = '';
+    editingRecipe = null;
+    editDialogOpen = false;
   }
 
   async function deleteRecipe(recipe: RecipeInfo) {
@@ -127,21 +182,6 @@
     }
   }
 
-  async function executeRecipe(recipe: RecipeInfo) {
-    try {
-      // Get the full recipe data
-      const fullRecipe = await RecipesService.GetRecipe(recipe.ID);
-      if (fullRecipe) {
-        sessionStorage.setItem('recipe-to-execute', JSON.stringify(fullRecipe));
-        goto('/execution');
-      } else {
-        alert('Failed to load recipe for execution');
-      }
-    } catch (error) {
-      console.error('Failed to load recipe:', error);
-      alert('Failed to load recipe. Please try again.');
-    }
-  }
 
   let filteredRecipes = $derived(
     recipes.filter(recipe =>
@@ -149,93 +189,89 @@
       recipe.Description.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
 </script>
 
 <svelte:head>
   <title>Teatime</title>
 </svelte:head>
 
-<div class="flex flex-col h-full">
-  <header class="flex h-16 items-center gap-2 border-b px-4">
-    <SidebarTrigger />
-    <Separator orientation="vertical" class="mr-2 h-4" />
-    <h1 class="text-lg font-semibold">Teatime</h1>
-  </header>
+<AppBase title="Recipe Library" icon={ChefHat}>
+  {#snippet actions()}
+    <Dialog bind:open={createDialogOpen}>
+      <DialogTrigger>
+        <Button onclick={createNewRecipe} class="gap-2">
+          <Plus class="w-4 h-4" />
+          New Recipe
+        </Button>
+      </DialogTrigger>
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create New Recipe</DialogTitle>
+          <DialogDescription>
+            Create a new automation recipe. You can add steps and configure it after creation.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div class="space-y-4 py-4">
+          <div class="space-y-2">
+            <Label for="recipe-name">Recipe Name</Label>
+            <Input
+              id="recipe-name"
+              bind:value={newRecipeName}
+              placeholder="Enter recipe name..."
+              disabled={creating}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleCreateRecipe();
+                }
+              }}
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <Label for="recipe-description">Description (optional)</Label>
+            <Textarea
+              id="recipe-description"
+              bind:value={newRecipeDescription}
+              placeholder="Describe what this recipe does..."
+              disabled={creating}
+              rows={3}
+            />
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-2">
+          <Button variant="outline" onclick={cancelCreateRecipe} disabled={creating}>
+            Cancel
+          </Button>
+          <Button 
+            onclick={handleCreateRecipe} 
+            disabled={creating || !newRecipeName.trim()}
+            class="gap-2"
+          >
+            {#if creating}
+              <div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              Creating...
+            {:else}
+              <Plus class="w-4 h-4" />
+              Create Recipe
+            {/if}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  {/snippet}
 
-  <main class="flex-1 p-6 space-y-6">
+  <div class="space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight">Recipe Library</h2>
         <p class="text-muted-foreground">
           Manage and organize your automation recipes
         </p>
       </div>
-      
-      <Dialog bind:open={dialogOpen}>
-        <DialogTrigger>
-          <Button onclick={createNewRecipe} class="gap-2">
-            <Plus class="w-4 h-4" />
-            New Recipe
-          </Button>
-        </DialogTrigger>
-        <DialogContent class="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Recipe</DialogTitle>
-            <DialogDescription>
-              Create a new automation recipe. You can add steps and configure it after creation.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div class="space-y-4 py-4">
-            <div class="space-y-2">
-              <Label for="recipe-name">Recipe Name</Label>
-              <Input
-                id="recipe-name"
-                bind:value={newRecipeName}
-                placeholder="Enter recipe name..."
-                disabled={creating}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleCreateRecipe();
-                  }
-                }}
-              />
-            </div>
-            
-            <div class="space-y-2">
-              <Label for="recipe-description">Description (optional)</Label>
-              <Textarea
-                id="recipe-description"
-                bind:value={newRecipeDescription}
-                placeholder="Describe what this recipe does..."
-                disabled={creating}
-                rows={3}
-              />
-            </div>
-          </div>
-          
-          <div class="flex justify-end gap-2">
-            <Button variant="outline" onclick={cancelCreateRecipe} disabled={creating}>
-              Cancel
-            </Button>
-            <Button 
-              onclick={handleCreateRecipe} 
-              disabled={creating || !newRecipeName.trim()}
-              class="gap-2"
-            >
-              {#if creating}
-                <div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Creating...
-              {:else}
-                <Plus class="w-4 h-4" />
-                Create Recipe
-              {/if}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
 
     <!-- Search and filters -->
@@ -283,14 +319,74 @@
         {#each filteredRecipes as recipe (recipe.ID)}
           <RecipeCard
             {recipe}
-            onEdit={editRecipe}
+            onCardClick={handleCardClick}
+            onEditDetails={handleEditDetails}
             onDelete={deleteRecipe}
             onDuplicate={duplicateRecipe}
-            onExecute={executeRecipe}
           />
         {/each}
       </div>
     {/if}
-  </main>
-</div>
+  </div>
+</AppBase>
+
+<!-- Edit Recipe Dialog -->
+<Dialog bind:open={editDialogOpen}>
+  <DialogContent class="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle>Edit Recipe Details</DialogTitle>
+      <DialogDescription>
+        Update the name and description of your recipe.
+      </DialogDescription>
+    </DialogHeader>
+    
+    <div class="space-y-4 py-4">
+      <div class="space-y-2">
+        <Label for="edit-recipe-name">Recipe Name</Label>
+        <Input
+          id="edit-recipe-name"
+          bind:value={editName}
+          placeholder="Enter recipe name..."
+          disabled={updating}
+          onkeydown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleUpdateRecipe();
+            }
+          }}
+        />
+      </div>
+      
+      <div class="space-y-2">
+        <Label for="edit-recipe-description">Description (optional)</Label>
+        <Textarea
+          id="edit-recipe-description"
+          bind:value={editDescription}
+          placeholder="Describe what this recipe does..."
+          disabled={updating}
+          rows={3}
+        />
+      </div>
+    </div>
+    
+    <div class="flex justify-end gap-2">
+      <Button variant="outline" onclick={cancelEditRecipe} disabled={updating}>
+        Cancel
+      </Button>
+      <Button 
+        onclick={handleUpdateRecipe} 
+        disabled={updating || !editName.trim()}
+        class="gap-2"
+      >
+        {#if updating}
+          <div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+          Updating...
+        {:else}
+          <Edit class="w-4 h-4" />
+          Update Recipe
+        {/if}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 

@@ -34,66 +34,49 @@
 	function closeDialog() {
 		showDialog = false;
 	}
-	
-	// Find a default action node to add with the Plus button
-	let defaultActionNode = $derived(
-		nodeStore.actionNodes.length > 0 ? nodeStore.actionNodes[0].ref : null
-	);
 </script>
 
 <!-- Floating Menu -->
 <div class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform">
-	<div class="bg-card flex items-center gap-2 rounded-full border p-2 shadow-lg">
+	<div class="bg-card flex items-center gap-2 rounded-full border p-1 shadow-lg">
 		<!-- Trigger Button -->
 		<Button
 			variant="ghost"
 			size="icon"
-			class="h-12 w-12 rounded-full hover:bg-blue-100 hover:text-blue-600"
+			class="h-10 w-10 rounded-full hover:bg-blue-100 hover:text-blue-600"
 			onclick={() => openDialog('trigger')}
 		>
-			<Zap class="h-5 w-5" />
+			<Zap class="h-4 w-4" />
 		</Button>
 
 		<!-- Branch Button -->
 		<Button
 			variant="ghost"
 			size="icon"
-			class="h-12 w-12 rounded-full hover:bg-yellow-100 hover:text-yellow-600"
+			class="h-10 w-10 rounded-full hover:bg-yellow-100 hover:text-yellow-600"
 			onclick={() => openDialog('branch')}
 		>
-			<GitBranch class="h-5 w-5" />
+			<GitBranch class="h-4 w-4" />
 		</Button>
 
 		<!-- Action Button -->
 		<Button
 			variant="ghost"
 			size="icon"
-			class="h-12 w-12 rounded-full hover:bg-green-100 hover:text-green-600"
+			class="h-10 w-10 rounded-full hover:bg-green-100 hover:text-green-600"
 			onclick={() => openDialog('action')}
 		>
-			<Play class="h-5 w-5" />
+			<Play class="h-4 w-4" />
 		</Button>
 
 		<!-- Utility Button -->
 		<Button
 			variant="ghost"
 			size="icon"
-			class="h-12 w-12 rounded-full hover:bg-purple-100 hover:text-purple-600"
+			class="h-10	 w-10 rounded-full hover:bg-purple-100 hover:text-purple-600"
 			onclick={() => openDialog('utility')}
 		>
-			<Settings class="h-5 w-5" />
-		</Button>
-
-		<!-- Add Generic Node Button -->
-		<div class="bg-border mx-1 h-8 w-px"></div>
-		<Button
-			variant="ghost"
-			size="icon"
-			class="hover:bg-primary hover:text-primary-foreground h-12 w-12 rounded-full"
-			onclick={() => defaultActionNode && addNode(defaultActionNode)}
-			disabled={!defaultActionNode}
-		>
-			<Plus class="h-5 w-5" />
+			<Settings class="h-4 w-4" />
 		</Button>
 	</div>
 </div>
