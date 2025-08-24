@@ -128,7 +128,7 @@ func (s *TriggersService) GetTriggersByRecipe(recipeID string) ([]*trigger.Insta
 }
 
 // ExecuteCommand executes a command trigger (for command-based triggers)
-func (s *TriggersService) ExecuteCommand(command string, args map[string]interface{}) error {
+func (s *TriggersService) ExecuteCommand(command string, args map[string]any) error {
 	if cmdHandler, ok := s.triggerManager.GetHandler(trigger.TypeCommand).(*handlers.CommandHandler); ok {
 		return cmdHandler.ExecuteCommand(command, args)
 	}

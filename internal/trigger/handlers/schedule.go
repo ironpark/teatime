@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/robfig/cron/v3"
 	"github.com/ironpark/teatime/internal/trigger"
 )
@@ -13,6 +14,26 @@ import (
 type ScheduleHandler struct {
 	manager   *trigger.Manager
 	scheduler *cron.Cron
+}
+
+// ScheduleConfig represents schedule configuration
+type ScheduleConfig struct {
+	Cron string `mapstructure:"cron"`
+}
+
+// Validate validates the schedule configuration
+func (c *ScheduleConfig) Validate() error {
+	if c.Cron == "" {
+		return fmt.Errorf("cron expression is required")
+	}
+
+	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+	_, err := parser.Parse(c.Cron)
+	if err != nil {
+		return fmt.Errorf("invalid cron expression '%s': %w", c.Cron, err)
+	}
+
+	return nil
 }
 
 func (h *ScheduleHandler) Initialize(ctx context.Context, manager *trigger.Manager) error {
@@ -35,19 +56,23 @@ func (h *ScheduleHandler) Type() trigger.TriggerType {
 	return trigger.TypeSchedule
 }
 
-func (h *ScheduleHandler) Validate(config map[string]interface{}) error {
-	cronExpr, ok := config["cron"].(string)
-	if !ok || cronExpr == "" {
-		return fmt.Errorf("cron expression is required")
-	}
-
-	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
-	_, err := parser.Parse(cronExpr)
+func (h *ScheduleHandler) Validate(configMap map[string]any) error {
+	// Use mapstructure directly for validation
+	var config ScheduleConfig
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:  &config,
+		TagName: "mapstructure",
+	})
 	if err != nil {
-		return fmt.Errorf("invalid cron expression '%s': %w", cronExpr, err)
+		return fmt.Errorf("failed to create decoder: %w", err)
 	}
 
-	return nil
+	if err := decoder.Decode(configMap); err != nil {
+		return fmt.Errorf("invalid schedule config: %w", err)
+	}
+
+	// Validate using ScheduleConfig's Validate method
+	return config.Validate()
 }
 
 func (h *ScheduleHandler) Register(ctx context.Context, instance *trigger.Instance) error {
@@ -55,13 +80,16 @@ func (h *ScheduleHandler) Register(ctx context.Context, instance *trigger.Instan
 		return fmt.Errorf("scheduler not initialized")
 	}
 
-	cronExpr := instance.Config["cron"].(string)
+	var config ScheduleConfig
+	if err := instance.Bind(&config); err != nil {
+		return fmt.Errorf("failed to bind schedule config: %w", err)
+	}
 	
-	entryID, err := h.scheduler.AddFunc(cronExpr, func() {
+	entryID, err := h.scheduler.AddFunc(config.Cron, func() {
 		if h.manager != nil {
-			data := map[string]interface{}{
+			data := map[string]any{
 				"timestamp": time.Now(),
-				"cron":      cronExpr,
+				"cron":      config.Cron,
 				"scheduled": true,
 			}
 			h.manager.ExecuteTrigger(instance.ID, data)
@@ -81,7 +109,7 @@ func (h *ScheduleHandler) Register(ctx context.Context, instance *trigger.Instan
 
 	instance.Config["entryID"] = int(entryID)
 
-	fmt.Printf("Scheduled cron job: %s (ID: %d)\n", cronExpr, entryID)
+	fmt.Printf("Scheduled cron job: %s (ID: %d)\n", config.Cron, entryID)
 	return nil
 }
 

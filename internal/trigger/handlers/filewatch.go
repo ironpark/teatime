@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/trigger"
 )
 
@@ -17,6 +18,26 @@ type FileWatchHandler struct {
 	watcher *fsnotify.Watcher
 	watches map[string]string
 	mu      sync.RWMutex
+}
+
+// FileWatchConfig represents file watch configuration
+type FileWatchConfig struct {
+	Path string `mapstructure:"path"`
+}
+
+// Validate validates the file watch configuration
+func (c *FileWatchConfig) Validate() error {
+	if c.Path == "" {
+		return fmt.Errorf("file path is required")
+	}
+
+	absPath, err := filepath.Abs(c.Path)
+	if err != nil {
+		return fmt.Errorf("invalid file path: %w", err)
+	}
+	
+	c.Path = absPath
+	return nil
 }
 
 func (h *FileWatchHandler) Initialize(ctx context.Context, manager *trigger.Manager) error {
@@ -51,18 +72,29 @@ func (h *FileWatchHandler) Type() trigger.TriggerType {
 	return trigger.TypeFileWatch
 }
 
-func (h *FileWatchHandler) Validate(config map[string]interface{}) error {
-	path, ok := config["path"].(string)
-	if !ok || path == "" {
-		return fmt.Errorf("file path is required")
+func (h *FileWatchHandler) Validate(configMap map[string]any) error {
+	// Use mapstructure directly for validation
+	var config FileWatchConfig
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:  &config,
+		TagName: "mapstructure",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create decoder: %w", err)
 	}
 
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		return fmt.Errorf("invalid file path: %w", err)
+	if err := decoder.Decode(configMap); err != nil {
+		return fmt.Errorf("invalid file watch config: %w", err)
 	}
-	
-	config["path"] = absPath
+
+	// Validate using FileWatchConfig's Validate method
+	if err := config.Validate(); err != nil {
+		return err
+	}
+
+	// Update configMap with any defaults set by validation
+	configMap["path"] = config.Path
+
 	return nil
 }
 
@@ -71,34 +103,37 @@ func (h *FileWatchHandler) Register(ctx context.Context, instance *trigger.Insta
 		return fmt.Errorf("file watcher not initialized")
 	}
 
-	path := instance.Config["path"].(string)
+	var config FileWatchConfig
+	if err := instance.Bind(&config); err != nil {
+		return fmt.Errorf("failed to bind file watch config: %w", err)
+	}
 	
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	if existingTriggerID, exists := h.watches[path]; exists {
-		return fmt.Errorf("path '%s' is already being watched by trigger %s", path, existingTriggerID)
+	if existingTriggerID, exists := h.watches[config.Path]; exists {
+		return fmt.Errorf("path '%s' is already being watched by trigger %s", config.Path, existingTriggerID)
 	}
 
-	err := h.watcher.Add(path)
+	err := h.watcher.Add(config.Path)
 	if err != nil {
-		return fmt.Errorf("failed to watch path '%s': %w", path, err)
+		return fmt.Errorf("failed to watch path '%s': %w", config.Path, err)
 	}
 
-	h.watches[path] = instance.ID
+	h.watches[config.Path] = instance.ID
 
 	instance.SetCleanup(func() error {
 		h.mu.Lock()
 		defer h.mu.Unlock()
 		
 		if h.watcher != nil {
-			h.watcher.Remove(path)
+			h.watcher.Remove(config.Path)
 		}
-		delete(h.watches, path)
+		delete(h.watches, config.Path)
 		return nil
 	})
 
-	fmt.Printf("Watching file path: %s\n", path)
+	fmt.Printf("Watching file path: %s\n", config.Path)
 	return nil
 }
 
@@ -137,7 +172,7 @@ func (h *FileWatchHandler) handleFileEvent(event fsnotify.Event) {
 		return
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"path":      event.Name,
 		"operation": event.Op.String(),
 		"timestamp": time.Now(),
