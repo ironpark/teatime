@@ -34,39 +34,37 @@ type Manager struct {
 }
 
 // NewManager creates a new trigger manager
-func NewManager(loader RecipeLoader, runner RecipeRunner) *Manager {
+func NewManager(loader RecipeLoader, runner RecipeRunner, handlers []Handler) *Manager {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Convert slice to map
+	handlersMap := make(map[TriggerType]Handler)
+	for _, handler := range handlers {
+		handlersMap[handler.Type()] = handler
+	}
 
 	m := &Manager{
 		recipeLoader:   loader,
 		recipeRunner:   runner,
-		handlers:       make(map[TriggerType]Handler),
+		handlers:       handlersMap,
 		activeTriggers: make(map[string]*Instance),
 		recipeTriggers: make(map[string][]*Instance),
 		ctx:            ctx,
 		cancel:         cancel,
 	}
 
-	// Register handlers
-	m.registerHandlers()
+	// Initialize handlers
+	for _, handler := range handlers {
+		if initializable, ok := handler.(interface{ Initialize(context.Context, *Manager) error }); ok {
+			if err := initializable.Initialize(ctx, m); err != nil {
+				log.Printf("Failed to initialize handler %s: %v", handler.Type(), err)
+			}
+		}
+	}
 
 	return m
 }
 
-// registerHandlers registers all available trigger handlers
-func (m *Manager) registerHandlers() {
-	m.handlers[TypeWebhook] = &WebhookHandler{}
-	m.handlers[TypeSchedule] = &ScheduleHandler{}
-	m.handlers[TypeCommand] = &CommandHandler{}
-	m.handlers[TypeFileWatch] = &FileWatchHandler{}
-
-	// Initialize handlers with manager reference
-	for _, handler := range m.handlers {
-		if initializable, ok := handler.(interface{ SetManager(interface{}) }); ok {
-			initializable.SetManager(m)
-		}
-	}
-}
 
 // SetStore sets the optional store for persistence
 func (m *Manager) SetStore(store Store) {
@@ -80,6 +78,17 @@ func (m *Manager) Start() error {
 
 	if m.running {
 		return fmt.Errorf("trigger manager already running")
+	}
+
+	// Start all handlers
+	for _, handler := range m.handlers {
+		if runnable, ok := handler.(interface{ Run(context.Context) error }); ok {
+			go func(h interface{ Run(context.Context) error }, handlerType TriggerType) {
+				if err := h.Run(m.ctx); err != nil {
+					log.Printf("Handler %s run error: %v", handlerType, err)
+				}
+			}(runnable, handler.Type())
+		}
 	}
 
 	m.running = true

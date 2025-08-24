@@ -8,6 +8,7 @@ import (
 	"github.com/ironpark/teatime/internal/recipe"
 	"github.com/ironpark/teatime/internal/runner"
 	"github.com/ironpark/teatime/internal/trigger"
+	"github.com/ironpark/teatime/internal/trigger/handlers"
 	"github.com/ironpark/teatime/stores"
 )
 
@@ -54,7 +55,15 @@ func NewTriggersService(store *stores.Store, recipesService *RecipesService) *Tr
 	loader := &recipeLoader{store: store}
 	runner := &recipeRunner{recipesService: recipesService}
 	
-	manager := trigger.NewManager(loader, runner)
+	// Create handlers slice
+	handlersList := []trigger.Handler{
+		&handlers.WebhookHandler{},
+		&handlers.ScheduleHandler{},
+		&handlers.CommandHandler{},
+		&handlers.FileWatchHandler{},
+	}
+	
+	manager := trigger.NewManager(loader, runner, handlersList)
 	
 	return &TriggersService{
 		store:          store,
@@ -120,7 +129,7 @@ func (s *TriggersService) GetTriggersByRecipe(recipeID string) ([]*trigger.Insta
 
 // ExecuteCommand executes a command trigger (for command-based triggers)
 func (s *TriggersService) ExecuteCommand(command string, args map[string]interface{}) error {
-	if cmdHandler, ok := s.triggerManager.GetHandler(trigger.TypeCommand).(*trigger.CommandHandler); ok {
+	if cmdHandler, ok := s.triggerManager.GetHandler(trigger.TypeCommand).(*handlers.CommandHandler); ok {
 		return cmdHandler.ExecuteCommand(command, args)
 	}
 	return fmt.Errorf("command handler not found")
@@ -128,7 +137,7 @@ func (s *TriggersService) ExecuteCommand(command string, args map[string]interfa
 
 // GetRegisteredCommands returns all registered commands
 func (s *TriggersService) GetRegisteredCommands() []string {
-	if cmdHandler, ok := s.triggerManager.GetHandler(trigger.TypeCommand).(*trigger.CommandHandler); ok {
+	if cmdHandler, ok := s.triggerManager.GetHandler(trigger.TypeCommand).(*handlers.CommandHandler); ok {
 		return cmdHandler.GetRegisteredCommands()
 	}
 	return []string{}
