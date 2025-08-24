@@ -95,8 +95,8 @@
             {workflowData.status}
           </Badge> -->
 			</div>
-			<CardTitle class="mb-1 text-lg pr-28">{recipe.Name}</CardTitle>
-			<CardDescription class="line-clamp-2 pr-28">
+			<CardTitle class="mb-1 text-lg">{recipe.Name}</CardTitle>
+			<CardDescription class="line-clamp-2">
 				{recipe.Description}
 			</CardDescription>
 		</div>

@@ -113,11 +113,11 @@
 				</DialogDescription>
 			</DialogHeader>
 
-			<div class="grid grid-cols-1 gap-4 py-4 md:grid-cols-2">
+			<div class="grid grid-cols-1 gap-2 py-4 md:grid-cols-2">
 				{#each currentCategory.nodes as node}
 					<Button
 						variant="outline"
-						class={`h-auto justify-start p-4 transition-all hover:shadow-md ${node.color}`}
+						class={`h-auto justify-start p-3 transition-all hover:shadow-md ${node.color}`}
 						onclick={() => onNodeSelect(node.ref)}
 					>
 						<div class="flex w-full items-start gap-3 text-left">
