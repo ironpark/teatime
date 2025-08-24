@@ -18,7 +18,7 @@ func init() {
 			"teatime.action.ls",
 			node.NodeTypeAction,
 			"ls",
-			"디렉토리의 파일 및 하위 디렉토리 목록을 조회합니다.",
+			"파일 및 하위 디렉토리 목록을 조회합니다.",
 			"FolderOpen",
 			[]node.NodeProperty{
 				node.StringProp("path", "Directory Path",
@@ -91,29 +91,29 @@ func (c *LsActionNode) Run(ctx context.Context, resolvedProps node.PropertyConte
 	if path == "" {
 		path = "."
 	}
-	
+
 	recursive, _ := resolvedProps["recursive"].(bool)
 	filterType, _ := resolvedProps["filterType"].(string)
 	if filterType == "" {
 		filterType = "all"
 	}
-	
+
 	pattern, _ := resolvedProps["pattern"].(string)
 	if pattern == "" {
 		pattern = "*"
 	}
-	
+
 	showHidden, _ := resolvedProps["showHidden"].(bool)
 	sortBy, _ := resolvedProps["sortBy"].(string)
 	if sortBy == "" {
 		sortBy = "name"
 	}
-	
+
 	sortOrder, _ := resolvedProps["sortOrder"].(string)
 	if sortOrder == "" {
 		sortOrder = "asc"
 	}
-	
+
 	maxDepth, _ := resolvedProps["maxDepth"].(int64)
 	if maxDepth <= 0 {
 		maxDepth = 1
@@ -152,7 +152,7 @@ func (c *LsActionNode) Run(ctx context.Context, resolvedProps node.PropertyConte
 		// Calculate current depth
 		relPath, _ := filepath.Rel(path, currentPath)
 		depth := int64(strings.Count(relPath, string(filepath.Separator))) + 1
-		
+
 		// Respect maxDepth for recursive mode
 		if recursive && depth > maxDepth {
 			if d.IsDir() {
@@ -160,7 +160,7 @@ func (c *LsActionNode) Run(ctx context.Context, resolvedProps node.PropertyConte
 			}
 			return nil
 		}
-		
+
 		// Skip if not recursive and not immediate child
 		if !recursive && depth > 1 {
 			if d.IsDir() {
@@ -190,7 +190,7 @@ func (c *LsActionNode) Run(ctx context.Context, resolvedProps node.PropertyConte
 
 		// Collect entries
 		allEntries = append(allEntries, d)
-		
+
 		// Categorize by type
 		if d.IsDir() {
 			if filterType == "all" || filterType == "directories" {

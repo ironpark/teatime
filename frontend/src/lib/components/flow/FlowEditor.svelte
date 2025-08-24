@@ -24,7 +24,7 @@
 		onEdgesChange?: (edges: Edge[]) => void;
 		onSelectionChange?: (selection: { nodes: Node[]; edges: Edge[] }) => void;
 	}
-
+	let editNode: Node | undefined = $state(undefined);
 	let {
 		onNodesChange,
 		onEdgesChange,
@@ -36,7 +36,7 @@
 	function handleEditClick(nodeId: string) {
 		const node = recipeStore.nodes.find(n => n.id === nodeId);
 		if (node) {
-			recipeStore.selectedNodes = [node];
+			editNode = node;
 			propertiesSheetOpen = true;
 		}
 	}
@@ -45,7 +45,7 @@
 	function handleNodeDoubleClick(nodeId: string) {
 		const node = recipeStore.nodes.find(n => n.id === nodeId);
 		if (node) {
-			recipeStore.selectedNodes = [node];
+			editNode = node;
 			propertiesSheetOpen = true;
 		}
 	}
@@ -109,12 +109,13 @@
 		}
 	}
 
-	function deleteSelectedNodes() {
+	async function deleteSelectedNodes() {
 		if (recipeStore.selectedNodes.length === 0) return;
 		
-		recipeStore.selectedNodes.forEach(node => {
-			recipeStore.deleteNode(node.id);
-		});
+		// Delete nodes one by one (could be optimized for batch operations later)
+		for (const node of recipeStore.selectedNodes) {
+			await recipeStore.deleteNode(node.id);
+		}
 		// Clear selection after deletion
 		recipeStore.selectedNodes = [];
 	}
@@ -128,7 +129,7 @@
 			{nodeTypes}
 			onconnect={handleConnect}
 			oninit={handleInit}
-			onselectionchange={handleSelectionChange}
+		
 			onerror={handleError}
 			fitView
 			snapGrid={[15, 15]}
@@ -149,7 +150,7 @@
 	<!-- Node Properties Sheet -->
 	<NodePropertiesSheet 
 		recipeStore={recipeStore}
-		bind:selectedNodes={recipeStore.selectedNodes} 
+		editNode={editNode} 
 		bind:open={propertiesSheetOpen}
 		onOpenChange={(open) => {
 			propertiesSheetOpen = open;

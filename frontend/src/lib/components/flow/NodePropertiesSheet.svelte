@@ -31,32 +31,57 @@
 	
 	interface Props {
 		recipeStore: RecipeStore;
-		selectedNodes: Node[];
+		editNode?: Node;
 		open?: boolean;
 		onOpenChange?: (open: boolean) => void;
 	}
 
-	let { selectedNodes = $bindable([]), open = $bindable(false), onOpenChange, recipeStore }: Props = $props();
-	const selectedNodeId = $derived(selectedNodes?.[0]?.id);
+	let { editNode, open = $bindable(false), onOpenChange, recipeStore }: Props = $props();
+	const selectedNodeId = $derived(editNode?.id);
 	const selectedNode = $derived(recipeStore.nodes.find(n => n.id === selectedNodeId));
 	
 	// Binding state management
 	let showBindingSelector = $state<{[key: string]: boolean}>({});
-	function updateNodeProperty(field: string, value: any) {
+	async function updateNodeProperty(field: string, value: any) {
 		if (selectedNode) {
-			updateNodeData(selectedNode.id, { [field]: value });
+			// For basic node properties like label
+			if (field === 'label') {
+				const properties = getPropertiesMap();
+				await recipeStore.updateNodeData(selectedNode.id, value, properties);
+			} else {
+				// For other data properties, update via updateNodeData (local change)
+				updateNodeData(selectedNode.id, { [field]: value });
+			}
 		}
 	}
 
-	function updateProperty(prop: NodeProperty, value: any) {
+	async function updateProperty(prop: NodeProperty, value: any) {
 		if (selectedNode && selectedNode.data.properties && Array.isArray(selectedNode.data.properties)) {
 			const properties = [...selectedNode.data.properties] as NodeProperty[];
 			const index = properties.findIndex((p: NodeProperty) => p.key === prop.key);
 			if (index !== -1) {
 				properties[index] = { ...properties[index], value };
-				updateNodeData(selectedNode.id, { properties });
+				
+				// Update via backend API
+				const propertiesMap = properties.reduce((acc, prop) => {
+					acc[prop.key] = prop.value;
+					return acc;
+				}, {} as Record<string, any>);
+				
+				await recipeStore.updateNodeData(selectedNode.id, selectedNode.data.label, propertiesMap);
+				// updateNodeData(selectedNode.id, { [prop.key]: value });
 			}
 		}
+	}
+
+	function getPropertiesMap(): Record<string, any> {
+		if (!selectedNode?.data.properties || !Array.isArray(selectedNode.data.properties)) {
+			return {};
+		}
+		return selectedNode.data.properties.reduce((acc, prop) => {
+			acc[prop.key] = prop.value;
+			return acc;
+		}, {} as Record<string, any>);
 	}
 
 	// Binding functions

@@ -108,17 +108,17 @@
     try {
       updating = true;
       // Get the full recipe data
-      const fullRecipe = await RecipesService.GetRecipe(editingRecipe.ID);
-      if (!fullRecipe) {
+      const editSession = await RecipesService.GetRecipe(editingRecipe.ID);
+      if (!editSession || !editSession.recipe) {
         alert('Failed to load recipe for update');
         return;
       }
       
       // Update the name and description
-      fullRecipe.name = editName.trim();
-      fullRecipe.description = editDescription.trim();
+      editSession.recipe.name = editName.trim();
+      editSession.recipe.description = editDescription.trim();
       
-      await RecipesService.UpdateRecipe(editingRecipe.ID, fullRecipe);
+      await RecipesService.UpdateRecipe(editingRecipe.ID, editSession.recipe);
       
       // Reset form and close dialog
       editName = '';
@@ -158,8 +158,8 @@
   async function duplicateRecipe(recipe: RecipeInfo) {
     try {
       // Get the full recipe data
-      const fullRecipe = await RecipesService.GetRecipe(recipe.ID);
-      if (!fullRecipe) {
+      const editSession = await RecipesService.GetRecipe(recipe.ID);
+      if (!editSession || !editSession.recipe) {
         alert('Failed to load recipe for duplication');
         return;
       }
@@ -172,8 +172,8 @@
       
       if (result) {
         // Update the new recipe with the copied workflow data
-        fullRecipe.name = `${recipe.Name} (Copy)`;
-        await RecipesService.UpdateRecipe(result.ID, fullRecipe);
+        editSession.recipe.name = `${recipe.Name} (Copy)`;
+        await RecipesService.UpdateRecipe(result.ID, editSession.recipe);
         await loadRecipes();
       }
     } catch (error) {

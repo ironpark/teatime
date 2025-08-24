@@ -5,15 +5,18 @@ import * as EnvironmentVariablesService from "./environmentvariablesservice.js";
 import * as RecipesService from "./recipesservice.js";
 import * as SecretsService from "./secretsservice.js";
 import * as SettingsService from "./settingsservice.js";
+import * as TriggersService from "./triggersservice.js";
 export {
     EnvironmentVariablesService,
     RecipesService,
     SecretsService,
-    SettingsService
+    SettingsService,
+    TriggersService
 };
 
 export {
     CreatedRecipe,
+    EditSession,
     EnvironmentVariableCreateRequest,
     EnvironmentVariableInfo,
     EnvironmentVariableUpdateRequest,

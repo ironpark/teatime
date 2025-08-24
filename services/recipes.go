@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/ironpark/teatime/internal/database"
@@ -15,7 +16,9 @@ import (
 )
 
 type RecipesService struct {
-	store *stores.Store
+	store           *stores.Store
+	editSessions    map[string]*EditSession
+	editSessionLock sync.RWMutex
 }
 
 type RecipeInfo struct {
@@ -28,7 +31,10 @@ type RecipeInfo struct {
 }
 
 func NewRecipesService(store *stores.Store) *RecipesService {
-	return &RecipesService{store: store}
+	return &RecipesService{
+		store:        store,
+		editSessions: make(map[string]*EditSession),
+	}
 }
 
 type CreatedRecipe struct {
@@ -59,42 +65,61 @@ func (s *RecipesService) CreateRecipe(name, description string) (*CreatedRecipe,
 	}, nil
 }
 
-func (s *RecipesService) SaveRecipe(id string, recipe *rc.Recipe) (*rc.Recipe, error) {
-	if err := recipe.Save(); err != nil {
-		return nil, err
+func (s *RecipesService) getSession(id string) *EditSession {
+	s.editSessionLock.Lock()
+	defer s.editSessionLock.Unlock()
+	session, ok := s.editSessions[id]
+	if !ok {
+		recipe, err := s.store.GetRecipe(id)
+		if err != nil {
+			return nil
+		}
+		session = &EditSession{
+			Recipe: recipe,
+		}
+		s.editSessions[id] = session
 	}
-	s.store.UpdateRecipe(id, recipe)
-	return recipe, nil
+	return session
 }
 
-func (s *RecipesService) CreateNode(ref string, x, y int) (rc.Node, error) {
-	createdNode, err := node.GetNodeByRef(ref)
-	if err != nil {
-		return rc.Node{}, err
+func (s *RecipesService) GetRecipe(id string) *EditSession {
+	return s.getSession(id)
+}
+
+func (s *RecipesService) UpdateRecipe(id string, recipe *rc.Recipe) error {
+	return s.getSession(id).UpdateRecipe(recipe)
+}
+
+func (s *RecipesService) DeleteRecipe(id string) error {
+	return s.store.DeleteRecipe(id)
+}
+
+func (s *RecipesService) SaveRecipe(id string) (*EditSession, error) {
+	session := s.getSession(id)
+	if err := session.Save(); err != nil {
+		return nil, err
 	}
-	current := time.Now().UnixNano()
-	currentHex := fmt.Sprintf("%x", current)
-	return rc.Node{
-		Id:       currentHex,
-		Position: rc.Position{x, y},
-		Type:     string(createdNode.Type()),
-		NodeData: rc.NodeData{
-			Ref:           ref,
-			Icon:          createdNode.Icon(),
-			Label:         createdNode.Name(),
-			Name:          createdNode.Name(),
-			NodeType:      string(createdNode.Type()),
-			Description:   createdNode.Description(),
-			Properties:    createdNode.GetProperties(node.PropertyContext{}),
-			Outputs:       createdNode.GetOutput(node.PropertyContext{}),
-			OutputHandles: createdNode.GetOutputHandles(node.PropertyContext{}),
-		},
-	}, nil
+	s.store.UpdateRecipe(id, session.Recipe)
+	return session, nil
+}
+
+func (s *RecipesService) CreateNode(id string, ref string, x, y int) (rc.Node, error) {
+	session := s.getSession(id)
+	return session.CreateNode(ref, x, y)
+}
+
+func (s *RecipesService) UpdateNode(id string, nodeId string, x, y int, label string, properties map[string]any) (rc.Node, error) {
+	session := s.getSession(id)
+	return session.UpdateNode(nodeId, x, y, label, properties)
+}
+
+func (s *RecipesService) DeleteNode(id string, nodeId string) error {
+	session := s.getSession(id)
+	return session.DeleteNode(nodeId)
 }
 
 func (s *RecipesService) RunRecipe(recipe *rc.Recipe, startNodeId string, properties map[string]any) error {
 	return runner.Run(context.Background(), recipe, startNodeId, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
-		fmt.Println("Recipe", recipe.Name, "Node", node.Id, "State", state, "Output", output, "Error", err)
 	})
 }
 
@@ -113,10 +138,6 @@ func (s *RecipesService) RunRecipeByID(id string, startNodeId string, properties
 	return runner.Run(context.Background(), recipe, startNodeId, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
 		fmt.Println("Recipe", recipe.Name, "Node", node.Id, "State", state, "Output", output, "Error", err)
 	})
-}
-
-func (s *RecipesService) GetRecipe(id string) (*rc.Recipe, error) {
-	return s.store.GetRecipe(id)
 }
 
 func (s *RecipesService) ListRecipes() ([]RecipeInfo, error) {
@@ -140,14 +161,6 @@ func (s *RecipesService) ListRecipes() ([]RecipeInfo, error) {
 		recipeInfos[i] = info
 	}
 	return recipeInfos, nil
-}
-
-func (s *RecipesService) UpdateRecipe(id string, recipe *rc.Recipe) error {
-	return s.store.UpdateRecipe(id, recipe)
-}
-
-func (s *RecipesService) DeleteRecipe(id string) error {
-	return s.store.DeleteRecipe(id)
 }
 
 func (s *RecipesService) Sync() error {

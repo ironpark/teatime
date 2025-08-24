@@ -41,6 +41,47 @@ export class CreatedRecipe {
     }
 }
 
+export class EditSession {
+    "id": string;
+    "loaded_at": time$0.Time;
+    "last_modified": time$0.Time;
+    "needs_save": boolean;
+    "recipe": recipe$0.Recipe | null;
+
+    /** Creates a new EditSession instance. */
+    constructor($$source: Partial<EditSession> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("loaded_at" in $$source)) {
+            this["loaded_at"] = null;
+        }
+        if (!("last_modified" in $$source)) {
+            this["last_modified"] = null;
+        }
+        if (!("needs_save" in $$source)) {
+            this["needs_save"] = false;
+        }
+        if (!("recipe" in $$source)) {
+            this["recipe"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new EditSession instance from a string or object.
+     */
+    static createFrom($$source: any = {}): EditSession {
+        const $$createField4_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("recipe" in $$parsedSource) {
+            $$parsedSource["recipe"] = $$createField4_0($$parsedSource["recipe"]);
+        }
+        return new EditSession($$parsedSource as Partial<EditSession>);
+    }
+}
+
 /**
  * EnvironmentVariableCreateRequest represents the data needed to create a new environment variable.
  */

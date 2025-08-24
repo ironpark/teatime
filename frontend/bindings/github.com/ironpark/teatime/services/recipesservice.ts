@@ -16,8 +16,8 @@ import * as recipe$0 from "../internal/recipe/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function CreateNode(ref: string, x: number, y: number): $CancellablePromise<recipe$0.Node> {
-    return $Call.ByID(3354454747, ref, x, y).then(($result: any) => {
+export function CreateNode(id: string, ref: string, x: number, y: number): $CancellablePromise<recipe$0.Node> {
+    return $Call.ByID(3354454747, id, ref, x, y).then(($result: any) => {
         return $$createType0($result);
     });
 }
@@ -26,6 +26,10 @@ export function CreateRecipe(name: string, description: string): $CancellablePro
     return $Call.ByID(209478005, name, description).then(($result: any) => {
         return $$createType2($result);
     });
+}
+
+export function DeleteNode(id: string, nodeId: string): $CancellablePromise<void> {
+    return $Call.ByID(1440773556, id, nodeId);
 }
 
 export function DeleteRecipe(id: string): $CancellablePromise<void> {
@@ -51,7 +55,7 @@ export function GetAvailableNodesByType(nodeType: string): $CancellablePromise<n
     });
 }
 
-export function GetRecipe(id: string): $CancellablePromise<recipe$0.Recipe | null> {
+export function GetRecipe(id: string): $CancellablePromise<$models.EditSession | null> {
     return $Call.ByID(493884671, id).then(($result: any) => {
         return $$createType6($result);
     });
@@ -71,14 +75,20 @@ export function RunRecipeByID(id: string, startNodeId: string, properties: { [_:
     return $Call.ByID(2955805230, id, startNodeId, properties);
 }
 
-export function SaveRecipe(id: string, recipe: recipe$0.Recipe | null): $CancellablePromise<recipe$0.Recipe | null> {
-    return $Call.ByID(4266337316, id, recipe).then(($result: any) => {
+export function SaveRecipe(id: string): $CancellablePromise<$models.EditSession | null> {
+    return $Call.ByID(4266337316, id).then(($result: any) => {
         return $$createType6($result);
     });
 }
 
 export function Sync(): $CancellablePromise<void> {
     return $Call.ByID(197929644);
+}
+
+export function UpdateNode(id: string, nodeId: string, x: number, y: number, label: string, properties: { [_: string]: any }): $CancellablePromise<recipe$0.Node> {
+    return $Call.ByID(1633196918, id, nodeId, x, y, label, properties).then(($result: any) => {
+        return $$createType0($result);
+    });
 }
 
 export function UpdateRecipe(id: string, recipe: recipe$0.Recipe | null): $CancellablePromise<void> {
@@ -91,7 +101,7 @@ const $$createType1 = $models.CreatedRecipe.createFrom;
 const $$createType2 = $Create.Nullable($$createType1);
 const $$createType3 = node$0.NodeInfo.createFrom;
 const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = recipe$0.Recipe.createFrom;
+const $$createType5 = $models.EditSession.createFrom;
 const $$createType6 = $Create.Nullable($$createType5);
 const $$createType7 = $models.RecipeInfo.createFrom;
 const $$createType8 = $Create.Array($$createType7);

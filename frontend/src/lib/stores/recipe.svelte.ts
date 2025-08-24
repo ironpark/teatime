@@ -1,5 +1,6 @@
 import { RecipesService } from '$bindings/services';
 import { Recipe, NodeData } from '$bindings/internal/recipe/models';
+import type { EditSession } from '$bindings/services/models';
 import type { Edge, Node } from '@xyflow/svelte';
 
 // Type definitions
@@ -26,7 +27,7 @@ export class RecipeStore {
 		description: ''
 	});
     private _loading = $state(false);
-    private _hasChanges = $state(false);
+    private _editSession = $state<EditSession | null>(null);
     
     error = $state<string | null>(null);
 
@@ -40,15 +41,22 @@ export class RecipeStore {
     }
 
     get hasChanges() {
-        return this._hasChanges;
+        return this._editSession?.needs_save ?? false;
+    }
+
+    get editSession() {
+        return this._editSession;
     }
 	
     async load(): Promise<boolean> {
         return await this.withLoading(async () => {
-            const recipe = await RecipesService.GetRecipe(this.recipeId);
-            if (!recipe) {
+            const editSession = await RecipesService.GetRecipe(this.recipeId);
+            if (!editSession || !editSession.recipe) {
                 throw new Error('Recipe not found');
             }
+            
+            this._editSession = editSession;
+            const recipe = editSession.recipe;
             
             this.info = {
                 name: recipe.name,
@@ -63,53 +71,75 @@ export class RecipeStore {
 	
     async save(): Promise<boolean> {
         return await this.withLoading(async () => {
+            // Update the current edit session with latest recipe data
             const data = this.serializeRecipeData();
-            const recipe = await RecipesService.SaveRecipe(this.recipeId, Recipe.createFrom(data));
-            if (!recipe) {
+            await RecipesService.UpdateRecipe(this.recipeId, Recipe.createFrom(data));
+            
+            // Save the session
+            const savedSession = await RecipesService.SaveRecipe(this.recipeId);
+            if (!savedSession) {
                 throw new Error('Failed to save recipe');
             }
             
-            this._hasChanges = false;
+            this._editSession = savedSession;
             return true;
         }) ?? false;
     }
 
-    async createNodeByRef(nodeId: string, x: number, y: number): Promise<boolean> {
+    async createNodeByRef(nodeRef: string, x: number, y: number): Promise<boolean> {
         return await this.withLoading(async () => {
-            const newNode = await RecipesService.CreateNode(nodeId, x, y);
+            const newNode = await RecipesService.CreateNode(this.recipeId, nodeRef, x, y);
             if (!newNode) {
                 throw new Error('Failed to create node');
             }
             
             this.nodes = [...this.nodes, newNode as CustomNode];
-            this.markChanged();
+            // No need to call markChanged() - the backend will handle session updates
             return true;
         }) ?? false;
     }
 
 
-    // Update node data
-    updateNodeData(nodeId: string, updates: Record<string, unknown>): boolean {
-        const nodeIndex = this.findNodeIndex(nodeId);
-        if (nodeIndex === -1) return false;
+    // Update node data - now calls backend API
+    async updateNodeData(nodeId: string, label: string, properties: Record<string, any>, x?: number, y?: number): Promise<boolean> {
+        const node = this.getNode(nodeId);
+        if (!node) return false;
 
-        this.nodes[nodeIndex] = {
-            ...this.nodes[nodeIndex],
-            data: { ...this.nodes[nodeIndex].data, ...updates }
-        };
-        this.markChanged();
+        const currentX = x ?? node.position.x;
+        const currentY = y ?? node.position.y;
+        
+        const updatedNode = await RecipesService.UpdateNode(
+            this.recipeId, 
+            nodeId, 
+            currentX, 
+            currentY, 
+            label, 
+            properties
+        );
+        
+        if (!updatedNode) {
+            throw new Error('Failed to update node');
+        }
+        
+        // Update local state
+        const nodeIndex = this.findNodeIndex(nodeId);
+        if (nodeIndex !== -1) {
+            // this.nodes[nodeIndex] = updatedNode as CustomNode;
+            this.nodes = this.nodes.map(node => node.id === nodeId ? updatedNode as CustomNode : node);
+        }
         return true;
     }
 
-    deleteNode(nodeId: string): boolean {
-        const initialLength = this.nodes.length;
-        this.nodes = this.nodes.filter(node => node.id !== nodeId);
-        
-        if (this.nodes.length < initialLength) {
-            this.markChanged();
-            return true;
-        }
-        return false;
+    async deleteNode(nodeId: string): Promise<boolean> {
+        return await this.withLoading(async () => {
+            await RecipesService.DeleteNode(this.recipeId, nodeId);
+            
+            // Update local state
+            const initialLength = this.nodes.length;
+            this.nodes = this.nodes.filter(node => node.id !== nodeId);
+            
+            return this.nodes.length < initialLength;
+        }) ?? false;
     }
 	
 	// Clear workflow
@@ -123,7 +153,7 @@ export class RecipeStore {
 			path: '',
 			description: ''
 		};
-		this._hasChanges = false;
+		this._editSession = null;
 	}
 
     // Helper methods
@@ -139,9 +169,7 @@ export class RecipeStore {
         return this.nodes.find(node => node.id === nodeId);
     }
 
-    private markChanged(): void {
-        this._hasChanges = true;
-    }
+    // markChanged is no longer needed - EditSession handles this automatically
 
     private serializeRecipeData() {
         return {

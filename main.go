@@ -29,11 +29,22 @@ func main() {
 		log.Fatal(err)
 	}
 	store := stores.NewStore(db, recipesDir)
+	
+	// Initialize services
+	recipesService := services.NewRecipesService(store)
+	triggersService := services.NewTriggersService(store, recipesService)
+	
+	// Start triggers service
+	if err := triggersService.Start(); err != nil {
+		log.Printf("Warning: Failed to start triggers service: %v", err)
+	}
+	
 	app := application.New(application.Options{
 		Name:        "teatime",
 		Description: "Teatime is a local workflow engine",
 		Services: []application.Service{
-			application.NewService(services.NewRecipesService(store)),
+			application.NewService(recipesService),
+			application.NewService(triggersService),
 			application.NewService(services.NewSettingsService(store)),
 			application.NewService(services.NewSecretsService(store)),
 			application.NewService(services.NewEnvironmentVariablesService(store)),
@@ -58,6 +69,11 @@ func main() {
 	})
 
 	err = app.Run()
+	
+	// Shutdown triggers service
+	if shutdownErr := triggersService.Shutdown(); shutdownErr != nil {
+		log.Printf("Warning: Failed to shutdown triggers service: %v", shutdownErr)
+	}
 
 	if err != nil {
 		log.Fatal(err)
