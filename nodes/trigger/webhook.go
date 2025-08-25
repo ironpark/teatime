@@ -74,12 +74,6 @@ func init() {
 	})
 }
 
-type webhookTriggerProps struct {
-	Path        string `mapstructure:"path"`
-	Method      string `mapstructure:"method"`
-	RequireAuth bool   `mapstructure:"requireAuth"`
-	Secret      string `mapstructure:"secret"`
-}
 
 // WebhookTriggerNode triggers workflow execution via HTTP webhooks.
 type WebhookTriggerNode struct {
@@ -90,8 +84,8 @@ type WebhookTriggerNode struct {
 // This is called when an HTTP request is received on the configured path.
 func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
-	var props webhookTriggerProps
-	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
+	var config handlers.WebhookConfig
+	if err := mapstructure.Decode(resolvedProps, &config); err != nil {
 		return node.NodeResult{
 			Error:         fmt.Errorf("failed to decode properties: %w", err),
 			Continue:      false,
@@ -110,21 +104,21 @@ func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	}
 
 	// Check authentication if required
-	if props.RequireAuth {
+	if config.RequireAuth {
 		authenticated := false
 
 		// Check for secret in different places
-		if props.Secret != "" {
+		if config.Secret != "" {
 			// Check Authorization header
-			if auth, ok := requestContext.Headers["authorization"].(string); ok && auth == "Bearer "+props.Secret {
+			if auth, ok := requestContext.Headers["authorization"].(string); ok && auth == "Bearer "+config.Secret {
 				authenticated = true
 			}
 			// Check X-Secret header
-			if secret, ok := requestContext.Headers["x-secret"].(string); ok && secret == props.Secret {
+			if secret, ok := requestContext.Headers["x-secret"].(string); ok && secret == config.Secret {
 				authenticated = true
 			}
 			// Check secret query parameter
-			if secret, ok := requestContext.Query["secret"].(string); ok && secret == props.Secret {
+			if secret, ok := requestContext.Query["secret"].(string); ok && secret == config.Secret {
 				authenticated = true
 			}
 		}
@@ -140,10 +134,10 @@ func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	}
 
 	// Check if method is allowed
-	if props.Method != "" && requestContext.Method != "" && requestContext.Method != props.Method {
+	if config.Method != "" && requestContext.Method != "" && requestContext.Method != config.Method {
 		return node.NodeResult{
 			Output:        states.ExecContext(),
-			Error:         fmt.Errorf("method %s not allowed, expected %s", requestContext.Method, props.Method),
+			Error:         fmt.Errorf("method %s not allowed, expected %s", requestContext.Method, config.Method),
 			Continue:      true,
 			OutputHandles: []string{"unauthorized"},
 		}

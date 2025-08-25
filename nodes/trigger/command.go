@@ -61,18 +61,6 @@ func init() {
 	})
 }
 
-// CommandArg represents a command line argument definition
-type CommandArg struct {
-	Name        string `json:"name" mapstructure:"name"`               // 옵션이름
-	Required    bool   `json:"required" mapstructure:"required"`       // 필수여부
-	List        bool   `json:"list" mapstructure:"list"`               // 리스트여부
-	Description string `json:"description" mapstructure:"description"` // 설명
-}
-
-type commandTriggerProps struct {
-	Description string       `mapstructure:"description"`
-	Args        []CommandArg `mapstructure:"args"`
-}
 
 // CommandTriggerNode triggers workflow execution via CLI commands.
 type CommandTriggerNode struct {
@@ -88,17 +76,17 @@ func (c *CommandTriggerNode) GetOutput(ctx node.PropertyContext) []node.NodeProp
 
 	// Get args from context to generate dynamic outputs
 	if argsValue, ok := ctx["args"]; ok {
-		var commandArgs []CommandArg
+		var commandArgs []handlers.CommandArg
 
 		// Handle different types of args values
 		switch v := argsValue.(type) {
-		case []CommandArg:
+		case []handlers.CommandArg:
 			commandArgs = v
 		case []any:
 			// Convert from any slice (from JSON unmarshaling)
 			for _, item := range v {
 				if argMap, ok := item.(map[string]any); ok {
-					arg := CommandArg{
+					arg := handlers.CommandArg{
 						Name:        getStringFromMap(argMap, "name"),
 						Required:    getBoolFromMap(argMap, "required"),
 						List:        getBoolFromMap(argMap, "list"),
@@ -157,8 +145,8 @@ func getBoolFromMap(m map[string]any, key string) bool {
 // This is called when: teatime run recipe-file --arg1 value1 --arg2 value2
 func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
-	var props commandTriggerProps
-	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
+	var config handlers.CommandConfig
+	if err := mapstructure.Decode(resolvedProps, &config); err != nil {
 		return node.NodeResult{
 			Error:         err,
 			Continue:      false,
@@ -187,12 +175,12 @@ func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	recipeFile := cmdContext.RecipeFile
 	cliArgs := cmdContext.CliArgs
 
-	// Merge CLI arguments with defined arguments from props
+	// Merge CLI arguments with defined arguments from config
 	finalArgs := make(map[string]any)
 
 	// Start with defined arguments (set defaults based on configuration)
-	if props.Args != nil {
-		for _, arg := range props.Args {
+	if config.Args != nil {
+		for _, arg := range config.Args {
 			if arg.Name != "" {
 				// Set default value based on argument type
 				if arg.List {
@@ -231,20 +219,20 @@ func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 }
 
 // GetExpectedArgs returns the argument definitions for CLI help and validation.
-func (c *CommandTriggerNode) GetExpectedArgs() []CommandArg {
+func (c *CommandTriggerNode) GetExpectedArgs() []handlers.CommandArg {
 	props := c.GetProperties(node.PropertyContext{})
 	for _, prop := range props {
 		if prop.Key == "args" {
 			// Handle different types of args values
 			switch v := prop.Value.(type) {
-			case []CommandArg:
+			case []handlers.CommandArg:
 				return v
 			case []any:
 				// Convert from any slice (from JSON unmarshaling)
-				var commandArgs []CommandArg
+				var commandArgs []handlers.CommandArg
 				for _, item := range v {
 					if argMap, ok := item.(map[string]any); ok {
-						arg := CommandArg{
+						arg := handlers.CommandArg{
 							Name:        getStringFromMap(argMap, "name"),
 							Required:    getBoolFromMap(argMap, "required"),
 							List:        getBoolFromMap(argMap, "list"),
@@ -257,7 +245,7 @@ func (c *CommandTriggerNode) GetExpectedArgs() []CommandArg {
 			}
 		}
 	}
-	return []CommandArg{}
+	return []handlers.CommandArg{}
 }
 
 // GetDescription returns the command description.

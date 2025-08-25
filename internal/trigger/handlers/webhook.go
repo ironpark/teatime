@@ -24,12 +24,6 @@ type WebhookContext struct {
 	RemoteAddr string         `mapstructure:"remoteAddr"`
 }
 
-// CommandContext represents the command execution context for command triggers.
-type CommandContext struct {
-	RecipeFile string         `mapstructure:"recipeFile"`
-	CliArgs    map[string]any `mapstructure:"cliArgs"`
-}
-
 // route represents a registered webhook route
 type route struct {
 	pattern   string
@@ -50,8 +44,10 @@ type WebhookHandler struct {
 
 // WebhookConfig represents webhook configuration
 type WebhookConfig struct {
-	Path   string `mapstructure:"path"`
-	Method string `mapstructure:"method"`
+	Path        string `mapstructure:"path"`
+	Method      string `mapstructure:"method"`
+	RequireAuth bool   `mapstructure:"requireAuth"`
+	Secret      string `mapstructure:"secret"`
 }
 
 // Validate validates the webhook configuration
@@ -139,7 +135,6 @@ func (h *WebhookHandler) Description() string {
 	return "Triggers workflows via HTTP webhook endpoints"
 }
 
-
 func (h *WebhookHandler) Register(ctx context.Context, id string, configMap map[string]any) error {
 	var config WebhookConfig
 	if err := trigger.BindAndValidate(&config, configMap); err != nil {
@@ -184,7 +179,7 @@ func (h *WebhookHandler) Unregister(ctx context.Context, id string) error {
 		}
 	}
 	h.routes = filteredRoutes
-	
+
 	return nil
 }
 

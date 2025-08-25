@@ -12,16 +12,31 @@ import (
 
 // CommandHandler handles command-based triggers
 type CommandHandler struct {
-	manager            *trigger.Manager
 	registeredCommands map[string]string
 	eventCh            chan<- trigger.Event
 	mu                 sync.RWMutex
 }
 
+// CommandArg represents a command line argument definition
+type CommandArg struct {
+	Name        string `json:"name" mapstructure:"name"`               // 옵션이름
+	Required    bool   `json:"required" mapstructure:"required"`       // 필수여부
+	List        bool   `json:"list" mapstructure:"list"`               // 리스트여부
+	Description string `json:"description" mapstructure:"description"` // 설명
+}
+
+// CommandContext represents the command execution context for command triggers.
+type CommandContext struct {
+	RecipeFile string         `mapstructure:"recipeFile"`
+	CliArgs    map[string]any `mapstructure:"cliArgs"`
+}
+
 // CommandConfig represents command configuration
 type CommandConfig struct {
-	Command string `mapstructure:"command"`
-	Global  bool   `mapstructure:"global"`
+	Command     string       `mapstructure:"command"`
+	Global      bool         `mapstructure:"global"`
+	Description string       `mapstructure:"description"`
+	Args        []CommandArg `mapstructure:"args"`
 }
 
 // Validate validates the command configuration
@@ -60,7 +75,6 @@ func (h *CommandHandler) Description() string {
 	return "Triggers workflows via manual command execution"
 }
 
-
 func (h *CommandHandler) Register(ctx context.Context, id string, configMap map[string]any) error {
 	var config CommandConfig
 	if err := trigger.BindAndValidate(&config, configMap); err != nil {
@@ -84,7 +98,7 @@ func (h *CommandHandler) Register(ctx context.Context, id string, configMap map[
 func (h *CommandHandler) Unregister(ctx context.Context, id string) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	// Find and remove the command associated with this trigger ID
 	for command, triggerID := range h.registeredCommands {
 		if triggerID == id {
@@ -93,7 +107,7 @@ func (h *CommandHandler) Unregister(ctx context.Context, id string) error {
 			break
 		}
 	}
-	
+
 	return nil
 }
 

@@ -19,9 +19,17 @@ type ScheduleHandler struct {
 	mu        sync.RWMutex
 }
 
+// ScheduleContext represents the schedule event context for schedule triggers.
+type ScheduleContext struct {
+	Timestamp time.Time `mapstructure:"timestamp"`
+	Cron      string    `mapstructure:"cron"`
+	Scheduled bool      `mapstructure:"scheduled"`
+}
+
 // ScheduleConfig represents schedule configuration
 type ScheduleConfig struct {
-	Cron string `mapstructure:"cron"`
+	Cron        string `mapstructure:"cron"`
+	Description string `mapstructure:"description"`
 }
 
 // Validate validates the schedule configuration

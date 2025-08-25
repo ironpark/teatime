@@ -11,18 +11,34 @@ import (
 	"github.com/ironpark/teatime/internal/trigger"
 )
 
-// FileWatchHandler handles file system events
-type FileWatchHandler struct {
-	manager *trigger.Manager
-	watcher *fsnotify.Watcher
-	watches map[string]string
-	mu      sync.RWMutex
-	eventCh chan<- trigger.Event
+// FilewatchContext represents the file system event context for filewatch triggers.
+type FilewatchContext struct {
+	Path      string    `mapstructure:"path"`
+	Operation string    `mapstructure:"operation"`
+	Timestamp time.Time `mapstructure:"timestamp"`
+	Created   bool      `mapstructure:"created"`
+	Modified  bool      `mapstructure:"modified"`
+	Removed   bool      `mapstructure:"removed"`
+	Renamed   bool      `mapstructure:"renamed"`
+	Chmod     bool      `mapstructure:"chmod"`
 }
 
-// FileWatchConfig represents file watch configuration
 type FileWatchConfig struct {
-	Path string `mapstructure:"path"`
+	Path        string `mapstructure:"path"`
+	WatchCreate bool   `mapstructure:"watchCreate"`
+	WatchModify bool   `mapstructure:"watchModify"`
+	WatchRemove bool   `mapstructure:"watchRemove"`
+	WatchRename bool   `mapstructure:"watchRename"`
+	WatchChmod  bool   `mapstructure:"watchChmod"`
+}
+
+// FileWatchHandler handles file system events
+type FileWatchHandler struct {
+	watcher *fsnotify.Watcher
+	watches map[string]string          // path -> triggerID
+	configs map[string]FileWatchConfig // triggerID -> config
+	mu      sync.RWMutex
+	eventCh chan<- trigger.Event
 }
 
 // Validate validates the file watch configuration
@@ -42,6 +58,7 @@ func (c *FileWatchConfig) Validate() error {
 
 func (h *FileWatchHandler) Initialize(ctx context.Context, eventCh chan<- trigger.Event) error {
 	h.watches = make(map[string]string)
+	h.configs = make(map[string]FileWatchConfig)
 	h.eventCh = eventCh
 
 	var err error
@@ -78,7 +95,6 @@ func (h *FileWatchHandler) Description() string {
 	return "Triggers workflows on file system events"
 }
 
-
 func (h *FileWatchHandler) Register(ctx context.Context, id string, configMap map[string]any) error {
 	if h.watcher == nil {
 		return fmt.Errorf("file watcher not initialized")
@@ -105,6 +121,7 @@ func (h *FileWatchHandler) Register(ctx context.Context, id string, configMap ma
 	}
 
 	h.watches[config.Path] = id
+	h.configs[id] = config
 
 	fmt.Printf("Watching file path: %s\n", config.Path)
 	return nil
@@ -130,6 +147,9 @@ func (h *FileWatchHandler) Unregister(ctx context.Context, id string) error {
 		delete(h.watches, pathToRemove)
 		fmt.Printf("Stopped watching file path: %s\n", pathToRemove)
 	}
+
+	// Remove config
+	delete(h.configs, id)
 
 	return nil
 }
@@ -161,9 +181,29 @@ func (h *FileWatchHandler) watchEvents(ctx context.Context) {
 func (h *FileWatchHandler) handleFileEvent(_ context.Context, event fsnotify.Event) {
 	h.mu.RLock()
 	triggerID, exists := h.watches[event.Name]
+	config, configExists := h.configs[triggerID]
 	h.mu.RUnlock()
 
-	if !exists {
+	if !exists || !configExists {
+		return
+	}
+
+	// Check event type flags
+	created := event.Op&fsnotify.Create != 0
+	modified := event.Op&fsnotify.Write != 0
+	removed := event.Op&fsnotify.Remove != 0
+	renamed := event.Op&fsnotify.Rename != 0
+	chmod := event.Op&fsnotify.Chmod != 0
+
+	// Filter events based on configuration
+	shouldProcess := (created && config.WatchCreate) ||
+		(modified && config.WatchModify) ||
+		(removed && config.WatchRemove) ||
+		(renamed && config.WatchRename) ||
+		(chmod && config.WatchChmod)
+
+	// Skip if this event type is not configured to be watched
+	if !shouldProcess {
 		return
 	}
 
@@ -171,22 +211,21 @@ func (h *FileWatchHandler) handleFileEvent(_ context.Context, event fsnotify.Eve
 		"path":      event.Name,
 		"operation": event.Op.String(),
 		"timestamp": time.Now(),
+		"created":   created,
+		"modified":  modified,
+		"removed":   removed,
+		"renamed":   renamed,
+		"chmod":     chmod,
 	}
 
-	data["created"] = event.Op&fsnotify.Create != 0
-	data["modified"] = event.Op&fsnotify.Write != 0
-	data["removed"] = event.Op&fsnotify.Remove != 0
-	data["renamed"] = event.Op&fsnotify.Rename != 0
-	data["chmod"] = event.Op&fsnotify.Chmod != 0
-
 	if h.eventCh != nil {
-		event := trigger.Event{
+		triggerEvent := trigger.Event{
 			TriggerID:   triggerID,
 			Data:        data,
 			TriggeredAt: time.Now(),
 		}
 		select {
-		case h.eventCh <- event:
+		case h.eventCh <- triggerEvent:
 		default:
 			fmt.Printf("Warning: event channel full for trigger %s\n", triggerID)
 		}
