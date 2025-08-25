@@ -52,13 +52,18 @@ func Run(ctx context.Context, target *recipe.Recipe, startNodeId string, workflo
 		workflowState = NewWorkflowState()
 	}
 	runState := &runState{
-		recipe:       target,
-		states:       workflowState,
-		nodeExecuted: map[string]bool{},
-		nodeResults:  map[string]chan error{},
-		lock:         sync.RWMutex{},
-		waitGroup:    sync.WaitGroup{},
+		recipe:          target,
+		states:          workflowState,
+		nodeExecuted:    map[string]bool{},
+		nodeResults:     map[string]chan error{},
+		executablePaths: map[string]bool{},
+		lock:            sync.RWMutex{},
+		waitGroup:       sync.WaitGroup{},
 	}
+	
+	// Calculate all executable paths from the trigger node
+	runState.calculateExecutablePaths(startNodeId)
+	
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -79,6 +84,11 @@ func Run(ctx context.Context, target *recipe.Recipe, startNodeId string, workflo
 // It validates inputs, marks the node as executed, and launches executeNode
 // in a goroutine for concurrent execution.
 func startNode(ctx context.Context, state *runState, node recipe.Node, properties map[string]any, callback Callback) error {
+	// Skip nodes that are not in the executable path
+	if !state.isExecutable(node.Id) {
+		return nil
+	}
+	
 	if !state.setNodeExecuted(node.Id) {
 		// node already executed
 		return nil
@@ -154,6 +164,11 @@ func executeNode(ctx context.Context, state *runState, resolvedProps map[string]
 	}
 	resultChannel <- nil
 	for _, nextNode := range nextNodes {
+		// Skip nodes that are not in the executable path
+		if !state.isExecutable(nextNode.Id) {
+			continue
+		}
+		
 		rawNextNode := nextNode.GetRawNode()
 		nextResultChannel := state.getNodeResultChannel(nextNode.Id)
 		if rawNextNode == nil {

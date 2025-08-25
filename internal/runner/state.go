@@ -19,8 +19,10 @@ type runState struct {
 	nodeExecuted map[string]bool
 	// nodeResults contains channels for signaling node completion
 	nodeResults map[string]chan error
-	lock        sync.RWMutex
-	waitGroup   sync.WaitGroup
+	// executablePaths contains all node IDs that are reachable from the trigger node
+	executablePaths map[string]bool
+	lock            sync.RWMutex
+	waitGroup       sync.WaitGroup
 }
 
 // setNodeOutput stores a node's output values in the state map.
@@ -70,20 +72,71 @@ func (state *runState) setNodeExecuted(nodeId string) bool {
 // waitDependencies blocks until all dependency nodes complete.
 // Returns immediately if no dependencies exist.
 // Returns an error if any dependency fails.
+// Only waits for dependencies that are in the executable path.
 func (state *runState) waitDependencies(nodeId string) error {
 	// check dependencies
 	dependencies, err := state.recipe.GetNodeDependencies(nodeId)
 	if err != nil {
 		return err
 	}
-	if len(dependencies) > 0 {
+	if len(dependencies) == 0 {
 		return nil
 	}
+	
+	// Filter dependencies to only include executable ones
+	executableDependencies := make([]string, 0, len(dependencies))
 	for _, dependency := range dependencies {
+		if state.isExecutable(dependency) {
+			executableDependencies = append(executableDependencies, dependency)
+		}
+	}
+	
+	// Wait for all executable dependencies to complete
+	for _, dependency := range executableDependencies {
 		err := <-state.getNodeResultChannel(dependency)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// calculateExecutablePaths computes all node IDs that are reachable from the given trigger node.
+// It performs a depth-first search through the recipe graph starting from the trigger.
+func (state *runState) calculateExecutablePaths(triggerNodeId string) {
+	state.lock.Lock()
+	defer state.lock.Unlock()
+
+	state.executablePaths = make(map[string]bool)
+	visited := make(map[string]bool)
+	
+	state.dfsExecutablePaths(triggerNodeId, visited)
+}
+
+// dfsExecutablePaths performs depth-first search to find all reachable nodes.
+func (state *runState) dfsExecutablePaths(nodeId string, visited map[string]bool) {
+	if visited[nodeId] {
+		return
+	}
+	
+	visited[nodeId] = true
+	state.executablePaths[nodeId] = true
+	
+	// Get all connected nodes from this node
+	connectedNodes, err := state.recipe.GetConnectedNodes(nodeId)
+	if err != nil {
+		return
+	}
+	
+	// Recursively visit all connected nodes
+	for _, connectedNode := range connectedNodes {
+		state.dfsExecutablePaths(connectedNode.Id, visited)
+	}
+}
+
+// isExecutable returns true if the node is in the executable path from trigger.
+func (state *runState) isExecutable(nodeId string) bool {
+	state.lock.RLock()
+	defer state.lock.RUnlock()
+	return state.executablePaths[nodeId]
 }
