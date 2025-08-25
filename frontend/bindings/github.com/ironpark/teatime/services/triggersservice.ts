@@ -79,13 +79,6 @@ export function RegisterRecipe(recipeID: string): $CancellablePromise<void> {
 }
 
 /**
- * Shutdown gracefully shuts down the triggers service
- */
-export function Shutdown(): $CancellablePromise<void> {
-    return $Call.ByID(920749021);
-}
-
-/**
  * Start starts the triggers service
  */
 export function Start(): $CancellablePromise<void> {

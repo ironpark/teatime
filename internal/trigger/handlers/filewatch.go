@@ -35,21 +35,21 @@ func (c *FileWatchConfig) Validate() error {
 	if err != nil {
 		return fmt.Errorf("invalid file path: %w", err)
 	}
-	
+
 	c.Path = absPath
 	return nil
 }
 
-func (h *FileWatchHandler) Initialize(ctx context.Context, manager *trigger.Manager) error {
+func (h *FileWatchHandler) Initialize(manager *trigger.Manager) error {
 	h.manager = manager
 	h.watches = make(map[string]string)
-	
+
 	var err error
 	h.watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("failed to create file watcher: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -57,14 +57,12 @@ func (h *FileWatchHandler) Run(ctx context.Context) error {
 	if h.watcher == nil {
 		return fmt.Errorf("file watcher not initialized")
 	}
-	
-	go h.watchEvents()
-	<-ctx.Done()
-	
+
+	h.watchEvents(ctx)
 	if h.watcher != nil {
 		h.watcher.Close()
 	}
-	
+
 	return nil
 }
 
@@ -98,7 +96,7 @@ func (h *FileWatchHandler) Validate(configMap map[string]any) error {
 	return nil
 }
 
-func (h *FileWatchHandler) Register(ctx context.Context, instance *trigger.Instance) error {
+func (h *FileWatchHandler) Register(instance *trigger.Instance) error {
 	if h.watcher == nil {
 		return fmt.Errorf("file watcher not initialized")
 	}
@@ -107,7 +105,7 @@ func (h *FileWatchHandler) Register(ctx context.Context, instance *trigger.Insta
 	if err := instance.Bind(&config); err != nil {
 		return fmt.Errorf("failed to bind file watch config: %w", err)
 	}
-	
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -125,7 +123,7 @@ func (h *FileWatchHandler) Register(ctx context.Context, instance *trigger.Insta
 	instance.SetCleanup(func() error {
 		h.mu.Lock()
 		defer h.mu.Unlock()
-		
+
 		if h.watcher != nil {
 			h.watcher.Remove(config.Path)
 		}
@@ -141,18 +139,20 @@ func (h *FileWatchHandler) Unregister(instance *trigger.Instance) error {
 	return nil
 }
 
-func (h *FileWatchHandler) watchEvents() {
+func (h *FileWatchHandler) watchEvents(ctx context.Context) {
 	if h.watcher == nil {
 		return
 	}
 
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case event, ok := <-h.watcher.Events:
 			if !ok {
 				return
 			}
-			h.handleFileEvent(event)
+			h.handleFileEvent(ctx, event)
 
 		case err, ok := <-h.watcher.Errors:
 			if !ok {
@@ -163,7 +163,7 @@ func (h *FileWatchHandler) watchEvents() {
 	}
 }
 
-func (h *FileWatchHandler) handleFileEvent(event fsnotify.Event) {
+func (h *FileWatchHandler) handleFileEvent(ctx context.Context, event fsnotify.Event) {
 	h.mu.RLock()
 	triggerID, exists := h.watches[event.Name]
 	h.mu.RUnlock()
@@ -185,7 +185,6 @@ func (h *FileWatchHandler) handleFileEvent(event fsnotify.Event) {
 	data["chmod"] = event.Op&fsnotify.Chmod != 0
 
 	if h.manager != nil {
-		h.manager.ExecuteTrigger(triggerID, data)
+		h.manager.ExecuteTrigger(ctx, triggerID, data)
 	}
 }
-

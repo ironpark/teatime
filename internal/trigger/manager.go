@@ -29,14 +29,10 @@ type Manager struct {
 
 	// Execution state
 	running bool
-	ctx     context.Context
-	cancel  context.CancelFunc
 }
 
 // NewManager creates a new trigger manager
 func NewManager(loader RecipeLoader, runner RecipeRunner, handlers []Handler) *Manager {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	// Convert slice to map
 	handlersMap := make(map[TriggerType]Handler)
 	for _, handler := range handlers {
@@ -49,22 +45,17 @@ func NewManager(loader RecipeLoader, runner RecipeRunner, handlers []Handler) *M
 		handlers:       handlersMap,
 		activeTriggers: make(map[string]*Instance),
 		recipeTriggers: make(map[string][]*Instance),
-		ctx:            ctx,
-		cancel:         cancel,
 	}
 
 	// Initialize handlers
 	for _, handler := range handlers {
-		if initializable, ok := handler.(interface{ Initialize(context.Context, *Manager) error }); ok {
-			if err := initializable.Initialize(ctx, m); err != nil {
-				log.Printf("Failed to initialize handler %s: %v", handler.Type(), err)
-			}
+		if err := handler.Initialize(m); err != nil {
+			log.Printf("Failed to initialize handler %s: %v", handler.Type(), err)
 		}
 	}
 
 	return m
 }
-
 
 // SetStore sets the optional store for persistence
 func (m *Manager) SetStore(store Store) {
@@ -72,50 +63,33 @@ func (m *Manager) SetStore(store Store) {
 }
 
 // Start starts the trigger manager
-func (m *Manager) Start() error {
+func (m *Manager) Start(ctx context.Context) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if m.running {
+		m.mu.Unlock()
 		return fmt.Errorf("trigger manager already running")
 	}
-
+	wg := sync.WaitGroup{}
 	// Start all handlers
 	for _, handler := range m.handlers {
-		if runnable, ok := handler.(interface{ Run(context.Context) error }); ok {
-			go func(h interface{ Run(context.Context) error }, handlerType TriggerType) {
-				if err := h.Run(m.ctx); err != nil {
-					log.Printf("Handler %s run error: %v", handlerType, err)
-				}
-			}(runnable, handler.Type())
-		}
+		wg.Add(1)
+		go func(h Handler) {
+			defer wg.Done()
+			if err := h.Run(ctx); err != nil {
+				log.Printf("Handler %s run error: %v", h.Type(), err)
+			}
+		}(handler)
 	}
-
-	m.running = true
-	log.Println("Trigger manager started")
-	return nil
-}
-
-// Shutdown gracefully shuts down the trigger manager
-func (m *Manager) Shutdown() error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if !m.running {
-		return nil
-	}
-
-	log.Println("Shutting down trigger manager...")
-
+	m.mu.Unlock()
+	wg.Wait()
 	// Unregister all triggers
+	m.mu.Lock()
 	for recipeID := range m.recipeTriggers {
 		m.unregisterRecipeInternal(recipeID)
 	}
-
-	m.cancel()
-	m.running = false
-
-	log.Println("Trigger manager shutdown complete")
+	m.running = true
+	m.mu.Unlock()
+	log.Println("Trigger manager started")
 	return nil
 }
 
@@ -174,7 +148,7 @@ func (m *Manager) registerTriggerNode(recipeID string, node recipe.Node) (*Insta
 	}
 
 	// Convert node properties to config map
-	config := make(map[string]interface{})
+	config := make(map[string]any)
 	for _, prop := range node.Properties {
 		config[prop.Key] = prop.Value
 	}
@@ -197,7 +171,7 @@ func (m *Manager) registerTriggerNode(recipeID string, node recipe.Node) (*Insta
 	}
 
 	// Register with handler
-	if err := handler.Register(m.ctx, instance); err != nil {
+	if err := handler.Register(instance); err != nil {
 		return nil, err
 	}
 
@@ -254,17 +228,17 @@ func (m *Manager) unregisterTriggerInternal(instance *Instance) error {
 }
 
 // ExecuteTrigger executes a trigger (called by handlers)
-func (m *Manager) ExecuteTrigger(triggerID string, data map[string]interface{}) {
+func (m *Manager) ExecuteTrigger(ctx context.Context, triggerID string, data map[string]any) {
 	// Execute asynchronously to prevent blocking
 	go func() {
-		if err := m.executeTriggerSync(triggerID, data); err != nil {
+		if err := m.executeTriggerSync(ctx, triggerID, data); err != nil {
 			log.Printf("Trigger execution failed [%s]: %v", triggerID, err)
 		}
 	}()
 }
 
 // executeTriggerSync synchronously executes a trigger
-func (m *Manager) executeTriggerSync(triggerID string, data map[string]interface{}) error {
+func (m *Manager) executeTriggerSync(ctx context.Context, triggerID string, data map[string]any) error {
 	m.mu.RLock()
 	instance, exists := m.activeTriggers[triggerID]
 	m.mu.RUnlock()
@@ -287,7 +261,7 @@ func (m *Manager) executeTriggerSync(triggerID string, data map[string]interface
 	}
 
 	// Execute recipe
-	ctx, cancel := context.WithTimeout(m.ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
 	err = m.recipeRunner.Execute(ctx, recipe, instance.NodeID, data)

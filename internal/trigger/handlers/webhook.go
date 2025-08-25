@@ -46,11 +46,11 @@ func (c *WebhookConfig) Validate() error {
 			return nil
 		}
 	}
-	
+
 	return fmt.Errorf("invalid HTTP method: %s", c.Method)
 }
 
-func (h *WebhookHandler) Initialize(ctx context.Context, manager *trigger.Manager) error {
+func (h *WebhookHandler) Initialize(manager *trigger.Manager) error {
 	h.manager = manager
 	h.mux = http.NewServeMux()
 	h.routes = make(map[string]string)
@@ -121,7 +121,7 @@ func (h *WebhookHandler) Validate(configMap map[string]any) error {
 	return nil
 }
 
-func (h *WebhookHandler) Register(ctx context.Context, instance *trigger.Instance) error {
+func (h *WebhookHandler) Register(instance *trigger.Instance) error {
 	if h.mux == nil {
 		return fmt.Errorf("webhook handler not initialized")
 	}
@@ -184,7 +184,7 @@ func (h *WebhookHandler) createHandler(triggerID string, method string) http.Han
 		}
 
 		if h.manager != nil {
-			h.manager.ExecuteTrigger(triggerID, data)
+			h.manager.ExecuteTrigger(context.Background(), triggerID, data)
 		}
 
 		response := map[string]any{

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/robfig/cron/v3"
 	"github.com/ironpark/teatime/internal/trigger"
+	"github.com/robfig/cron/v3"
 )
 
 // ScheduleHandler handles cron-based schedule triggers
@@ -36,7 +36,7 @@ func (c *ScheduleConfig) Validate() error {
 	return nil
 }
 
-func (h *ScheduleHandler) Initialize(ctx context.Context, manager *trigger.Manager) error {
+func (h *ScheduleHandler) Initialize(manager *trigger.Manager) error {
 	h.manager = manager
 	h.scheduler = cron.New(cron.WithSeconds())
 	return nil
@@ -75,7 +75,7 @@ func (h *ScheduleHandler) Validate(configMap map[string]any) error {
 	return config.Validate()
 }
 
-func (h *ScheduleHandler) Register(ctx context.Context, instance *trigger.Instance) error {
+func (h *ScheduleHandler) Register(instance *trigger.Instance) error {
 	if h.scheduler == nil {
 		return fmt.Errorf("scheduler not initialized")
 	}
@@ -84,7 +84,7 @@ func (h *ScheduleHandler) Register(ctx context.Context, instance *trigger.Instan
 	if err := instance.Bind(&config); err != nil {
 		return fmt.Errorf("failed to bind schedule config: %w", err)
 	}
-	
+
 	entryID, err := h.scheduler.AddFunc(config.Cron, func() {
 		if h.manager != nil {
 			data := map[string]any{
@@ -92,10 +92,10 @@ func (h *ScheduleHandler) Register(ctx context.Context, instance *trigger.Instan
 				"cron":      config.Cron,
 				"scheduled": true,
 			}
-			h.manager.ExecuteTrigger(instance.ID, data)
+			h.manager.ExecuteTrigger(context.Background(), instance.ID, data)
 		}
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to schedule cron job: %w", err)
 	}
@@ -116,4 +116,3 @@ func (h *ScheduleHandler) Register(ctx context.Context, instance *trigger.Instan
 func (h *ScheduleHandler) Unregister(instance *trigger.Instance) error {
 	return nil
 }
-

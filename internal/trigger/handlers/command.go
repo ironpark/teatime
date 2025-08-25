@@ -13,9 +13,9 @@ import (
 
 // CommandHandler handles command-based triggers
 type CommandHandler struct {
-	manager           *trigger.Manager
+	manager            *trigger.Manager
 	registeredCommands map[string]string
-	mu                sync.RWMutex
+	mu                 sync.RWMutex
 }
 
 // CommandConfig represents command configuration
@@ -37,7 +37,7 @@ func (c *CommandConfig) Validate() error {
 	return nil
 }
 
-func (h *CommandHandler) Initialize(ctx context.Context, manager *trigger.Manager) error {
+func (h *CommandHandler) Initialize(manager *trigger.Manager) error {
 	h.manager = manager
 	h.registeredCommands = make(map[string]string)
 	return nil
@@ -71,7 +71,7 @@ func (h *CommandHandler) Validate(configMap map[string]any) error {
 	return config.Validate()
 }
 
-func (h *CommandHandler) Register(ctx context.Context, instance *trigger.Instance) error {
+func (h *CommandHandler) Register(instance *trigger.Instance) error {
 	var config CommandConfig
 	if err := instance.Bind(&config); err != nil {
 		return fmt.Errorf("failed to bind command config: %w", err)
@@ -102,7 +102,7 @@ func (h *CommandHandler) Unregister(instance *trigger.Instance) error {
 	return nil
 }
 
-func (h *CommandHandler) ExecuteCommand(command string, args map[string]any) error {
+func (h *CommandHandler) ExecuteCommand(ctx context.Context, command string, args map[string]any) error {
 	h.mu.RLock()
 	triggerID, exists := h.registeredCommands[command]
 	h.mu.RUnlock()
@@ -119,7 +119,7 @@ func (h *CommandHandler) ExecuteCommand(command string, args map[string]any) err
 	}
 
 	if h.manager != nil {
-		h.manager.ExecuteTrigger(triggerID, data)
+		h.manager.ExecuteTrigger(ctx, triggerID, data)
 	}
 
 	return nil

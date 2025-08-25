@@ -36,9 +36,11 @@ type Event struct {
 // Handler interface for different trigger types
 type Handler interface {
 	Type() TriggerType
-	Register(ctx context.Context, instance *Instance) error
+	Register(instance *Instance) error
 	Unregister(instance *Instance) error
-	Validate(config map[string]interface{}) error
+	Validate(config map[string]any) error
+	Run(ctx context.Context) error
+	Initialize(*Manager) error
 }
 
 // External dependencies interfaces
