@@ -3,10 +3,10 @@ package trigger
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/node"
+	"github.com/ironpark/teatime/internal/trigger/handlers"
 )
 
 func init() {
@@ -99,32 +99,15 @@ func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 		}
 	}
 
-	// Get current timestamp
-	timestamp := time.Now()
-
 	// Extract request information from execution context
-	var requestContext struct {
-		Method     string         `mapstructure:"method"`
-		Path       string         `mapstructure:"path"`
-		Headers    map[string]any `mapstructure:"headers"`
-		Query      map[string]any `mapstructure:"query"`
-		Body       map[string]any `mapstructure:"body"`
-		RemoteAddr string         `mapstructure:"remoteAddr"`
-	}
-	
+	var requestContext handlers.WebhookContext
+
 	if err := states.BindExecContext(&requestContext); err != nil {
 		return node.NodeResult{
 			Error:    fmt.Errorf("failed to bind execution context: %w", err),
 			Continue: false,
 		}
 	}
-	
-	method := requestContext.Method
-	path := requestContext.Path
-	headers := requestContext.Headers
-	query := requestContext.Query
-	body := requestContext.Body
-	remoteAddr := requestContext.RemoteAddr
 
 	// Check authentication if required
 	if props.RequireAuth {
@@ -133,30 +116,22 @@ func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 		// Check for secret in different places
 		if props.Secret != "" {
 			// Check Authorization header
-			if auth, ok := headers["authorization"].(string); ok && auth == "Bearer "+props.Secret {
+			if auth, ok := requestContext.Headers["authorization"].(string); ok && auth == "Bearer "+props.Secret {
 				authenticated = true
 			}
 			// Check X-Secret header
-			if secret, ok := headers["x-secret"].(string); ok && secret == props.Secret {
+			if secret, ok := requestContext.Headers["x-secret"].(string); ok && secret == props.Secret {
 				authenticated = true
 			}
 			// Check secret query parameter
-			if secret, ok := query["secret"].(string); ok && secret == props.Secret {
+			if secret, ok := requestContext.Query["secret"].(string); ok && secret == props.Secret {
 				authenticated = true
 			}
 		}
 
 		if !authenticated {
 			return node.NodeResult{
-				Output: map[string]any{
-					"timestamp":  timestamp,
-					"method":     method,
-					"path":       path,
-					"headers":    headers,
-					"query":      query,
-					"body":       body,
-					"remoteAddr": remoteAddr,
-				},
+				Output:        states.ExecContext(),
 				Error:         fmt.Errorf("authentication failed"),
 				Continue:      true,
 				OutputHandles: []string{"unauthorized"},
@@ -165,33 +140,17 @@ func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	}
 
 	// Check if method is allowed
-	if props.Method != "" && method != "" && method != props.Method {
+	if props.Method != "" && requestContext.Method != "" && requestContext.Method != props.Method {
 		return node.NodeResult{
-			Output: map[string]any{
-				"timestamp":  timestamp,
-				"method":     method,
-				"path":       path,
-				"headers":    headers,
-				"query":      query,
-				"body":       body,
-				"remoteAddr": remoteAddr,
-			},
-			Error:         fmt.Errorf("method %s not allowed, expected %s", method, props.Method),
+			Output:        states.ExecContext(),
+			Error:         fmt.Errorf("method %s not allowed, expected %s", requestContext.Method, props.Method),
 			Continue:      true,
 			OutputHandles: []string{"unauthorized"},
 		}
 	}
 
 	return node.NodeResult{
-		Output: map[string]any{
-			"timestamp":  timestamp,
-			"method":     method,
-			"path":       path,
-			"headers":    headers,
-			"query":      query,
-			"body":       body,
-			"remoteAddr": remoteAddr,
-		},
+		Output:        states.ExecContext(),
 		Error:         nil,
 		Continue:      true,
 		OutputHandles: []string{"success"},

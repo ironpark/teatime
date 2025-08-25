@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/node"
+	"github.com/ironpark/teatime/internal/trigger/handlers"
 )
 
 func init() {
@@ -174,14 +175,17 @@ func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	// Get current timestamp
 	timestamp := time.Now()
 
-	// Extract recipe file and CLI arguments from states
-	// These would be populated by the CLI system when running: teatime run recipe-file --arg1 value1
-	recipeFile := ""
-	if rf := states.Get("recipeFile"); rf != nil {
-		if s, ok := rf.(string); ok {
-			recipeFile = s
+	// Extract CLI context from execution context
+	var cmdContext handlers.CommandContext
+	if err := states.BindExecContext(&cmdContext); err != nil {
+		return node.NodeResult{
+			Error:    fmt.Errorf("failed to bind execution context: %w", err),
+			Continue: false,
 		}
 	}
+
+	recipeFile := cmdContext.RecipeFile
+	cliArgs := cmdContext.CliArgs
 
 	// Merge CLI arguments with defined arguments from props
 	finalArgs := make(map[string]any)
@@ -200,13 +204,9 @@ func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 		}
 	}
 
-	// Override with CLI arguments from states
-	if cliArgsValue := states.Get("cliArgs"); cliArgsValue != nil {
-		if cliArgs, ok := cliArgsValue.(map[string]any); ok {
-			for k, v := range cliArgs {
-				finalArgs[k] = v
-			}
-		}
+	// Override with CLI arguments from execution context
+	for k, v := range cliArgs {
+		finalArgs[k] = v
 	}
 
 	// Build output including individual argument outputs

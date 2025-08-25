@@ -14,6 +14,22 @@ import (
 	"github.com/ironpark/teatime/internal/trigger"
 )
 
+// WebhookContext represents the HTTP request context for webhook triggers.
+type WebhookContext struct {
+	Method     string         `mapstructure:"method"`
+	Path       string         `mapstructure:"path"`
+	Headers    map[string]any `mapstructure:"headers"`
+	Query      map[string]any `mapstructure:"query"`
+	Body       map[string]any `mapstructure:"body"`
+	RemoteAddr string         `mapstructure:"remoteAddr"`
+}
+
+// CommandContext represents the command execution context for command triggers.
+type CommandContext struct {
+	RecipeFile string         `mapstructure:"recipeFile"`
+	CliArgs    map[string]any `mapstructure:"cliArgs"`
+}
+
 // route represents a registered webhook route
 type route struct {
 	pattern   string

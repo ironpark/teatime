@@ -60,6 +60,12 @@ func (ws *WorkflowState) SetExecContext(contextMap map[string]any) {
 	}
 }
 
+func (ws *WorkflowState) ExecContext() map[string]any {
+	ws.mu.RLock()
+	defer ws.mu.RUnlock()
+	return ws.execCtx
+}
+
 // GetOutput retrieves an output value from a specific node.
 func (ws *WorkflowState) GetOutput(nodeId string, key string) any {
 	ws.mu.RLock()
