@@ -48,9 +48,10 @@ func Run(ctx context.Context, target *recipe.Recipe, startNodeId string, propert
 	if callback == nil {
 		return fmt.Errorf("callback is nil")
 	}
+	workflowState := n.NewWorkflowState()
 	runState := &runState{
 		recipe:       target,
-		states:       map[string]any{},
+		states:       workflowState,
 		nodeExecuted: map[string]bool{},
 		nodeResults:  map[string]chan error{},
 		lock:         sync.RWMutex{},
@@ -81,7 +82,7 @@ func startNode(ctx context.Context, state *runState, node recipe.Node, propertie
 		return nil
 	}
 	rawNode := node.GetRawNode()
-	resolvedProperties, err := n.ResolveInput(node.Properties, state.states)
+	resolvedProperties, err := ResolveInput(node.Properties, state.states)
 	if err != nil {
 		callback(state.recipe, StateError, node, nil, err)
 		return err
@@ -158,7 +159,7 @@ func executeNode(ctx context.Context, state *runState, resolvedProps map[string]
 			nextResultChannel <- fmt.Errorf("next node %s has no raw node", nextNode.Id)
 			return
 		}
-		nextInput, err := n.ResolveInput(nextNode.Properties, state.states)
+		nextInput, err := ResolveInput(nextNode.Properties, state.states)
 		if err != nil {
 			callback(state.recipe, StateError, nextNode, nil, err)
 			nextResultChannel <- err

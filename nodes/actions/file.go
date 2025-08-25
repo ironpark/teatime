@@ -207,7 +207,7 @@ type fileReadProps struct {
 	Encoding string `mapstructure:"encoding"`
 }
 
-func (f *FileReadActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (f *FileReadActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props fileReadProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -289,7 +289,7 @@ type fileWriteProps struct {
 	CreateDirs bool   `mapstructure:"createDirs"`
 }
 
-func (f *FileWriteActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (f *FileWriteActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props fileWriteProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -401,7 +401,7 @@ type fileDeleteProps struct {
 	Recursive bool   `mapstructure:"recursive"`
 }
 
-func (f *FileDeleteActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (f *FileDeleteActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props fileDeleteProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -482,7 +482,7 @@ type fileMoveProps struct {
 	CreateDirs      bool   `mapstructure:"createDirs"`
 }
 
-func (f *FileMoveActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (f *FileMoveActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props fileMoveProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{

@@ -106,7 +106,7 @@ type jsonParseProps struct {
 	Path       string `mapstructure:"path"`
 }
 
-func (j *JSONParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (j *JSONParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props jsonParseProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -184,7 +184,7 @@ type jsonStringifyProps struct {
 	Pretty bool `mapstructure:"pretty"`
 }
 
-func (j *JSONStringifyUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (j *JSONStringifyUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props jsonStringifyProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{

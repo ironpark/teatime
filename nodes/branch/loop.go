@@ -85,7 +85,7 @@ type LoopBranchNode struct {
 }
 
 // Run executes the loop logic.
-func (l *LoopBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (l *LoopBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props loopBranchProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
@@ -98,7 +98,7 @@ func (l *LoopBranchNode) Run(ctx context.Context, resolvedProps node.PropertyCon
 
 	// Get current iteration from workflow state
 	currentIteration := int64(1)
-	if iter, exists := states["_loop_iteration"]; exists {
+	if iter := states.Get("_loop_iteration"); iter != nil {
 		if iterInt, ok := iter.(int64); ok {
 			currentIteration = iterInt + 1
 		}

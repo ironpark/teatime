@@ -132,7 +132,7 @@ type httpActionProps struct {
 }
 
 // Run executes the HTTP request and returns the response.
-func (h *HTTPRequestActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (h *HTTPRequestActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props httpActionProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{

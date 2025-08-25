@@ -88,7 +88,7 @@ type WebhookTriggerNode struct {
 
 // Run executes the webhook trigger logic.
 // This is called when an HTTP request is received on the configured path.
-func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props webhookTriggerProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
@@ -104,33 +104,45 @@ func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 
 	// Extract request information from states (would be populated by the HTTP server)
 	method := ""
-	if m, ok := states["method"].(string); ok {
-		method = m
+	if m := states.Get("method"); m != nil {
+		if s, ok := m.(string); ok {
+			method = s
+		}
 	}
 
 	path := ""
-	if p, ok := states["path"].(string); ok {
-		path = p
+	if p := states.Get("path"); p != nil {
+		if s, ok := p.(string); ok {
+			path = s
+		}
 	}
 
 	headers := make(map[string]any)
-	if h, ok := states["headers"].(map[string]any); ok {
-		headers = h
+	if h := states.Get("headers"); h != nil {
+		if m, ok := h.(map[string]any); ok {
+			headers = m
+		}
 	}
 
 	query := make(map[string]any)
-	if q, ok := states["query"].(map[string]any); ok {
-		query = q
+	if q := states.Get("query"); q != nil {
+		if m, ok := q.(map[string]any); ok {
+			query = m
+		}
 	}
 
 	body := make(map[string]any)
-	if b, ok := states["body"].(map[string]any); ok {
-		body = b
+	if b := states.Get("body"); b != nil {
+		if m, ok := b.(map[string]any); ok {
+			body = m
+		}
 	}
 
 	remoteAddr := ""
-	if r, ok := states["remoteAddr"].(string); ok {
-		remoteAddr = r
+	if r := states.Get("remoteAddr"); r != nil {
+		if s, ok := r.(string); ok {
+			remoteAddr = s
+		}
 	}
 
 	// Check authentication if required

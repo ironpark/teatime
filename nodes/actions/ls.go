@@ -85,7 +85,7 @@ func init() {
 }
 
 // Run executes directory listing with filtering, sorting, and pagination options.
-func (c *LsActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (c *LsActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	// Extract parameters
 	path, _ := resolvedProps["path"].(string)
 	if path == "" {

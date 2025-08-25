@@ -154,7 +154,7 @@ func getBoolFromMap(m map[string]any, key string) bool {
 
 // Run executes the command trigger logic.
 // This is called when: teatime run recipe-file --arg1 value1 --arg2 value2
-func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props commandTriggerProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
@@ -177,8 +177,10 @@ func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	// Extract recipe file and CLI arguments from states
 	// These would be populated by the CLI system when running: teatime run recipe-file --arg1 value1
 	recipeFile := ""
-	if rf, ok := states["recipeFile"].(string); ok {
-		recipeFile = rf
+	if rf := states.Get("recipeFile"); rf != nil {
+		if s, ok := rf.(string); ok {
+			recipeFile = s
+		}
 	}
 
 	// Merge CLI arguments with defined arguments from props
@@ -199,9 +201,11 @@ func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	}
 
 	// Override with CLI arguments from states
-	if cliArgs, ok := states["cliArgs"].(map[string]any); ok {
-		for k, v := range cliArgs {
-			finalArgs[k] = v
+	if cliArgsValue := states.Get("cliArgs"); cliArgsValue != nil {
+		if cliArgs, ok := cliArgsValue.(map[string]any); ok {
+			for k, v := range cliArgs {
+				finalArgs[k] = v
+			}
 		}
 	}
 

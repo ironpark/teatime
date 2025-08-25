@@ -83,7 +83,7 @@ type SaveActionNode struct {
 }
 
 // Run executes the file save operation.
-func (s *SaveActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (s *SaveActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props saveActionProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {

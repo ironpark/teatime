@@ -133,7 +133,7 @@ func (m *MatchBranchNode) GetOutputHandles(ctx node.PropertyContext) []node.Outp
 }
 
 // Run executes the match branch logic.
-func (m *MatchBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (m *MatchBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	// Extract base parameters
 	var props matchBranchProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {

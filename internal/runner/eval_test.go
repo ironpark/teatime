@@ -1,8 +1,10 @@
-package node
+package runner
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/ironpark/teatime/internal/node"
 )
 
 func TestEval(t *testing.T) {
@@ -186,7 +188,12 @@ func TestEval(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Eval(tt.expression, tt.states)
+			// Create WorkflowState and populate it with test data
+			workflowState := node.NewWorkflowState()
+			for key, value := range tt.states {
+				workflowState.Set(key, value)
+			}
+			got, err := Eval(tt.expression, workflowState)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Eval() error = %v, wantErr %v", err, tt.wantErr)
 				return

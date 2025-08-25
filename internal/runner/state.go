@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/ironpark/teatime/internal/node"
 	"github.com/ironpark/teatime/internal/recipe"
 )
 
@@ -14,7 +15,7 @@ type runState struct {
 	// states stores all node I/O values with keys:
 	// "{nodeId}.input.{propertyKey}" for node inputs
 	// "{nodeId}.output.{outputKey}" for node outputs
-	states       map[string]any
+	states       *node.WorkflowState
 	nodeExecuted map[string]bool
 	// nodeResults contains channels for signaling node completion
 	nodeResults map[string]chan error
@@ -28,7 +29,7 @@ func (state *runState) setNodeOutput(nodeId string, output map[string]any) {
 	state.lock.Lock()
 	defer state.lock.Unlock()
 	for key, value := range output {
-		state.states[fmt.Sprintf("%s.output.%s", nodeId, key)] = value
+		state.states.Set(fmt.Sprintf("%s.output.%s", nodeId, key), value)
 	}
 }
 
@@ -38,7 +39,7 @@ func (state *runState) setNodeInput(nodeId string, input map[string]any) {
 	state.lock.Lock()
 	defer state.lock.Unlock()
 	for key, value := range input {
-		state.states[fmt.Sprintf("%s.input.%s", nodeId, key)] = value
+		state.states.Set(fmt.Sprintf("%s.input.%s", nodeId, key), value)
 	}
 }
 

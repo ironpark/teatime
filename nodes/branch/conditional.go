@@ -49,7 +49,7 @@ type ConditionalBranchNode struct {
 }
 
 // Run executes the conditional branch logic.
-func (c *ConditionalBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (c *ConditionalBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props conditionalBranchProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {

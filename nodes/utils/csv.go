@@ -129,7 +129,7 @@ type csvParseProps struct {
 	AutoType  bool   `mapstructure:"autoType"`
 }
 
-func (c *CSVParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (c *CSVParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props csvParseProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -259,7 +259,7 @@ type csvGenerateProps struct {
 	IncludeHeader bool     `mapstructure:"includeHeader"`
 }
 
-func (c *CSVGenerateUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
+func (c *CSVGenerateUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
 	var props csvGenerateProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
