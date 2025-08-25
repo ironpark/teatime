@@ -10,7 +10,6 @@ import (
 	"github.com/ironpark/teatime/internal/database"
 	"github.com/ironpark/teatime/internal/node"
 	rc "github.com/ironpark/teatime/internal/recipe"
-	"github.com/ironpark/teatime/internal/runner"
 	"github.com/ironpark/teatime/stores"
 	"github.com/samber/lo"
 )
@@ -118,28 +117,6 @@ func (s *RecipesService) DeleteNode(id string, nodeId string) error {
 	return session.DeleteNode(nodeId)
 }
 
-func (s *RecipesService) RunRecipe(recipe *rc.Recipe, startNodeId string, properties map[string]any) error {
-	return runner.Run(context.Background(), recipe, startNodeId, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
-	})
-}
-
-func (s *RecipesService) RunRecipeByID(id string, startNodeId string, properties map[string]any) error {
-	recipe, err := s.store.GetRecipe(id)
-	if err != nil {
-		return err
-	}
-	triggerNode, err := recipe.GetNodeById(startNodeId)
-	if err != nil {
-		return err
-	}
-	if triggerNode.Type != string(node.NodeTypeTrigger) {
-		return fmt.Errorf("node %s is not a trigger node", startNodeId)
-	}
-	return runner.Run(context.Background(), recipe, startNodeId, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
-		fmt.Println("Recipe", recipe.Name, "Node", node.Id, "State", state, "Output", output, "Error", err)
-	})
-}
-
 func (s *RecipesService) ListRecipes() ([]RecipeInfo, error) {
 	recipes, err := s.store.ListRecipes()
 	if err != nil {
@@ -167,6 +144,27 @@ func (s *RecipesService) Sync() error {
 	return s.store.Sync()
 }
 
+func (s *RecipesService) RunRecipe(recipe *rc.Recipe, startNodeId string, properties map[string]any) error {
+	// TODO: implement recipe runner
+	return nil
+}
+
+func (s *RecipesService) RunRecipeByID(id string, startNodeId string, properties map[string]any) error {
+	recipe, err := s.store.GetRecipe(id)
+	if err != nil {
+		return err
+	}
+	triggerNode, err := recipe.GetNodeById(startNodeId)
+	if err != nil {
+		return err
+	}
+	if triggerNode.Type != string(node.NodeTypeTrigger) {
+		return fmt.Errorf("node %s is not a trigger node", startNodeId)
+	}
+	// TODO: implement recipe runner
+	return nil
+}
+
 // ExecuteTriggerNode executes a single trigger node with provided arguments
 func (s *RecipesService) ExecuteTriggerNode(recipeID, nodeID string, properties map[string]any, args map[string]any) error {
 	recipe, err := s.store.GetRecipe(recipeID)
@@ -186,7 +184,6 @@ func (s *RecipesService) ExecuteTriggerNode(recipeID, nodeID string, properties 
 	ctx = context.WithValue(ctx, "args", args)
 	fmt.Println("args", args, "properties", properties)
 	// Execute the trigger node
-	return runner.Run(ctx, recipe, nodeID, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
-		fmt.Printf("Recipe: %s, Node: %s, State: %s, Output: %v, Error: %v\n", recipe.Name, node.Id, state, output, err)
-	})
+	// TODO: implement recipe runner
+	return nil
 }

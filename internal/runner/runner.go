@@ -40,7 +40,7 @@ type Callback func(recipe *recipe.Recipe, state NodeExecutionStatus, node recipe
 //  4. Reports state changes via callback
 //
 // Execution stops if any node encounters an error or the context is cancelled.
-func Run(ctx context.Context, target *recipe.Recipe, startNodeId string, properties map[string]any, callback Callback) error {
+func Run(ctx context.Context, target *recipe.Recipe, startNodeId string, workflowState *n.WorkflowState, properties map[string]any, callback Callback) error {
 	triggerNode, err := target.GetNodeById(startNodeId)
 	if err != nil {
 		return err
@@ -48,7 +48,9 @@ func Run(ctx context.Context, target *recipe.Recipe, startNodeId string, propert
 	if callback == nil {
 		return fmt.Errorf("callback is nil")
 	}
-	workflowState := n.NewWorkflowState()
+	if workflowState == nil {
+		workflowState = n.NewWorkflowState()
+	}
 	runState := &runState{
 		recipe:       target,
 		states:       workflowState,

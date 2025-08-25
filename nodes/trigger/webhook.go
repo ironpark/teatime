@@ -102,48 +102,29 @@ func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.Propert
 	// Get current timestamp
 	timestamp := time.Now()
 
-	// Extract request information from states (would be populated by the HTTP server)
-	method := ""
-	if m := states.Get("method"); m != nil {
-		if s, ok := m.(string); ok {
-			method = s
+	// Extract request information from execution context
+	var requestContext struct {
+		Method     string         `mapstructure:"method"`
+		Path       string         `mapstructure:"path"`
+		Headers    map[string]any `mapstructure:"headers"`
+		Query      map[string]any `mapstructure:"query"`
+		Body       map[string]any `mapstructure:"body"`
+		RemoteAddr string         `mapstructure:"remoteAddr"`
+	}
+	
+	if err := states.BindExecContext(&requestContext); err != nil {
+		return node.NodeResult{
+			Error:    fmt.Errorf("failed to bind execution context: %w", err),
+			Continue: false,
 		}
 	}
-
-	path := ""
-	if p := states.Get("path"); p != nil {
-		if s, ok := p.(string); ok {
-			path = s
-		}
-	}
-
-	headers := make(map[string]any)
-	if h := states.Get("headers"); h != nil {
-		if m, ok := h.(map[string]any); ok {
-			headers = m
-		}
-	}
-
-	query := make(map[string]any)
-	if q := states.Get("query"); q != nil {
-		if m, ok := q.(map[string]any); ok {
-			query = m
-		}
-	}
-
-	body := make(map[string]any)
-	if b := states.Get("body"); b != nil {
-		if m, ok := b.(map[string]any); ok {
-			body = m
-		}
-	}
-
-	remoteAddr := ""
-	if r := states.Get("remoteAddr"); r != nil {
-		if s, ok := r.(string); ok {
-			remoteAddr = s
-		}
-	}
+	
+	method := requestContext.Method
+	path := requestContext.Path
+	headers := requestContext.Headers
+	query := requestContext.Query
+	body := requestContext.Body
+	remoteAddr := requestContext.RemoteAddr
 
 	// Check authentication if required
 	if props.RequireAuth {

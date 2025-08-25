@@ -9,7 +9,6 @@ import (
 	"github.com/ironpark/teatime/internal/recipe"
 )
 
-
 // Status represents the current state of a trigger instance.
 type Status string
 
@@ -22,11 +21,11 @@ const (
 
 // Event represents a trigger event with metadata and data payload.
 type Event struct {
-	TriggerID   string                 `json:"triggerId"`   // Unique trigger identifier
-	RecipeID    string                 `json:"recipeId"`    // Associated recipe ID
-	NodeID      string                 `json:"nodeId"`      // Trigger node ID
+	TriggerID   string         `json:"triggerId"`   // Unique trigger identifier
+	RecipeID    string         `json:"recipeId"`    // Associated recipe ID
+	NodeID      string         `json:"nodeId"`      // Trigger node ID
 	Data        map[string]any `json:"data"`        // Event payload data
-	TriggeredAt time.Time              `json:"triggeredAt"` // Event timestamp
+	TriggeredAt time.Time      `json:"triggeredAt"` // Event timestamp
 }
 
 // Handler defines the interface that all trigger handlers must implement.
@@ -34,22 +33,22 @@ type Event struct {
 type Handler interface {
 	// NodeRef returns the node reference this handler manages.
 	NodeRef() string
-	
+
 	// Name returns the human-readable name of this handler.
 	Name() string
-	
+
 	// Description returns a description of this handler's functionality.
 	Description() string
-	
+
 	// Register registers a new trigger instance with the handler.
 	Register(ctx context.Context, id string, config map[string]any) error
-	
+
 	// Unregister removes a trigger instance from the handler.
 	Unregister(ctx context.Context, id string) error
-	
+
 	// Start starts the handler's background processing (if needed).
 	Start(ctx context.Context) error
-	
+
 	// Initialize prepares the handler with event channel.
 	Initialize(ctx context.Context, eventCh chan<- Event) error
 }
@@ -68,10 +67,10 @@ type RecipeRunner interface {
 
 // TriggerStat represents execution statistics for a trigger.
 type TriggerStat struct {
-	TriggerID     string     `json:"triggerId"`     // Trigger identifier
-	RecipeID      string     `json:"recipeId"`      // Associated recipe ID
-	NodeRef       string     `json:"nodeRef"`       // Node reference
-	TriggerCount  int64      `json:"triggerCount"`  // Number of times triggered
+	TriggerID     string     `json:"triggerId"`               // Trigger identifier
+	RecipeID      string     `json:"recipeId"`                // Associated recipe ID
+	NodeRef       string     `json:"nodeRef"`                 // Node reference
+	TriggerCount  int64      `json:"triggerCount"`            // Number of times triggered
 	LastTriggered *time.Time `json:"lastTriggered,omitempty"` // Last trigger timestamp
 	LastError     string     `json:"lastError,omitempty"`     // Last error message
 }

@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"maps"
 
 	"github.com/ironpark/teatime/internal/recipe"
-	"github.com/ironpark/teatime/internal/runner"
 	"github.com/ironpark/teatime/internal/trigger"
 	"github.com/ironpark/teatime/internal/trigger/handlers"
 	"github.com/ironpark/teatime/stores"
@@ -29,33 +27,11 @@ func (r *recipeLoader) LoadRecipe(recipeID string) (*recipe.Recipe, error) {
 	return r.store.GetRecipe(recipeID)
 }
 
-// RecipeRunner implementation for trigger manager
-type recipeRunner struct {
-	recipesService *RecipesService
-}
-
-func (r *recipeRunner) Execute(ctx context.Context, rec *recipe.Recipe, startNodeID string, data map[string]any) error {
-	// Convert trigger data to properties map
-	properties := make(map[string]any, len(data))
-	maps.Copy(properties, data)
-
-	// Execute the recipe starting from the trigger node
-	return runner.Run(ctx, rec, startNodeID, properties, func(rec *recipe.Recipe, state runner.NodeExecutionStatus, node recipe.Node, output map[string]any, err error) {
-		if err != nil {
-			log.Printf("Recipe execution error - Recipe: %s, Node: %s, State: %s, Error: %v", rec.Name, node.Id, state, err)
-		} else {
-			log.Printf("Recipe execution - Recipe: %s, Node: %s, State: %s", rec.Name, node.Id, state)
-		}
-	})
-}
-
 // NewTriggersService creates a new triggers service with internal registry management.
 func NewTriggersService(store *stores.Store, recipesService *RecipesService) *TriggersService {
 	loader := &recipeLoader{store: store}
-	runner := &recipeRunner{recipesService: recipesService}
-
 	// Create manager with internal registry
-	manager := trigger.NewManager(loader, runner)
+	manager := trigger.NewManager(loader)
 
 	// Register handler instances directly with the manager
 	handlerInstances := []trigger.Handler{

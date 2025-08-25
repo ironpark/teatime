@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // WorkflowState represents the global state of a workflow execution.
 // It stores all node inputs and outputs with structured keys for easy access.
 type WorkflowState struct {
 	data    map[string]any
+	execCtx map[string]any
 	history []StateChange
 	mu      sync.RWMutex
 }
@@ -27,7 +30,33 @@ type StateChange struct {
 func NewWorkflowState() *WorkflowState {
 	return &WorkflowState{
 		data:    make(map[string]any),
+		execCtx: make(map[string]any),
 		history: make([]StateChange, 0),
+	}
+}
+
+func (ws *WorkflowState) BindExecContext(value any) error {
+	if value == nil {
+		return nil
+	}
+	ws.mu.RLock()
+	defer ws.mu.RUnlock()
+
+	// decode execCtx to value
+	err := mapstructure.Decode(ws.execCtx, value)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetExecContext sets execution context data from a map.
+func (ws *WorkflowState) SetExecContext(contextMap map[string]any) {
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	for key, value := range contextMap {
+		ws.execCtx[key] = value
 	}
 }
 

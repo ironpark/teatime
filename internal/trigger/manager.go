@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ironpark/teatime/internal/recipe"
+	"github.com/ironpark/teatime/internal/node"
+	rc "github.com/ironpark/teatime/internal/recipe"
+	"github.com/ironpark/teatime/internal/runner"
 )
 
 // Manager coordinates trigger handlers and manages trigger instances for recipes.
@@ -15,7 +17,6 @@ import (
 type Manager struct {
 	// Dependencies
 	recipeLoader RecipeLoader
-	recipeRunner RecipeRunner
 	registry     *Registry
 
 	// Active triggers management
@@ -34,10 +35,9 @@ type Manager struct {
 }
 
 // NewManager creates a new trigger manager with internal registry.
-func NewManager(loader RecipeLoader, runner RecipeRunner) *Manager {
+func NewManager(loader RecipeLoader) *Manager {
 	m := &Manager{
 		recipeLoader:   loader,
-		recipeRunner:   runner,
 		registry:       NewRegistry(),
 		activeTriggers: make(map[string]*Instance),
 		recipeTriggers: make(map[string][]*Instance),
@@ -49,8 +49,8 @@ func NewManager(loader RecipeLoader, runner RecipeRunner) *Manager {
 
 // NewManagerWithHandlers creates a new trigger manager with specific handlers (legacy).
 // This function is provided for backward compatibility. New code should use NewManager and RegisterHandler.
-func NewManagerWithHandlers(loader RecipeLoader, runner RecipeRunner, handlers []Handler) *Manager {
-	m := NewManager(loader, runner)
+func NewManagerWithHandlers(loader RecipeLoader, handlers []Handler) *Manager {
+	m := NewManager(loader)
 
 	// Register handlers (initialization handled by registry)
 	for _, handler := range handlers {
@@ -143,7 +143,7 @@ func (m *Manager) waitForShutdown(ctx context.Context) {
 }
 
 // RegisterRecipe registers all triggers for a recipe
-func (m *Manager) RegisterRecipe(recipe *recipe.Recipe) error {
+func (m *Manager) RegisterRecipe(recipe *rc.Recipe) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -188,7 +188,7 @@ func (m *Manager) UnregisterRecipe(recipeID string) error {
 }
 
 // registerTriggerNode registers a single trigger node
-func (m *Manager) registerTriggerNode(recipeID string, node recipe.Node) (*Instance, error) {
+func (m *Manager) registerTriggerNode(recipeID string, node rc.Node) (*Instance, error) {
 	// Get handler from registry
 	handler, err := m.registry.GetHandler(node.Ref)
 	if err != nil {
@@ -203,15 +203,14 @@ func (m *Manager) registerTriggerNode(recipeID string, node recipe.Node) (*Insta
 
 	// Create instance
 	instance := &Instance{
-		RecipeRunner: m.recipeRunner,
-		ID:           generateTriggerID(recipeID, node.Id),
-		RecipeID:     recipeID,
-		NodeID:       node.Id,
-		NodeRef:      node.Ref,
-		Config:       config,
-		Status:       StatusInactive,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:        generateTriggerID(recipeID, node.Id),
+		RecipeID:  recipeID,
+		NodeID:    node.Id,
+		NodeRef:   node.Ref,
+		Config:    config,
+		Status:    StatusInactive,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Register with handler (validation is performed inside Register)
@@ -301,7 +300,15 @@ func (m *Manager) executeTriggerSync(ctx context.Context, triggerID string, data
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
-	err = m.recipeRunner.Execute(ctx, recipe, instance.NodeID, data)
+	workflowState := node.NewWorkflowState()
+	workflowState.SetExecContext(data)
+	err = runner.Run(ctx, recipe, instance.NodeID, workflowState, data, func(rec *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
+		if err != nil {
+			log.Printf("Recipe execution error - Recipe: %s, Node: %s, State: %s, Error: %v", rec.Name, node.Id, state, err)
+		} else {
+			log.Printf("Recipe execution - Recipe: %s, Node: %s, State: %s", rec.Name, node.Id, state)
+		}
+	})
 	if err != nil {
 		instance.LastError = err.Error()
 		return fmt.Errorf("recipe execution failed: %w", err)

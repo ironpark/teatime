@@ -4,7 +4,6 @@ package node
 
 import (
 	"context"
-	"fmt"
 )
 
 // NodeType represents the category of a workflow node.
@@ -55,7 +54,6 @@ type NodeResult struct {
 // It contains the current property values that nodes can use to
 // dynamically adjust their properties and outputs.
 type PropertyContext map[string]any
-
 
 // OutputHandle represents a connection point from a node.
 // Nodes can have multiple output handles for different execution paths.
