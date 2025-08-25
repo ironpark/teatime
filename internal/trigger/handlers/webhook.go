@@ -24,6 +24,14 @@ type WebhookContext struct {
 	RemoteAddr string         `mapstructure:"remoteAddr"`
 }
 
+// WebhookConfig represents webhook configuration
+type WebhookConfig struct {
+	Path        string `mapstructure:"path"`
+	Method      string `mapstructure:"method"`
+	RequireAuth bool   `mapstructure:"requireAuth"`
+	Secret      string `mapstructure:"secret"`
+}
+
 // route represents a registered webhook route
 type route struct {
 	pattern   string
@@ -34,20 +42,11 @@ type route struct {
 
 // WebhookHandler handles HTTP webhook triggers with proper route cleanup
 type WebhookHandler struct {
-	manager  *trigger.Manager
 	server   *http.Server
 	routes   []route
 	routesMu sync.RWMutex
 	serverMu sync.Mutex
 	eventCh  chan<- trigger.Event
-}
-
-// WebhookConfig represents webhook configuration
-type WebhookConfig struct {
-	Path        string `mapstructure:"path"`
-	Method      string `mapstructure:"method"`
-	RequireAuth bool   `mapstructure:"requireAuth"`
-	Secret      string `mapstructure:"secret"`
 }
 
 // Validate validates the webhook configuration

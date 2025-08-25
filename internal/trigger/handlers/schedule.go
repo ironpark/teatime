@@ -12,7 +12,6 @@ import (
 
 // ScheduleHandler handles cron-based schedule triggers
 type ScheduleHandler struct {
-	manager   *trigger.Manager
 	scheduler *cron.Cron
 	eventCh   chan<- trigger.Event
 	entries   map[string]cron.EntryID // triggerID -> entryID mapping
@@ -75,7 +74,6 @@ func (h *ScheduleHandler) Name() string {
 func (h *ScheduleHandler) Description() string {
 	return "Triggers workflows based on cron schedule"
 }
-
 
 func (h *ScheduleHandler) Register(ctx context.Context, id string, configMap map[string]any) error {
 	if h.scheduler == nil {
