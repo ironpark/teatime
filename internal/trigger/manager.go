@@ -151,15 +151,15 @@ func (m *Manager) RegisterRecipe(recipe *rc.Recipe) error {
 	// Cleanup existing triggers for this recipe
 	m.unregisterRecipeInternal(recipeID)
 
-	// Find trigger nodes
-	triggerNodes := recipe.GetTriggerNodes()
+	// Find only connected trigger nodes
+	triggerNodes := recipe.GetConnectedTriggerNodes()
 	if len(triggerNodes) == 0 {
-		return nil // No triggers to register
+		return nil // No connected triggers to register
 	}
 
 	var instances []*Instance
 
-	// Register each trigger node
+	// Register each connected trigger node
 	for _, node := range triggerNodes {
 		instance, err := m.registerTriggerNode(recipeID, node)
 		if err != nil {

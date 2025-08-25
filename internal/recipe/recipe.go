@@ -158,6 +158,30 @@ func (r *Recipe) GetTriggerNodes() []Node {
 	return nodes
 }
 
+// GetConnectedTriggerNodes returns only trigger nodes that have outbound connections.
+// This filters out isolated trigger nodes that wouldn't execute any workflow.
+func (r *Recipe) GetConnectedTriggerNodes() []Node {
+	triggerNodes := r.GetTriggerNodes()
+	var connectedTriggers []Node
+	
+	for _, trigger := range triggerNodes {
+		if r.HasOutboundConnections(trigger.Id) {
+			connectedTriggers = append(connectedTriggers, trigger)
+		}
+	}
+	return connectedTriggers
+}
+
+// HasOutboundConnections checks if a node has any outbound connections.
+func (r *Recipe) HasOutboundConnections(nodeId string) bool {
+	for _, edge := range r.Edges {
+		if edge.Source == nodeId {
+			return true
+		}
+	}
+	return false
+}
+
 // Save persists the recipe to its associated file path in YAML format.
 // It creates or overwrites the file with the current recipe data.
 func (r *Recipe) Save() error {
