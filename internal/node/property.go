@@ -105,6 +105,8 @@ type NodeProperty struct {
 	Options []string `json:"options"`
 	// not editable
 	ReadOnly bool `json:"readOnly"`
+	// hide on node preview
+	HideOnPreview bool `json:"hideOnPreview"`
 }
 
 func (p *NodeProperty) Cast(v any) (any, error) {

@@ -10,6 +10,7 @@ import (
 	"github.com/ironpark/teatime/internal/database"
 	"github.com/ironpark/teatime/internal/node"
 	rc "github.com/ironpark/teatime/internal/recipe"
+	"github.com/ironpark/teatime/internal/runner"
 	"github.com/ironpark/teatime/stores"
 	"github.com/samber/lo"
 )
@@ -73,9 +74,7 @@ func (s *RecipesService) getSession(id string) *EditSession {
 		if err != nil {
 			return nil
 		}
-		session = &EditSession{
-			Recipe: recipe,
-		}
+		session = newSession(recipe)
 		s.editSessions[id] = session
 	}
 	return session
@@ -183,7 +182,13 @@ func (s *RecipesService) ExecuteTriggerNode(recipeID, nodeID string, properties 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "args", args)
 	fmt.Println("args", args, "properties", properties)
-	// Execute the trigger node
-	// TODO: implement recipe runner
+	states := runner.NewWorkflowState()
+	states.SetExecContext(args)
+	err = runner.Run(ctx, recipe, nodeID, states, properties, func(recipe *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
+		fmt.Println("node", node.Id, "output", output, "error", err)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to run recipe: %w", err)
+	}
 	return nil
 }

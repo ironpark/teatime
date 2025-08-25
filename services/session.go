@@ -2,9 +2,11 @@ package services
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ironpark/teatime/internal/node"
 	rc "github.com/ironpark/teatime/internal/recipe"
 	"github.com/samber/lo"
@@ -17,6 +19,27 @@ type EditSession struct {
 	NeedsSave    bool       `json:"needs_save"`
 	Recipe       *rc.Recipe `json:"recipe"`
 	lock         sync.RWMutex
+	nodeCounter  map[string]int
+}
+
+func newSession(recipe *rc.Recipe) *EditSession {
+	session := &EditSession{
+		ID:           uuid.New().String(),
+		LoadedAt:     time.Now(),
+		LastModified: time.Now(),
+		Recipe:       recipe,
+		nodeCounter:  make(map[string]int),
+	}
+	for _, n := range recipe.Nodes {
+		session.nodeCounter[n.NodeData.Ref]++
+	}
+	return session
+}
+
+func (s *EditSession) GetNodeCount(ref string) int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.nodeCounter[ref]
 }
 
 func (s *EditSession) CreateNode(ref string, x, y int) (rc.Node, error) {
@@ -24,10 +47,11 @@ func (s *EditSession) CreateNode(ref string, x, y int) (rc.Node, error) {
 	if err != nil {
 		return rc.Node{}, err
 	}
-	current := time.Now().UnixNano()
-	currentHex := fmt.Sprintf("%x", current)
+	lowerName := strings.ReplaceAll(strings.TrimSpace(strings.ToLower(createdNode.Name())), " ", "-")
+
+	nodeId := fmt.Sprintf("%s%d", lowerName, s.GetNodeCount(ref))
 	node := rc.Node{
-		Id:       currentHex,
+		Id:       nodeId,
 		Position: rc.Position{x, y},
 		Type:     string(createdNode.Type()),
 		NodeData: rc.NodeData{

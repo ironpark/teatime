@@ -239,6 +239,11 @@ export class NodeProperty {
      */
     "readOnly": boolean;
 
+    /**
+     * hide on node preview
+     */
+    "hideOnPreview": boolean;
+
     /** Creates a new NodeProperty instance. */
     constructor($$source: Partial<NodeProperty> = {}) {
         if (!("type" in $$source)) {
@@ -264,6 +269,9 @@ export class NodeProperty {
         }
         if (!("readOnly" in $$source)) {
             this["readOnly"] = false;
+        }
+        if (!("hideOnPreview" in $$source)) {
+            this["hideOnPreview"] = false;
         }
 
         Object.assign(this, $$source);

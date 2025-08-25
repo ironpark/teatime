@@ -84,6 +84,7 @@ func (m *MatchBranchNode) GetProperties(ctx node.PropertyContext) []node.NodePro
 		baseProps = append(baseProps, node.StringProp(labelKey, labelLabel,
 			node.WithDescription(labelDesc),
 			node.WithDefault(fmt.Sprintf("Branch %d", i)),
+			node.HideOnPreview(),
 		))
 	}
 

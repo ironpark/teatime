@@ -209,7 +209,7 @@
 			<div class="space-y-2">
 				<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Properties</div>
 				<div class="space-y-1">
-					{#each properties as prop}
+					{#each properties.filter(prop => !prop.hideOnPreview) as prop}
 						<div class="rounded bg-muted/50 p-1.5 text-xs">
 							<div class="flex items-center justify-between gap-2">
 								<div class="flex items-center gap-2 flex-1">

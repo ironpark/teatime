@@ -38,6 +38,13 @@ func ReadOnly() PropertyOption {
 	}
 }
 
+// HideOnPreview makes the property hide on node preview
+func HideOnPreview() PropertyOption {
+	return func(p *NodeProperty) {
+		p.HideOnPreview = true
+	}
+}
+
 // WithOptions sets the available options for select properties
 func WithOptions(options ...string) PropertyOption {
 	return func(p *NodeProperty) {
