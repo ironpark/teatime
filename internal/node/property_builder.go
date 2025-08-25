@@ -360,6 +360,7 @@ func SelectProp(key, name string, options []string, opts ...PropertyOption) Node
 func MultiSelectProp(key, name string, options []string, opts ...PropertyOption) NodeProperty {
 	defaultOpts := []PropertyOption{
 		WithOptions(options...),
+		Multiple(),
 		// Input type and Multiple are already set by default for StringArray
 	}
 	return NewProp(StringArray, key, name, append(defaultOpts, opts...)...)
