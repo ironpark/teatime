@@ -72,11 +72,11 @@ func init() {
 }
 
 type loopBranchProps struct {
-	LoopType       string      `mapstructure:"loopType"`
-	MaxIterations  int         `mapstructure:"maxIterations"`
-	Count          int         `mapstructure:"count"`
-	Condition      bool        `mapstructure:"condition"`
-	Array          any `mapstructure:"array"`
+	LoopType      string `mapstructure:"loopType"`
+	MaxIterations int    `mapstructure:"maxIterations"`
+	Count         int    `mapstructure:"count"`
+	Condition     bool   `mapstructure:"condition"`
+	Array         any    `mapstructure:"array"`
 }
 
 // LoopBranchNode executes workflow iterations based on different loop types.
@@ -85,7 +85,7 @@ type LoopBranchNode struct {
 }
 
 // Run executes the loop logic.
-func (l *LoopBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (l *LoopBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props loopBranchProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
@@ -124,7 +124,7 @@ func (l *LoopBranchNode) Run(ctx context.Context, resolvedProps node.PropertyCon
 		if arraySlice, ok := props.Array.([]any); ok {
 			totalIterations = int64(len(arraySlice))
 			currentIndex = currentIteration - 1
-			
+
 			if currentIndex < totalIterations {
 				currentItem = arraySlice[currentIndex]
 				shouldContinueLoop = true

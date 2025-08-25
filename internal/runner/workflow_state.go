@@ -1,5 +1,5 @@
-// Package node provides the core node system for workflow automation.
-package node
+// Package runner provides workflow execution state management.
+package runner
 
 import (
 	"fmt"
@@ -7,23 +7,16 @@ import (
 	"time"
 
 	"github.com/go-viper/mapstructure/v2"
+	"github.com/ironpark/teatime/internal/node"
 )
 
-// WorkflowState represents the global state of a workflow execution.
+// workflowState implements the node.WorkflowState interface.
 // It stores all node inputs and outputs with structured keys for easy access.
 type WorkflowState struct {
 	data    map[string]any
 	execCtx map[string]any
-	history []StateChange
+	history []node.StateChange
 	mu      sync.RWMutex
-}
-
-// StateChange represents a change in the workflow state for history tracking.
-type StateChange struct {
-	Key       string    `json:"key"`
-	OldValue  any       `json:"oldValue"`
-	NewValue  any       `json:"newValue"`
-	Timestamp time.Time `json:"timestamp"`
 }
 
 // NewWorkflowState creates a new WorkflowState instance.
@@ -31,7 +24,7 @@ func NewWorkflowState() *WorkflowState {
 	return &WorkflowState{
 		data:    make(map[string]any),
 		execCtx: make(map[string]any),
-		history: make([]StateChange, 0),
+		history: make([]node.StateChange, 0),
 	}
 }
 
@@ -89,7 +82,7 @@ func (ws *WorkflowState) SetOutput(nodeId string, key string, value any) {
 	oldValue := ws.data[stateKey]
 	ws.data[stateKey] = value
 
-	ws.history = append(ws.history, StateChange{
+	ws.history = append(ws.history, node.StateChange{
 		Key:       stateKey,
 		OldValue:  oldValue,
 		NewValue:  value,
@@ -113,7 +106,7 @@ func (ws *WorkflowState) SetInput(nodeId string, key string, value any) {
 	oldValue := ws.data[stateKey]
 	ws.data[stateKey] = value
 
-	ws.history = append(ws.history, StateChange{
+	ws.history = append(ws.history, node.StateChange{
 		Key:       stateKey,
 		OldValue:  oldValue,
 		NewValue:  value,
@@ -143,7 +136,7 @@ func (ws *WorkflowState) Set(key string, value any) {
 	oldValue := ws.data[key]
 	ws.data[key] = value
 
-	ws.history = append(ws.history, StateChange{
+	ws.history = append(ws.history, node.StateChange{
 		Key:       key,
 		OldValue:  oldValue,
 		NewValue:  value,
@@ -152,11 +145,11 @@ func (ws *WorkflowState) Set(key string, value any) {
 }
 
 // GetHistory returns a copy of the state change history.
-func (ws *WorkflowState) GetHistory() []StateChange {
+func (ws *WorkflowState) GetHistory() []node.StateChange {
 	ws.mu.RLock()
 	defer ws.mu.RUnlock()
 
-	history := make([]StateChange, len(ws.history))
+	history := make([]node.StateChange, len(ws.history))
 	copy(history, ws.history)
 	return history
 }

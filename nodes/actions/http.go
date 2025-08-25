@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	httpMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+	httpMethods  = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
 	contentTypes = []string{"application/json", "application/x-www-form-urlencoded", "text/plain", "application/xml", "multipart/form-data"}
 )
 
@@ -55,7 +55,7 @@ func init() {
 				},
 				{
 					ID:          "error",
-					Label:       "Error", 
+					Label:       "Error",
 					Description: "HTTP request failed",
 				},
 			},
@@ -132,7 +132,7 @@ type httpActionProps struct {
 }
 
 // Run executes the HTTP request and returns the response.
-func (h *HTTPRequestActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (h *HTTPRequestActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	var props httpActionProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{

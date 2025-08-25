@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ironpark/teatime/internal/node"
 	rc "github.com/ironpark/teatime/internal/recipe"
 	"github.com/ironpark/teatime/internal/runner"
 )
@@ -300,7 +299,7 @@ func (m *Manager) executeTriggerSync(ctx context.Context, triggerID string, data
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
-	workflowState := node.NewWorkflowState()
+	workflowState := runner.NewWorkflowState()
 	workflowState.SetExecContext(data)
 	err = runner.Run(ctx, recipe, instance.NodeID, workflowState, data, func(rec *rc.Recipe, state runner.NodeExecutionStatus, node rc.Node, output map[string]any, err error) {
 		if err != nil {

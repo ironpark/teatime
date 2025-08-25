@@ -197,7 +197,7 @@ type llmActionProps struct {
 }
 
 // Run executes the LLM request and returns the generated response.
-func (l *LLMActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (l *LLMActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	// Extract parameters
 	var props llmActionProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {

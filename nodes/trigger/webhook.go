@@ -88,7 +88,7 @@ type WebhookTriggerNode struct {
 
 // Run executes the webhook trigger logic.
 // This is called when an HTTP request is received on the configured path.
-func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (w *WebhookTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props webhookTriggerProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {

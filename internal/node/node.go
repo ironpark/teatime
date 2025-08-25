@@ -87,7 +87,7 @@ type Node interface {
 	// Info returns the complete metadata for the node.
 	Info() NodeInfo
 	// Run executes the node with the given context and state.
-	Run(ctx context.Context, resolvedProperties PropertyContext, states *WorkflowState) (result NodeResult)
+	Run(ctx context.Context, resolvedProperties PropertyContext, states WorkflowState) (result NodeResult)
 	// ValidateProperties validates the properties of the node.
 	ValidateProperties(input PropertyContext) error
 }

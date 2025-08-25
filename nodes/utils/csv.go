@@ -129,7 +129,7 @@ type csvParseProps struct {
 	AutoType  bool   `mapstructure:"autoType"`
 }
 
-func (c *CSVParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (c *CSVParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	var props csvParseProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -190,7 +190,7 @@ func (c *CSVParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyC
 
 	var headers []string
 	var dataRows [][]string
-	
+
 	if props.HasHeader && len(records) > 0 {
 		headers = records[0]
 		dataRows = records[1:]
@@ -259,7 +259,7 @@ type csvGenerateProps struct {
 	IncludeHeader bool     `mapstructure:"includeHeader"`
 }
 
-func (c *CSVGenerateUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (c *CSVGenerateUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	var props csvGenerateProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -321,7 +321,7 @@ func (c *CSVGenerateUtilNode) Run(ctx context.Context, resolvedProps node.Proper
 	// Write data rows
 	for _, item := range props.Data {
 		var row []string
-		
+
 		switch v := item.(type) {
 		case map[string]any:
 			// Object - use headers to maintain order
@@ -382,16 +382,16 @@ func convertValue(value string) any {
 	if intVal, err := strconv.Atoi(value); err == nil {
 		return int64(intVal)
 	}
-	
+
 	if floatVal, err := strconv.ParseFloat(value, 64); err == nil {
 		return floatVal
 	}
-	
+
 	// Try to convert to boolean
 	if boolVal, err := strconv.ParseBool(value); err == nil {
 		return boolVal
 	}
-	
+
 	// Return as string if no conversion possible
 	return value
 }

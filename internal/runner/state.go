@@ -15,7 +15,7 @@ type runState struct {
 	// states stores all node I/O values with keys:
 	// "{nodeId}.input.{propertyKey}" for node inputs
 	// "{nodeId}.output.{outputKey}" for node outputs
-	states       *node.WorkflowState
+	states       node.WorkflowState
 	nodeExecuted map[string]bool
 	// nodeResults contains channels for signaling node completion
 	nodeResults map[string]chan error

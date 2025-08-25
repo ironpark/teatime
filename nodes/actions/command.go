@@ -64,7 +64,7 @@ type CommandActionNode struct {
 }
 
 // Run executes the configured system command and returns the result.
-func (c *CommandActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (c *CommandActionNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	// Extract command parameters
 	command, ok := resolvedProps["command"].(string)
 	if !ok || command == "" {

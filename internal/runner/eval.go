@@ -20,7 +20,7 @@ import (
 //   - Plain values: returned as-is
 //
 // Returns a map of resolved property values ready for node execution.
-func ResolveInput(properties []node.NodeProperty, states *node.WorkflowState) (resolvedProperties map[string]any, err error) {
+func ResolveInput(properties []node.NodeProperty, states node.WorkflowState) (resolvedProperties map[string]any, err error) {
 	re := regexp.MustCompile(`{{.*}}`)
 	propertiesMap := lo.Reduce(properties, func(acc map[string]node.NodeProperty, property node.NodeProperty, _ int) map[string]node.NodeProperty {
 		acc[property.Key] = property
@@ -91,7 +91,7 @@ func ResolveInput(properties []node.NodeProperty, states *node.WorkflowState) (r
 //   - Direct key-value pairs for other workflow data
 //
 // Built-in functions include: len(), strContains(), toLowerCase(), toUpperCase(), toString()
-func Eval(expression string, states *node.WorkflowState) (any, error) {
+func Eval(expression string, states node.WorkflowState) (any, error) {
 	expression = strings.TrimSpace(expression)
 
 	// Create evaluation environment with states and built-in variables

@@ -58,7 +58,7 @@ type DelayBranchNode struct {
 }
 
 // Run executes the delay logic.
-func (d *DelayBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (d *DelayBranchNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props delayBranchProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {

@@ -89,7 +89,7 @@ func (c *CommandTriggerNode) GetOutput(ctx node.PropertyContext) []node.NodeProp
 	// Get args from context to generate dynamic outputs
 	if argsValue, ok := ctx["args"]; ok {
 		var commandArgs []CommandArg
-		
+
 		// Handle different types of args values
 		switch v := argsValue.(type) {
 		case []CommandArg:
@@ -155,7 +155,7 @@ func getBoolFromMap(m map[string]any, key string) bool {
 
 // Run executes the command trigger logic.
 // This is called when: teatime run recipe-file --arg1 value1 --arg2 value2
-func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (c *CommandTriggerNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	// Extract parameters using mapstructure
 	var props commandTriggerProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {

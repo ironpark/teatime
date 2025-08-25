@@ -106,7 +106,7 @@ type jsonParseProps struct {
 	Path       string `mapstructure:"path"`
 }
 
-func (j *JSONParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (j *JSONParseUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	var props jsonParseProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -184,7 +184,7 @@ type jsonStringifyProps struct {
 	Pretty bool `mapstructure:"pretty"`
 }
 
-func (j *JSONStringifyUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states *node.WorkflowState) node.NodeResult {
+func (j *JSONStringifyUtilNode) Run(ctx context.Context, resolvedProps node.PropertyContext, states node.WorkflowState) node.NodeResult {
 	var props jsonStringifyProps
 	if err := mapstructure.Decode(resolvedProps, &props); err != nil {
 		return node.NodeResult{
@@ -250,7 +250,7 @@ func getValueType(value any) string {
 func extractJSONPath(data any, path string) (any, error) {
 	// Simple JSON path extraction (supports dot notation and array indices)
 	// Example: "data.items[0].name"
-	
+
 	parts := parseJSONPath(path)
 	current := data
 
@@ -296,13 +296,13 @@ func parseJSONPath(path string) []pathPart {
 			// Handle array notation: "items[0]"
 			openBracket := strings.Index(segment, "[")
 			closeBracket := strings.Index(segment, "]")
-			
+
 			if openBracket > 0 {
 				// Object key first, then array index
 				key := segment[:openBracket]
 				parts = append(parts, pathPart{key: key, isArray: false})
 			}
-			
+
 			if closeBracket > openBracket {
 				indexStr := segment[openBracket+1 : closeBracket]
 				if index, err := strconv.Atoi(indexStr); err == nil {
