@@ -40,6 +40,15 @@ export function GetRegisteredCommands(): $CancellablePromise<string[]> {
 }
 
 /**
+ * GetSupportedNodeRefs returns all supported node references from the registry
+ */
+export function GetSupportedNodeRefs(): $CancellablePromise<string[]> {
+    return $Call.ByID(474231515).then(($result: any) => {
+        return $$createType3($result);
+    });
+}
+
+/**
  * GetTriggerStats returns trigger statistics
  */
 export function GetTriggerStats(): $CancellablePromise<{ [_: string]: any }> {
@@ -65,10 +74,17 @@ export function RefreshAllTriggers(): $CancellablePromise<void> {
 }
 
 /**
- * RefreshRecipeTriggers refreshes triggers for a specific recipe (call after recipe updates)
+ * RefreshRecipeTriggers refreshes triggers for a specific recipe (call after recipe updates).
  */
 export function RefreshRecipeTriggers(recipeID: string): $CancellablePromise<void> {
     return $Call.ByID(3196380101, recipeID);
+}
+
+/**
+ * RegisterHandler dynamically registers a handler instance
+ */
+export function RegisterHandler(handler: trigger$0.Handler): $CancellablePromise<void> {
+    return $Call.ByID(149706930, handler);
 }
 
 /**
@@ -79,10 +95,17 @@ export function RegisterRecipe(recipeID: string): $CancellablePromise<void> {
 }
 
 /**
- * Start starts the triggers service
+ * Start starts the triggers service and registers all existing recipe triggers.
  */
 export function Start(): $CancellablePromise<void> {
     return $Call.ByID(3718432365);
+}
+
+/**
+ * UnregisterHandler dynamically unregisters a trigger handler
+ */
+export function UnregisterHandler(nodeRef: string): $CancellablePromise<void> {
+    return $Call.ByID(2711613639, nodeRef);
 }
 
 /**

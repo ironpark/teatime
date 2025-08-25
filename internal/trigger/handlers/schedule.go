@@ -3,9 +3,9 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
-	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/trigger"
 	"github.com/robfig/cron/v3"
 )
@@ -14,6 +14,9 @@ import (
 type ScheduleHandler struct {
 	manager   *trigger.Manager
 	scheduler *cron.Cron
+	eventCh   chan<- trigger.Event
+	entries   map[string]cron.EntryID // triggerID -> entryID mapping
+	mu        sync.RWMutex
 }
 
 // ScheduleConfig represents schedule configuration
@@ -36,13 +39,14 @@ func (c *ScheduleConfig) Validate() error {
 	return nil
 }
 
-func (h *ScheduleHandler) Initialize(manager *trigger.Manager) error {
-	h.manager = manager
+func (h *ScheduleHandler) Initialize(ctx context.Context, eventCh chan<- trigger.Event) error {
 	h.scheduler = cron.New(cron.WithSeconds())
+	h.eventCh = eventCh
+	h.entries = make(map[string]cron.EntryID)
 	return nil
 }
 
-func (h *ScheduleHandler) Run(ctx context.Context) error {
+func (h *ScheduleHandler) Start(ctx context.Context) error {
 	if h.scheduler != nil {
 		h.scheduler.Start()
 		<-ctx.Done()
@@ -52,47 +56,46 @@ func (h *ScheduleHandler) Run(ctx context.Context) error {
 	return nil
 }
 
-func (h *ScheduleHandler) Type() trigger.TriggerType {
-	return trigger.TypeSchedule
+func (h *ScheduleHandler) NodeRef() string {
+	return "teatime.trigger.schedule"
 }
 
-func (h *ScheduleHandler) Validate(configMap map[string]any) error {
-	// Use mapstructure directly for validation
-	var config ScheduleConfig
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:  &config,
-		TagName: "mapstructure",
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create decoder: %w", err)
-	}
-
-	if err := decoder.Decode(configMap); err != nil {
-		return fmt.Errorf("invalid schedule config: %w", err)
-	}
-
-	// Validate using ScheduleConfig's Validate method
-	return config.Validate()
+func (h *ScheduleHandler) Name() string {
+	return "Scheduled"
 }
 
-func (h *ScheduleHandler) Register(instance *trigger.Instance) error {
+func (h *ScheduleHandler) Description() string {
+	return "Triggers workflows based on cron schedule"
+}
+
+
+func (h *ScheduleHandler) Register(ctx context.Context, id string, configMap map[string]any) error {
 	if h.scheduler == nil {
 		return fmt.Errorf("scheduler not initialized")
 	}
 
 	var config ScheduleConfig
-	if err := instance.Bind(&config); err != nil {
-		return fmt.Errorf("failed to bind schedule config: %w", err)
+	if err := trigger.BindAndValidate(&config, configMap); err != nil {
+		return fmt.Errorf("failed to validate schedule config: %w", err)
 	}
 
 	entryID, err := h.scheduler.AddFunc(config.Cron, func() {
-		if h.manager != nil {
+		if h.eventCh != nil {
 			data := map[string]any{
 				"timestamp": time.Now(),
 				"cron":      config.Cron,
 				"scheduled": true,
 			}
-			h.manager.ExecuteTrigger(context.Background(), instance.ID, data)
+			event := trigger.Event{
+				TriggerID:   id,
+				Data:        data,
+				TriggeredAt: time.Now(),
+			}
+			select {
+			case h.eventCh <- event:
+			default:
+				fmt.Printf("Warning: event channel full for trigger %s\n", id)
+			}
 		}
 	})
 
@@ -100,19 +103,27 @@ func (h *ScheduleHandler) Register(instance *trigger.Instance) error {
 		return fmt.Errorf("failed to schedule cron job: %w", err)
 	}
 
-	instance.SetCleanup(func() error {
-		if h.scheduler != nil {
-			h.scheduler.Remove(entryID)
-		}
-		return nil
-	})
-
-	instance.Config["entryID"] = int(entryID)
+	// Store entry ID for later removal
+	h.mu.Lock()
+	h.entries[id] = entryID
+	h.mu.Unlock()
 
 	fmt.Printf("Scheduled cron job: %s (ID: %d)\n", config.Cron, entryID)
 	return nil
 }
 
-func (h *ScheduleHandler) Unregister(instance *trigger.Instance) error {
+func (h *ScheduleHandler) Unregister(ctx context.Context, id string) error {
+	h.mu.Lock()
+	entryID, exists := h.entries[id]
+	if exists {
+		delete(h.entries, id)
+	}
+	h.mu.Unlock()
+
+	if exists && h.scheduler != nil {
+		h.scheduler.Remove(entryID)
+		fmt.Printf("Removed scheduled job for trigger %s (entry ID: %d)\n", id, entryID)
+	}
+
 	return nil
 }

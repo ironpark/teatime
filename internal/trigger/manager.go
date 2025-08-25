@@ -4,24 +4,26 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/ironpark/teatime/internal/recipe"
 )
 
+// Manager coordinates trigger handlers and manages trigger instances for recipes.
+// It provides registration, lifecycle management, and execution orchestration for triggers.
 type Manager struct {
 	// Dependencies
 	recipeLoader RecipeLoader
 	recipeRunner RecipeRunner
-
-	// Trigger handlers
-	handlers map[TriggerType]Handler
+	registry     *Registry
 
 	// Active triggers management
 	activeTriggers map[string]*Instance
 	recipeTriggers map[string][]*Instance
+
+	// Event channel for trigger events
+	eventCh chan Event
 
 	// Optional state management
 	store Store
@@ -31,26 +33,30 @@ type Manager struct {
 	running bool
 }
 
-// NewManager creates a new trigger manager
-func NewManager(loader RecipeLoader, runner RecipeRunner, handlers []Handler) *Manager {
-	// Convert slice to map
-	handlersMap := make(map[TriggerType]Handler)
-	for _, handler := range handlers {
-		handlersMap[handler.Type()] = handler
-	}
-
+// NewManager creates a new trigger manager with internal registry.
+func NewManager(loader RecipeLoader, runner RecipeRunner) *Manager {
 	m := &Manager{
 		recipeLoader:   loader,
 		recipeRunner:   runner,
-		handlers:       handlersMap,
+		registry:       NewRegistry(),
 		activeTriggers: make(map[string]*Instance),
 		recipeTriggers: make(map[string][]*Instance),
+		eventCh:        make(chan Event, 100), // Buffered channel for trigger events
 	}
 
-	// Initialize handlers
+	return m
+}
+
+// NewManagerWithHandlers creates a new trigger manager with specific handlers (legacy).
+// This function is provided for backward compatibility. New code should use NewManager and RegisterHandler.
+func NewManagerWithHandlers(loader RecipeLoader, runner RecipeRunner, handlers []Handler) *Manager {
+	m := NewManager(loader, runner)
+
+	// Register handlers (initialization handled by registry)
 	for _, handler := range handlers {
-		if err := handler.Initialize(m); err != nil {
-			log.Printf("Failed to initialize handler %s: %v", handler.Type(), err)
+		if err := m.RegisterHandler(handler); err != nil {
+			log.Printf("Failed to register handler %s: %v", handler.NodeRef(), err)
+			continue
 		}
 	}
 
@@ -62,35 +68,78 @@ func (m *Manager) SetStore(store Store) {
 	m.store = store
 }
 
-// Start starts the trigger manager
+// Start starts the trigger manager and all registered handlers.
 func (m *Manager) Start(ctx context.Context) error {
 	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.running {
-		m.mu.Unlock()
 		return fmt.Errorf("trigger manager already running")
 	}
-	wg := sync.WaitGroup{}
-	// Start all handlers
-	for _, handler := range m.handlers {
-		wg.Add(1)
+
+	// Start all handlers in background
+	handlers := m.registry.List()
+	for _, handlerInfo := range handlers {
+		handler, err := m.registry.GetHandler(handlerInfo.NodeRef)
+		if err != nil {
+			log.Printf("Failed to get handler %s: %v", handlerInfo.NodeRef, err)
+			continue
+		}
 		go func(h Handler) {
-			defer wg.Done()
-			if err := h.Run(ctx); err != nil {
-				log.Printf("Handler %s run error: %v", h.Type(), err)
+			if err := h.Start(ctx); err != nil {
+				log.Printf("Handler %s start error: %v", h.NodeRef(), err)
 			}
 		}(handler)
 	}
-	m.mu.Unlock()
-	wg.Wait()
-	// Unregister all triggers
+
+	m.running = true
+	log.Println("Trigger manager started")
+
+	// Start event processing goroutine
+	go m.processEvents(ctx)
+
+	// Wait for context cancellation to cleanup
+	go m.waitForShutdown(ctx)
+
+	return nil
+}
+
+// processEvents processes trigger events from the event channel
+func (m *Manager) processEvents(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event := <-m.eventCh:
+			m.handleTriggerEvent(ctx, event)
+		}
+	}
+}
+
+// handleTriggerEvent handles a single trigger event
+func (m *Manager) handleTriggerEvent(ctx context.Context, event Event) {
+	// Execute asynchronously to prevent blocking
+	go func() {
+		if err := m.executeTriggerSync(ctx, event.TriggerID, event.Data); err != nil {
+			log.Printf("Trigger execution failed [%s]: %v", event.TriggerID, err)
+		}
+	}()
+}
+
+// waitForShutdown waits for context cancellation and cleans up resources.
+func (m *Manager) waitForShutdown(ctx context.Context) {
+	<-ctx.Done()
+
 	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Unregister all triggers
 	for recipeID := range m.recipeTriggers {
 		m.unregisterRecipeInternal(recipeID)
 	}
-	m.running = true
-	m.mu.Unlock()
-	log.Println("Trigger manager started")
-	return nil
+
+	m.running = false
+	log.Println("Trigger manager stopped")
 }
 
 // RegisterRecipe registers all triggers for a recipe
@@ -104,7 +153,7 @@ func (m *Manager) RegisterRecipe(recipe *recipe.Recipe) error {
 	m.unregisterRecipeInternal(recipeID)
 
 	// Find trigger nodes
-	triggerNodes := m.findTriggerNodes(recipe.Nodes)
+	triggerNodes := recipe.GetTriggerNodes()
 	if len(triggerNodes) == 0 {
 		return nil // No triggers to register
 	}
@@ -140,11 +189,10 @@ func (m *Manager) UnregisterRecipe(recipeID string) error {
 
 // registerTriggerNode registers a single trigger node
 func (m *Manager) registerTriggerNode(recipeID string, node recipe.Node) (*Instance, error) {
-	// Determine trigger type
-	triggerType := m.determineTriggerType(node.Ref)
-	handler, exists := m.handlers[triggerType]
-	if !exists {
-		return nil, fmt.Errorf("unsupported trigger type: %s", triggerType)
+	// Get handler from registry
+	handler, err := m.registry.GetHandler(node.Ref)
+	if err != nil {
+		return nil, fmt.Errorf("unsupported trigger node: %s", node.Ref)
 	}
 
 	// Convert node properties to config map
@@ -155,23 +203,19 @@ func (m *Manager) registerTriggerNode(recipeID string, node recipe.Node) (*Insta
 
 	// Create instance
 	instance := &Instance{
-		ID:        generateTriggerID(recipeID, node.Id),
-		RecipeID:  recipeID,
-		NodeID:    node.Id,
-		Type:      triggerType,
-		Config:    config,
-		Status:    StatusInactive,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		RecipeRunner: m.recipeRunner,
+		ID:           generateTriggerID(recipeID, node.Id),
+		RecipeID:     recipeID,
+		NodeID:       node.Id,
+		NodeRef:      node.Ref,
+		Config:       config,
+		Status:       StatusInactive,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
-	// Validate configuration
-	if err := handler.Validate(instance.Config); err != nil {
-		return nil, fmt.Errorf("invalid trigger config: %w", err)
-	}
-
-	// Register with handler
-	if err := handler.Register(instance); err != nil {
+	// Register with handler (validation is performed inside Register)
+	if err := handler.Register(context.Background(), instance.ID, instance.Config); err != nil {
 		return nil, err
 	}
 
@@ -207,15 +251,8 @@ func (m *Manager) unregisterRecipeInternal(recipeID string) error {
 // unregisterTriggerInternal unregisters a single trigger (internal, assumes lock held)
 func (m *Manager) unregisterTriggerInternal(instance *Instance) error {
 	// Unregister from handler
-	if handler, exists := m.handlers[instance.Type]; exists {
-		if err := handler.Unregister(instance); err != nil {
-			return err
-		}
-	}
-
-	// Call cleanup function if exists
-	if instance.cleanup != nil {
-		if err := instance.cleanup(); err != nil {
+	if handler, err := m.registry.GetHandler(instance.NodeRef); err == nil {
+		if err := handler.Unregister(context.Background(), instance.ID); err != nil {
 			return err
 		}
 	}
@@ -306,11 +343,48 @@ func (m *Manager) GetTriggersByRecipe(recipeID string) []*Instance {
 	return result
 }
 
-// GetHandler returns a handler by type
-func (m *Manager) GetHandler(triggerType TriggerType) Handler {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.handlers[triggerType]
+// GetHandler returns a handler by node reference
+func (m *Manager) GetHandler(nodeRef string) Handler {
+	handler, err := m.registry.GetHandler(nodeRef)
+	if err != nil {
+		return nil
+	}
+	return handler
+}
+
+// RegisterHandler dynamically registers a handler instance
+func (m *Manager) RegisterHandler(handler Handler) error {
+	return m.registry.Register(context.Background(), handler, m.eventCh)
+}
+
+// UnregisterHandler dynamically unregisters a handler
+func (m *Manager) UnregisterHandler(nodeRef string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Check if there are active triggers of this type
+	for _, instances := range m.recipeTriggers {
+		for _, instance := range instances {
+			if instance.NodeRef == nodeRef {
+				return fmt.Errorf("cannot unregister handler '%s': active triggers exist", nodeRef)
+			}
+		}
+	}
+
+	// Remove from registry
+	m.registry.UnregisterHandler(nodeRef)
+
+	return nil
+}
+
+// GetSupportedNodeRefs returns all supported node references.
+func (m *Manager) GetSupportedNodeRefs() []string {
+	handlers := m.registry.List()
+	nodeRefs := make([]string, len(handlers))
+	for i, handler := range handlers {
+		nodeRefs[i] = handler.NodeRef
+	}
+	return nodeRefs
 }
 
 // SaveTriggerStats saves trigger statistics (optional)
@@ -328,6 +402,7 @@ func (m *Manager) SaveTriggerStats() error {
 			stats = append(stats, TriggerStat{
 				TriggerID:     instance.ID,
 				RecipeID:      instance.RecipeID,
+				NodeRef:       instance.NodeRef,
 				TriggerCount:  instance.TriggerCount,
 				LastTriggered: instance.LastTriggered,
 				LastError:     instance.LastError,
@@ -340,39 +415,7 @@ func (m *Manager) SaveTriggerStats() error {
 
 // Helper functions
 
-// findTriggerNodes finds all trigger nodes in a recipe
-func (m *Manager) findTriggerNodes(nodes []recipe.Node) []recipe.Node {
-	var triggerNodes []recipe.Node
-	for _, node := range nodes {
-		if m.isTriggerNode(node.Ref) {
-			triggerNodes = append(triggerNodes, node)
-		}
-	}
-	return triggerNodes
-}
-
-// isTriggerNode checks if a node reference is a trigger node
-func (m *Manager) isTriggerNode(nodeRef string) bool {
-	return strings.HasPrefix(nodeRef, "teatime.trigger.")
-}
-
-// determineTriggerType determines the trigger type from node reference
-func (m *Manager) determineTriggerType(nodeRef string) TriggerType {
-	switch {
-	case strings.Contains(nodeRef, ".webhook"):
-		return TypeWebhook
-	case strings.Contains(nodeRef, ".schedule"):
-		return TypeSchedule
-	case strings.Contains(nodeRef, ".command"):
-		return TypeCommand
-	case strings.Contains(nodeRef, ".filewatch"):
-		return TypeFileWatch
-	default:
-		return TriggerType(nodeRef) // fallback
-	}
-}
-
-// generateTriggerID generates a deterministic trigger ID
+// generateTriggerID generates a deterministic trigger ID.
 func generateTriggerID(recipeID, nodeID string) string {
-	return fmt.Sprintf("trigger_%s_%s", recipeID, nodeID)
+	return "trigger_" + recipeID + "_" + nodeID
 }

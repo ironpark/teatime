@@ -3,6 +3,9 @@
 
 export {
     Instance,
-    Status,
-    TriggerType
+    Status
+} from "./models.js";
+
+export type {
+    Handler
 } from "./models.js";

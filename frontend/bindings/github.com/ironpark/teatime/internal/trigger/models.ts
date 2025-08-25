@@ -10,23 +10,69 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as time$0 from "../../../../../time/models.js";
 
 /**
- * Instance represents an active trigger instance
+ * Handler defines the interface that all trigger handlers must implement.
+ * Handlers are responsible for managing specific types of triggers.
+ */
+export type Handler = any;
+
+/**
+ * Instance represents an active trigger instance with configuration and runtime data.
  */
 export class Instance {
+    /**
+     * Unique instance identifier
+     */
     "id": string;
+
+    /**
+     * Associated recipe ID
+     */
     "recipeId": string;
+
+    /**
+     * Source node ID in recipe
+     */
     "nodeId": string;
-    "type": TriggerType;
+
+    /**
+     * Node reference
+     */
+    "nodeRef": string;
+
+    /**
+     * Trigger configuration
+     */
     "config": { [_: string]: any };
+
+    /**
+     * Current status
+     */
     "status": Status;
+
+    /**
+     * Creation timestamp
+     */
     "createdAt": time$0.Time;
+
+    /**
+     * Last update timestamp
+     */
     "updatedAt": time$0.Time;
 
     /**
      * Runtime statistics (memory only)
+     * Total trigger executions
      */
     "triggerCount": number;
+
+    /**
+     * Last execution time
+     */
     "lastTriggered"?: time$0.Time | null;
+
+    /**
+     * Last error message
+     */
     "lastError"?: string;
 
     /** Creates a new Instance instance. */
@@ -40,8 +86,8 @@ export class Instance {
         if (!("nodeId" in $$source)) {
             this["nodeId"] = "";
         }
-        if (!("type" in $$source)) {
-            this["type"] = TriggerType.$zero;
+        if (!("nodeRef" in $$source)) {
+            this["nodeRef"] = "";
         }
         if (!("config" in $$source)) {
             this["config"] = {};
@@ -75,27 +121,31 @@ export class Instance {
     }
 }
 
+/**
+ * Status represents the current state of a trigger instance.
+ */
 export enum Status {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = "",
 
-    StatusActive = "active",
-    StatusInactive = "inactive",
-    StatusError = "error",
-};
-
-export enum TriggerType {
     /**
-     * The Go zero value for the underlying type of the enum.
+     * Trigger instance states.
+     *
+     * Trigger is active and monitoring
      */
-    $zero = "",
+    StatusActive = "active",
 
-    TypeWebhook = "webhook",
-    TypeSchedule = "schedule",
-    TypeCommand = "command",
-    TypeFileWatch = "filewatch",
+    /**
+     * Trigger is disabled
+     */
+    StatusInactive = "inactive",
+
+    /**
+     * Trigger encountered an error
+     */
+    StatusError = "error",
 };
 
 // Private type creation functions

@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/trigger"
 )
 
@@ -15,6 +14,7 @@ import (
 type CommandHandler struct {
 	manager            *trigger.Manager
 	registeredCommands map[string]string
+	eventCh            chan<- trigger.Event
 	mu                 sync.RWMutex
 }
 
@@ -37,44 +37,34 @@ func (c *CommandConfig) Validate() error {
 	return nil
 }
 
-func (h *CommandHandler) Initialize(manager *trigger.Manager) error {
-	h.manager = manager
+func (h *CommandHandler) Initialize(ctx context.Context, eventCh chan<- trigger.Event) error {
 	h.registeredCommands = make(map[string]string)
+	h.eventCh = eventCh
 	return nil
 }
 
-func (h *CommandHandler) Run(ctx context.Context) error {
+func (h *CommandHandler) Start(ctx context.Context) error {
 	// Command handler doesn't need a background process
 	return nil
 }
 
-func (h *CommandHandler) Type() trigger.TriggerType {
-	return trigger.TypeCommand
+func (h *CommandHandler) NodeRef() string {
+	return "teatime.trigger.command"
 }
 
-func (h *CommandHandler) Validate(configMap map[string]any) error {
-	// Use mapstructure directly for validation
-	var config CommandConfig
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:  &config,
-		TagName: "mapstructure",
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create decoder: %w", err)
-	}
-
-	if err := decoder.Decode(configMap); err != nil {
-		return fmt.Errorf("invalid command config: %w", err)
-	}
-
-	// Validate using CommandConfig's Validate method
-	return config.Validate()
+func (h *CommandHandler) Name() string {
+	return "Manual Command"
 }
 
-func (h *CommandHandler) Register(instance *trigger.Instance) error {
+func (h *CommandHandler) Description() string {
+	return "Triggers workflows via manual command execution"
+}
+
+
+func (h *CommandHandler) Register(ctx context.Context, id string, configMap map[string]any) error {
 	var config CommandConfig
-	if err := instance.Bind(&config); err != nil {
-		return fmt.Errorf("failed to bind command config: %w", err)
+	if err := trigger.BindAndValidate(&config, configMap); err != nil {
+		return fmt.Errorf("failed to validate command config: %w", err)
 	}
 
 	h.mu.Lock()
@@ -84,21 +74,26 @@ func (h *CommandHandler) Register(instance *trigger.Instance) error {
 		return fmt.Errorf("command '%s' is already registered by trigger %s", config.Command, existingTriggerID)
 	}
 
-	h.registeredCommands[config.Command] = instance.ID
-
-	instance.SetCleanup(func() error {
-		h.mu.Lock()
-		defer h.mu.Unlock()
-		delete(h.registeredCommands, config.Command)
-		return nil
-	})
+	h.registeredCommands[config.Command] = id
 
 	fmt.Printf("Registered command: %s (global: %v)\n", config.Command, config.Global)
 
 	return nil
 }
 
-func (h *CommandHandler) Unregister(instance *trigger.Instance) error {
+func (h *CommandHandler) Unregister(ctx context.Context, id string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	
+	// Find and remove the command associated with this trigger ID
+	for command, triggerID := range h.registeredCommands {
+		if triggerID == id {
+			delete(h.registeredCommands, command)
+			fmt.Printf("Unregistered command: %s\n", command)
+			break
+		}
+	}
+	
 	return nil
 }
 
@@ -118,8 +113,18 @@ func (h *CommandHandler) ExecuteCommand(ctx context.Context, command string, arg
 		"workdir":   getCurrentWorkingDirectory(),
 	}
 
-	if h.manager != nil {
-		h.manager.ExecuteTrigger(ctx, triggerID, data)
+	if h.eventCh != nil {
+		event := trigger.Event{
+			TriggerID:   triggerID,
+			Data:        data,
+			TriggeredAt: time.Now(),
+		}
+		select {
+		case h.eventCh <- event:
+		default:
+			// Channel is full, log warning
+			fmt.Printf("Warning: event channel full for trigger %s\n", triggerID)
+		}
 	}
 
 	return nil

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/trigger"
 )
 
@@ -18,6 +17,7 @@ type FileWatchHandler struct {
 	watcher *fsnotify.Watcher
 	watches map[string]string
 	mu      sync.RWMutex
+	eventCh chan<- trigger.Event
 }
 
 // FileWatchConfig represents file watch configuration
@@ -40,9 +40,9 @@ func (c *FileWatchConfig) Validate() error {
 	return nil
 }
 
-func (h *FileWatchHandler) Initialize(manager *trigger.Manager) error {
-	h.manager = manager
+func (h *FileWatchHandler) Initialize(ctx context.Context, eventCh chan<- trigger.Event) error {
 	h.watches = make(map[string]string)
+	h.eventCh = eventCh
 
 	var err error
 	h.watcher, err = fsnotify.NewWatcher()
@@ -53,7 +53,7 @@ func (h *FileWatchHandler) Initialize(manager *trigger.Manager) error {
 	return nil
 }
 
-func (h *FileWatchHandler) Run(ctx context.Context) error {
+func (h *FileWatchHandler) Start(ctx context.Context) error {
 	if h.watcher == nil {
 		return fmt.Errorf("file watcher not initialized")
 	}
@@ -66,45 +66,31 @@ func (h *FileWatchHandler) Run(ctx context.Context) error {
 	return nil
 }
 
-func (h *FileWatchHandler) Type() trigger.TriggerType {
-	return trigger.TypeFileWatch
+func (h *FileWatchHandler) NodeRef() string {
+	return "teatime.trigger.filewatch"
 }
 
-func (h *FileWatchHandler) Validate(configMap map[string]any) error {
-	// Use mapstructure directly for validation
-	var config FileWatchConfig
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:  &config,
-		TagName: "mapstructure",
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create decoder: %w", err)
-	}
-
-	if err := decoder.Decode(configMap); err != nil {
-		return fmt.Errorf("invalid file watch config: %w", err)
-	}
-
-	// Validate using FileWatchConfig's Validate method
-	if err := config.Validate(); err != nil {
-		return err
-	}
-
-	// Update configMap with any defaults set by validation
-	configMap["path"] = config.Path
-
-	return nil
+func (h *FileWatchHandler) Name() string {
+	return "File Watcher"
 }
 
-func (h *FileWatchHandler) Register(instance *trigger.Instance) error {
+func (h *FileWatchHandler) Description() string {
+	return "Triggers workflows on file system events"
+}
+
+
+func (h *FileWatchHandler) Register(ctx context.Context, id string, configMap map[string]any) error {
 	if h.watcher == nil {
 		return fmt.Errorf("file watcher not initialized")
 	}
 
 	var config FileWatchConfig
-	if err := instance.Bind(&config); err != nil {
-		return fmt.Errorf("failed to bind file watch config: %w", err)
+	if err := trigger.BindAndValidate(&config, configMap); err != nil {
+		return fmt.Errorf("failed to validate file watch config: %w", err)
 	}
+
+	// Update configMap with any defaults set by validation
+	configMap["path"] = config.Path
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -118,24 +104,33 @@ func (h *FileWatchHandler) Register(instance *trigger.Instance) error {
 		return fmt.Errorf("failed to watch path '%s': %w", config.Path, err)
 	}
 
-	h.watches[config.Path] = instance.ID
-
-	instance.SetCleanup(func() error {
-		h.mu.Lock()
-		defer h.mu.Unlock()
-
-		if h.watcher != nil {
-			h.watcher.Remove(config.Path)
-		}
-		delete(h.watches, config.Path)
-		return nil
-	})
+	h.watches[config.Path] = id
 
 	fmt.Printf("Watching file path: %s\n", config.Path)
 	return nil
 }
 
-func (h *FileWatchHandler) Unregister(instance *trigger.Instance) error {
+func (h *FileWatchHandler) Unregister(ctx context.Context, id string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// Find and remove the path associated with this trigger ID
+	var pathToRemove string
+	for path, triggerID := range h.watches {
+		if triggerID == id {
+			pathToRemove = path
+			break
+		}
+	}
+
+	if pathToRemove != "" {
+		if h.watcher != nil {
+			h.watcher.Remove(pathToRemove)
+		}
+		delete(h.watches, pathToRemove)
+		fmt.Printf("Stopped watching file path: %s\n", pathToRemove)
+	}
+
 	return nil
 }
 
@@ -163,7 +158,7 @@ func (h *FileWatchHandler) watchEvents(ctx context.Context) {
 	}
 }
 
-func (h *FileWatchHandler) handleFileEvent(ctx context.Context, event fsnotify.Event) {
+func (h *FileWatchHandler) handleFileEvent(_ context.Context, event fsnotify.Event) {
 	h.mu.RLock()
 	triggerID, exists := h.watches[event.Name]
 	h.mu.RUnlock()
@@ -184,7 +179,16 @@ func (h *FileWatchHandler) handleFileEvent(ctx context.Context, event fsnotify.E
 	data["renamed"] = event.Op&fsnotify.Rename != 0
 	data["chmod"] = event.Op&fsnotify.Chmod != 0
 
-	if h.manager != nil {
-		h.manager.ExecuteTrigger(ctx, triggerID, data)
+	if h.eventCh != nil {
+		event := trigger.Event{
+			TriggerID:   triggerID,
+			Data:        data,
+			TriggeredAt: time.Now(),
+		}
+		select {
+		case h.eventCh <- event:
+		default:
+			fmt.Printf("Warning: event channel full for trigger %s\n", triggerID)
+		}
 	}
 }

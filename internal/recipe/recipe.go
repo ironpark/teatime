@@ -33,8 +33,8 @@ type FlowEdge struct {
 	ID           string `json:"id"`
 	Source       string `json:"source"`
 	Target       string `json:"target"`
-	SourceHandle string `json:"sourceHandle"`         // Output handle ID from source node
-	TargetHandle string `json:"targetHandle"`         // Input handle ID to target node (optional)
+	SourceHandle string `json:"sourceHandle"` // Output handle ID from source node
+	TargetHandle string `json:"targetHandle"` // Input handle ID to target node (optional)
 	Type         string `json:"type,omitempty"`
 }
 
@@ -106,13 +106,13 @@ func (r *Recipe) GetConnectedNodesByHandles(sourceId string, outputHandles []str
 	if len(outputHandles) == 0 || (len(outputHandles) == 1 && outputHandles[0] == "default") {
 		return r.GetConnectedNodes(sourceId)
 	}
-	
+
 	// Create a map for quick handle lookup
 	handleMap := make(map[string]bool)
 	for _, handle := range outputHandles {
 		handleMap[handle] = true
 	}
-	
+
 	nodes := []Node{}
 	for _, edge := range r.Edges {
 		if edge.Source == sourceId {
@@ -121,7 +121,7 @@ func (r *Recipe) GetConnectedNodesByHandles(sourceId string, outputHandles []str
 			if edgeHandle == "" {
 				edgeHandle = "default"
 			}
-			
+
 			// Check if this edge's handle is in the active handles
 			if handleMap[edgeHandle] {
 				node, err := r.GetNodeById(edge.Target)
@@ -145,6 +145,17 @@ func (r *Recipe) GetNodeDependencies(id string) (ids []string, err error) {
 		}
 	}
 	return ids, nil
+}
+
+// GetTriggerNodes returns all trigger nodes in the recipe.
+func (r *Recipe) GetTriggerNodes() []Node {
+	nodes := []Node{}
+	for _, node := range r.Nodes {
+		if node.IsTrigger() {
+			nodes = append(nodes, node)
+		}
+	}
+	return nodes
 }
 
 // Save persists the recipe to its associated file path in YAML format.

@@ -9,15 +9,17 @@ var (
 	// triggerNodes stores all registered trigger nodes.
 	triggerNodes = []Node{}
 	// actionNodes stores all registered action nodes.
-	actionNodes  = []Node{}
+	actionNodes = []Node{}
 	// branchNodes stores all registered branch nodes.
-	branchNodes  = []Node{}
+	branchNodes = []Node{}
 	// utilNodes stores all registered utility nodes.
-	utilNodes    = []Node{}
+	utilNodes = []Node{}
 	// refToNode maps node reference IDs to their implementations.
-	refToNode    = make(map[string]Node)
+	refToNode = make(map[string]Node)
+	// triggerRefToNode maps trigger node reference IDs to their implementations.
+	triggerRefToNode = make(map[string]Node)
 	// lock protects concurrent access to the node registry.
-	lock         sync.RWMutex
+	lock sync.RWMutex
 )
 
 // RegisterNode registers a new node implementation in the global registry.
@@ -40,6 +42,9 @@ func RegisterNode(node Node) {
 		utilNodes = append(utilNodes, node)
 	}
 	refToNode[node.Ref()] = node
+	if node.Type() == NodeTypeTrigger {
+		triggerRefToNode[node.Ref()] = node
+	}
 }
 
 // GetNodes returns all registered nodes regardless of type.
@@ -78,4 +83,20 @@ func GetNodeByRef(ref string) (Node, error) {
 		return node, nil
 	}
 	return nil, errors.New("node not found")
+}
+
+// Exists checks if a node with the given reference exists in the registry.
+func Exists(ref string) bool {
+	lock.RLock()
+	defer lock.RUnlock()
+	_, ok := refToNode[ref]
+	return ok
+}
+
+// TriggerExists checks if a trigger node with the given reference exists in the registry.
+func TriggerExists(ref string) bool {
+	lock.RLock()
+	defer lock.RUnlock()
+	_, ok := triggerRefToNode[ref]
+	return ok
 }

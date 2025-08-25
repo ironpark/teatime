@@ -58,6 +58,10 @@ func (n Node) MarshalYAML() ([]byte, error) {
 	})
 }
 
+func (n *Node) IsTrigger() bool {
+	return n.NodeType == string(node.NodeTypeTrigger)
+}
+
 // GetRawNode returns the underlying node implementation.
 // This provides access to the node's execution logic.
 func (n *Node) GetRawNode() node.Node {

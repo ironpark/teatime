@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 
 	"github.com/ironpark/teatime/internal/recipe"
 	"github.com/ironpark/teatime/internal/runner"
@@ -33,12 +34,10 @@ type recipeRunner struct {
 	recipesService *RecipesService
 }
 
-func (r *recipeRunner) Execute(ctx context.Context, rec *recipe.Recipe, startNodeID string, data map[string]interface{}) error {
+func (r *recipeRunner) Execute(ctx context.Context, rec *recipe.Recipe, startNodeID string, data map[string]any) error {
 	// Convert trigger data to properties map
-	properties := make(map[string]any)
-	for key, value := range data {
-		properties[key] = value
-	}
+	properties := make(map[string]any, len(data))
+	maps.Copy(properties, data)
 
 	// Execute the recipe starting from the trigger node
 	return runner.Run(ctx, rec, startNodeID, properties, func(rec *recipe.Recipe, state runner.NodeExecutionStatus, node recipe.Node, output map[string]any, err error) {
@@ -50,20 +49,27 @@ func (r *recipeRunner) Execute(ctx context.Context, rec *recipe.Recipe, startNod
 	})
 }
 
-// NewTriggersService creates a new triggers service
+// NewTriggersService creates a new triggers service with internal registry management.
 func NewTriggersService(store *stores.Store, recipesService *RecipesService) *TriggersService {
 	loader := &recipeLoader{store: store}
 	runner := &recipeRunner{recipesService: recipesService}
 
-	// Create handlers slice
-	handlersList := []trigger.Handler{
+	// Create manager with internal registry
+	manager := trigger.NewManager(loader, runner)
+
+	// Register handler instances directly with the manager
+	handlerInstances := []trigger.Handler{
 		&handlers.WebhookHandler{},
 		&handlers.ScheduleHandler{},
 		&handlers.CommandHandler{},
 		&handlers.FileWatchHandler{},
 	}
 
-	manager := trigger.NewManager(loader, runner, handlersList)
+	for _, handler := range handlerInstances {
+		if err := manager.RegisterHandler(handler); err != nil {
+			log.Printf("Failed to register handler %s: %v", handler.NodeRef(), err)
+		}
+	}
 
 	return &TriggersService{
 		store:          store,
@@ -72,7 +78,7 @@ func NewTriggersService(store *stores.Store, recipesService *RecipesService) *Tr
 	}
 }
 
-// Start starts the triggers service
+// Start starts the triggers service and registers all existing recipe triggers.
 func (s *TriggersService) Start(ctx context.Context) error {
 	if err := s.triggerManager.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start trigger manager: %w", err)
@@ -80,10 +86,11 @@ func (s *TriggersService) Start(ctx context.Context) error {
 
 	// Register triggers for all existing recipes
 	if err := s.registerAllRecipes(); err != nil {
-		log.Printf("Warning: failed to register some triggers: %v", err)
+		// Log but don't fail - service can start even if some triggers fail to register
+		log.Printf("Trigger registration warning: %v", err)
 	}
 
-	log.Println("Triggers service started")
+	log.Println("Triggers service started successfully")
 	return nil
 }
 
@@ -124,7 +131,7 @@ func (s *TriggersService) GetTriggersByRecipe(recipeID string) ([]*trigger.Insta
 
 // ExecuteCommand executes a command trigger (for command-based triggers)
 func (s *TriggersService) ExecuteCommand(ctx context.Context, command string, args map[string]any) error {
-	if cmdHandler, ok := s.triggerManager.GetHandler(trigger.TypeCommand).(*handlers.CommandHandler); ok {
+	if cmdHandler, ok := s.triggerManager.GetHandler("teatime.trigger.command").(*handlers.CommandHandler); ok {
 		return cmdHandler.ExecuteCommand(ctx, command, args)
 	}
 	return fmt.Errorf("command handler not found")
@@ -132,26 +139,46 @@ func (s *TriggersService) ExecuteCommand(ctx context.Context, command string, ar
 
 // GetRegisteredCommands returns all registered commands
 func (s *TriggersService) GetRegisteredCommands() []string {
-	if cmdHandler, ok := s.triggerManager.GetHandler(trigger.TypeCommand).(*handlers.CommandHandler); ok {
+	if cmdHandler, ok := s.triggerManager.GetHandler("teatime.trigger.command").(*handlers.CommandHandler); ok {
 		return cmdHandler.GetRegisteredCommands()
 	}
 	return []string{}
 }
 
-// RefreshRecipeTriggers refreshes triggers for a specific recipe (call after recipe updates)
+// GetSupportedNodeRefs returns all supported node references from the registry
+func (s *TriggersService) GetSupportedNodeRefs() []string {
+	return s.triggerManager.GetSupportedNodeRefs()
+}
+
+// RegisterHandler dynamically registers a handler instance
+func (s *TriggersService) RegisterHandler(handler trigger.Handler) error {
+	return s.triggerManager.RegisterHandler(handler)
+}
+
+// UnregisterHandler dynamically unregisters a trigger handler
+func (s *TriggersService) UnregisterHandler(nodeRef string) error {
+	return s.triggerManager.UnregisterHandler(nodeRef)
+}
+
+// RefreshRecipeTriggers refreshes triggers for a specific recipe (call after recipe updates).
 func (s *TriggersService) RefreshRecipeTriggers(recipeID string) error {
-	// First unregister existing triggers for this recipe
 	recipe, err := s.store.GetRecipe(recipeID)
 	if err != nil {
-		return fmt.Errorf("failed to get recipe: %w", err)
+		return fmt.Errorf("failed to load recipe %s: %w", recipeID, err)
 	}
 
+	// First unregister existing triggers
 	if err := s.triggerManager.UnregisterRecipe(recipe.Path); err != nil {
 		log.Printf("Warning: failed to unregister triggers for recipe %s: %v", recipeID, err)
 	}
 
 	// Re-register triggers
-	return s.triggerManager.RegisterRecipe(recipe)
+	if err := s.triggerManager.RegisterRecipe(recipe); err != nil {
+		return fmt.Errorf("failed to register triggers for recipe %s: %w", recipeID, err)
+	}
+
+	log.Printf("Successfully refreshed triggers for recipe: %s", recipeID)
+	return nil
 }
 
 // RefreshAllTriggers refreshes all triggers (useful for bulk updates)
@@ -160,9 +187,9 @@ func (s *TriggersService) RefreshAllTriggers() error {
 }
 
 // GetTriggerStats returns trigger statistics
-func (s *TriggersService) GetTriggerStats() map[string]interface{} {
+func (s *TriggersService) GetTriggerStats() map[string]any {
 	triggers := s.triggerManager.GetActiveTriggers()
-	stats := make(map[string]interface{})
+	stats := make(map[string]any)
 
 	stats["total_triggers"] = len(triggers)
 
@@ -170,7 +197,7 @@ func (s *TriggersService) GetTriggerStats() map[string]interface{} {
 	totalExecutions := int64(0)
 
 	for _, t := range triggers {
-		typeCount[string(t.Type)]++
+		typeCount[t.NodeRef]++
 		totalExecutions += t.TriggerCount
 	}
 
@@ -180,7 +207,7 @@ func (s *TriggersService) GetTriggerStats() map[string]interface{} {
 	return stats
 }
 
-// registerAllRecipes registers triggers for all existing recipes
+// registerAllRecipes registers triggers for all existing recipes.
 func (s *TriggersService) registerAllRecipes() error {
 	recipes, err := s.store.ListRecipes()
 	if err != nil {
@@ -188,20 +215,33 @@ func (s *TriggersService) registerAllRecipes() error {
 	}
 
 	var errors []error
+	successCount := 0
+
 	for _, dbRecipe := range recipes {
 		recipe, err := s.store.GetRecipe(dbRecipe.ID)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("failed to get recipe %s: %w", dbRecipe.ID, err))
+			errors = append(errors, fmt.Errorf("recipe %s: failed to load: %w", dbRecipe.ID, err))
 			continue
 		}
 
 		if err := s.triggerManager.RegisterRecipe(recipe); err != nil {
-			errors = append(errors, fmt.Errorf("failed to register triggers for recipe %s: %w", dbRecipe.ID, err))
+			errors = append(errors, fmt.Errorf("recipe %s: failed to register triggers: %w", dbRecipe.ID, err))
+			continue
 		}
+
+		successCount++
 	}
 
+	// Log results
+	log.Printf("Registered triggers for %d/%d recipes", successCount, len(recipes))
+
 	if len(errors) > 0 {
-		return fmt.Errorf("multiple registration errors occurred: %v", errors)
+		log.Printf("Registration errors: %v", errors)
+		if successCount == 0 {
+			return fmt.Errorf("failed to register any triggers: %d errors occurred", len(errors))
+		}
+		// Return warning if some succeeded
+		return fmt.Errorf("partial registration failure: %d/%d failed", len(errors), len(recipes))
 	}
 
 	return nil

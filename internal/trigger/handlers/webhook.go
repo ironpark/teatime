@@ -7,21 +7,29 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"sync"
 	"time"
 
-	"github.com/go-viper/mapstructure/v2"
 	"github.com/ironpark/teatime/internal/trigger"
 )
 
-// WebhookHandler handles HTTP webhook triggers
+// route represents a registered webhook route
+type route struct {
+	pattern   string
+	method    string
+	handler   http.HandlerFunc
+	triggerID string
+}
+
+// WebhookHandler handles HTTP webhook triggers with proper route cleanup
 type WebhookHandler struct {
 	manager  *trigger.Manager
 	server   *http.Server
-	mux      *http.ServeMux
-	routes   map[string]string // path+method -> triggerID
+	routes   []route
 	routesMu sync.RWMutex
 	serverMu sync.Mutex
+	eventCh  chan<- trigger.Event
 }
 
 // WebhookConfig represents webhook configuration
@@ -41,23 +49,20 @@ func (c *WebhookConfig) Validate() error {
 	}
 
 	validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH"}
-	for _, validMethod := range validMethods {
-		if c.Method == validMethod {
-			return nil
-		}
+	if !slices.Contains(validMethods, c.Method) {
+		return fmt.Errorf("invalid HTTP method: %s", c.Method)
 	}
 
-	return fmt.Errorf("invalid HTTP method: %s", c.Method)
-}
-
-func (h *WebhookHandler) Initialize(manager *trigger.Manager) error {
-	h.manager = manager
-	h.mux = http.NewServeMux()
-	h.routes = make(map[string]string)
 	return nil
 }
 
-func (h *WebhookHandler) Run(ctx context.Context) error {
+func (h *WebhookHandler) Initialize(ctx context.Context, eventCh chan<- trigger.Event) error {
+	h.routes = make([]route, 0)
+	h.eventCh = eventCh
+	return nil
+}
+
+func (h *WebhookHandler) Start(ctx context.Context) error {
 	h.serverMu.Lock()
 	if h.server != nil {
 		h.serverMu.Unlock()
@@ -66,7 +71,7 @@ func (h *WebhookHandler) Run(ctx context.Context) error {
 
 	h.server = &http.Server{
 		Addr:    ":8080",
-		Handler: h.mux,
+		Handler: h,
 	}
 	h.serverMu.Unlock()
 
@@ -91,72 +96,79 @@ func (h *WebhookHandler) Run(ctx context.Context) error {
 	return nil
 }
 
-func (h *WebhookHandler) Type() trigger.TriggerType {
-	return trigger.TypeWebhook
+// ServeHTTP implements http.Handler interface for custom routing
+func (h *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.routesMu.RLock()
+	defer h.routesMu.RUnlock()
+
+	for _, route := range h.routes {
+		if route.method == r.Method && route.pattern == r.URL.Path {
+			route.handler(w, r)
+			return
+		}
+	}
+
+	http.NotFound(w, r)
 }
 
-func (h *WebhookHandler) Validate(configMap map[string]any) error {
-	// Use mapstructure directly for validation
+func (h *WebhookHandler) NodeRef() string {
+	return "teatime.trigger.webhook"
+}
+
+func (h *WebhookHandler) Name() string {
+	return "HTTP Webhook"
+}
+
+func (h *WebhookHandler) Description() string {
+	return "Triggers workflows via HTTP webhook endpoints"
+}
+
+
+func (h *WebhookHandler) Register(ctx context.Context, id string, configMap map[string]any) error {
 	var config WebhookConfig
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:  &config,
-		TagName: "mapstructure",
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create decoder: %w", err)
-	}
-
-	if err := decoder.Decode(configMap); err != nil {
-		return fmt.Errorf("invalid webhook config: %w", err)
-	}
-
-	// Validate using WebhookConfig's Validate method
-	if err := config.Validate(); err != nil {
-		return err
+	if err := trigger.BindAndValidate(&config, configMap); err != nil {
+		return fmt.Errorf("failed to validate webhook config: %w", err)
 	}
 
 	// Update configMap with any defaults set by validation
 	configMap["method"] = config.Method
 
-	return nil
-}
-
-func (h *WebhookHandler) Register(instance *trigger.Instance) error {
-	if h.mux == nil {
-		return fmt.Errorf("webhook handler not initialized")
-	}
-
-	var config WebhookConfig
-	if err := instance.Bind(&config); err != nil {
-		return fmt.Errorf("failed to bind webhook config: %w", err)
-	}
-
-	// Create route key
-	routeKey := config.Method + ":" + config.Path
-
 	h.routesMu.Lock()
 	defer h.routesMu.Unlock()
 
-	if existingTriggerID, exists := h.routes[routeKey]; exists {
-		return fmt.Errorf("route '%s %s' is already registered by trigger %s", config.Method, config.Path, existingTriggerID)
+	// Check for existing route
+	for _, existingRoute := range h.routes {
+		if existingRoute.method == config.Method && existingRoute.pattern == config.Path {
+			return fmt.Errorf("route '%s %s' is already registered by trigger %s",
+				config.Method, config.Path, existingRoute.triggerID)
+		}
 	}
 
-	h.routes[routeKey] = instance.ID
-	h.mux.HandleFunc(config.Path, h.createHandler(instance.ID, config.Method))
-
-	instance.SetCleanup(func() error {
-		h.routesMu.Lock()
-		defer h.routesMu.Unlock()
-
-		routeKey := config.Method + ":" + config.Path
-		delete(h.routes, routeKey)
-		return nil
-	})
+	// Add new route
+	newRoute := route{
+		pattern:   config.Path,
+		method:    config.Method,
+		handler:   h.createHandler(id, config.Method),
+		triggerID: id,
+	}
+	h.routes = append(h.routes, newRoute)
 
 	return nil
 }
 
-func (h *WebhookHandler) Unregister(instance *trigger.Instance) error {
+func (h *WebhookHandler) Unregister(ctx context.Context, id string) error {
+	h.routesMu.Lock()
+	defer h.routesMu.Unlock()
+
+	// Remove route by filtering
+	filteredRoutes := make([]route, 0, len(h.routes))
+	for _, route := range h.routes {
+		if route.triggerID != id {
+			filteredRoutes = append(filteredRoutes, route)
+		}
+	}
+	h.routes = filteredRoutes
+	
 	return nil
 }
 
@@ -183,8 +195,17 @@ func (h *WebhookHandler) createHandler(triggerID string, method string) http.Han
 			}
 		}
 
-		if h.manager != nil {
-			h.manager.ExecuteTrigger(context.Background(), triggerID, data)
+		if h.eventCh != nil {
+			event := trigger.Event{
+				TriggerID:   triggerID,
+				Data:        data,
+				TriggeredAt: time.Now(),
+			}
+			select {
+			case h.eventCh <- event:
+			default:
+				fmt.Printf("Warning: event channel full for trigger %s\n", triggerID)
+			}
 		}
 
 		response := map[string]any{
