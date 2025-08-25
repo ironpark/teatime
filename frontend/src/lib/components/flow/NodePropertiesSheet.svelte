@@ -46,8 +46,7 @@
 		if (selectedNode) {
 			// For basic node properties like label
 			if (field === 'label') {
-				const properties = getPropertiesMap();
-				await recipeStore.updateNodeData(selectedNode.id, value, properties);
+				await recipeStore.updateNodeData(selectedNode.id, value, getPropertiesMap());
 			} else {
 				// For other data properties, update via updateNodeData (local change)
 				updateNodeData(selectedNode.id, { [field]: value });

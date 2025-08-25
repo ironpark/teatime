@@ -78,6 +78,7 @@ func (s *EditSession) UpdateNode(nodeId string, x, y int, label string, properti
 		Ref:           foundNode.NodeData.Ref,
 		Icon:          foundNode.NodeData.Icon,
 		Name:          foundNode.NodeData.Name,
+		Label:         label,
 		NodeType:      foundNode.NodeData.NodeType,
 		Description:   foundNode.NodeData.Description,
 		Properties:    newProps,

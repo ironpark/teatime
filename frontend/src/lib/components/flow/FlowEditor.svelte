@@ -98,10 +98,6 @@
 		recipeStore.selectedEdges = selectedEdgesList;
 	}
 
-	function handleNodeDrag(targetNode: Node, nodes: Node[], event: MouseEvent | TouchEvent) {
-		console.log('Node dragged:', targetNode, nodes, event);
-	}
-
 	function handleKeyDown(event: KeyboardEvent) {
 		if ((event.key === 'Delete' || event.key === 'Backspace') && recipeStore.selectedNodes.length > 0) {
 			event.preventDefault();
@@ -129,7 +125,7 @@
 			{nodeTypes}
 			onconnect={handleConnect}
 			oninit={handleInit}
-		
+			onselectionchange={handleSelectionChange}
 			onerror={handleError}
 			fitView
 			snapGrid={[15, 15]}
