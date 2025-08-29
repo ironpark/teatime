@@ -39,19 +39,13 @@ var (
 	providerToModel = map[string][]string{
 		"openai":     openaiModels,
 		"anthropic":  anthropicModels,
-		"openrouter": []string{"openai/gpt-4", "openai/gpt-3.5-turbo", "anthropic/claude-3-opus", "anthropic/claude-3-sonnet", "anthropic/claude-3-haiku", "meta-llama/llama-2-70b-chat"},
-		"custom":     []string{},
+		"openrouter": {"openai/gpt-4", "openai/gpt-3.5-turbo", "anthropic/claude-3-opus", "anthropic/claude-3-sonnet", "anthropic/claude-3-haiku", "meta-llama/llama-2-70b-chat"},
+		"custom":     {},
 	}
 	providerDefaultModel = map[string]string{
 		"openai":     "gpt-4o-mini",
 		"anthropic":  "claude-3-haiku-20240307",
 		"openrouter": "openai/gpt-4o-mini",
-		"custom":     "",
-	}
-	providerToBaseURL = map[string]string{
-		"openai":     "https://api.openai.com/v1",
-		"anthropic":  "https://api.anthropic.com",
-		"openrouter": "https://openrouter.ai/api/v1",
 		"custom":     "",
 	}
 )
@@ -112,12 +106,10 @@ func (l *LLMActionNode) GetProperties(ctx node.PropertyContext) []node.NodePrope
 	props = append(props, baseProps...)
 
 	// Add model property based on provider
-	var modelProp node.NodeProperty
-	modelProp = node.SelectProp("model", "Model", providerToModel[provider],
+	props = append(props, node.SelectProp("model", "Model", providerToModel[provider],
 		node.WithDescription("모델을 선택하세요"),
 		node.RequiredWithDefault(providerDefaultModel[provider]),
-	)
-	props = append(props, modelProp)
+	))
 
 	// Add API Key property
 	var apiKeyProp node.NodeProperty
