@@ -129,17 +129,27 @@ export class RecipeStore {
         }
         return true;
     }
+    
+    async deleteNodes(nodeIds: string[]): Promise<boolean> {
+        for (const nodeId of nodeIds) {
+            await RecipesService.DeleteNode(this.recipeId, nodeId);
+        }
+        this.nodes = this.nodes.filter(node => !nodeIds.includes(node.id));
+        this.edges = this.edges.filter(edge => !nodeIds.includes(edge.source) && !nodeIds.includes(edge.target));
+        return true;
+    }
 
     async deleteNode(nodeId: string): Promise<boolean> {
-        return await this.withLoading(async () => {
-            await RecipesService.DeleteNode(this.recipeId, nodeId);
+        await RecipesService.DeleteNode(this.recipeId, nodeId);
+        // Update local state
+        const initialLength = this.nodes.length;
+        this.nodes = this.nodes.filter(node => node.id !== nodeId);
             
-            // Update local state
-            const initialLength = this.nodes.length;
-            this.nodes = this.nodes.filter(node => node.id !== nodeId);
-            
-            return this.nodes.length < initialLength;
-        }) ?? false;
+        // Remove connected edges
+        this.edges = this.edges.filter(edge => 
+            edge.source !== nodeId && edge.target !== nodeId
+        );    
+        return this.nodes.length < initialLength;
     }
 	
 	// Clear workflow

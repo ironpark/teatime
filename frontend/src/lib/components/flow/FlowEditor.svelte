@@ -108,12 +108,13 @@
 	async function deleteSelectedNodes() {
 		if (recipeStore.selectedNodes.length === 0) return;
 		
-		// Delete nodes one by one (could be optimized for batch operations later)
-		for (const node of recipeStore.selectedNodes) {
-			await recipeStore.deleteNode(node.id);
-		}
-		// Clear selection after deletion
+		// Store node IDs to delete before clearing selection
+		const nodeIdsToDelete = recipeStore.selectedNodes.map(node => node.id);
+		
+		// Clear selection before deletion to avoid UI issues
 		recipeStore.selectedNodes = [];
+		
+		await recipeStore.deleteNodes(nodeIdsToDelete);
 	}
 </script>
 
