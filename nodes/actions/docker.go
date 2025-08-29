@@ -6,11 +6,11 @@ import (
 	"io"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"github.com/ironpark/teatime/internal/node"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/filters"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/client"
 )
 
 func init() {
@@ -596,7 +596,7 @@ func (d *DockerListNode) Run(ctx context.Context, resolvedProps node.PropertyCon
 			"labels":  c.Labels,
 			"created": c.Created,
 		}
-		
+
 		// Include size information if requested
 		if listOptions.Size {
 			containerInfo["sizeRw"] = c.SizeRw

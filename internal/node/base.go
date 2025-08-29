@@ -1,5 +1,7 @@
 package node
 
+import "slices"
+
 // BaseNode provides a default implementation of the Node interface.
 // It should be embedded in concrete node implementations.
 type BaseNode struct {
@@ -85,7 +87,7 @@ func (r *BaseNode) Info() NodeInfo {
 // Properties returns the static input properties.
 // This provides access to the base properties defined in NewBaseNode.
 func (r *BaseNode) Properties() []NodeProperty {
-	return r.properties
+	return slices.Clone(r.properties)
 }
 
 // Output returns the static output properties.
@@ -104,21 +106,21 @@ func (r *BaseNode) OutputHandles() []OutputHandle {
 // Default implementation returns the static properties.
 // Concrete nodes can override this for dynamic behavior.
 func (r *BaseNode) GetProperties(ctx PropertyContext) []NodeProperty {
-	return r.properties
+	return slices.Clone(r.properties)
 }
 
 // GetOutput returns dynamic output properties based on context.
 // Default implementation returns the static output.
 // Concrete nodes can override this for dynamic behavior.
 func (r *BaseNode) GetOutput(ctx PropertyContext) []NodeProperty {
-	return r.output
+	return slices.Clone(r.output)
 }
 
 // GetOutputHandles returns dynamic output handles based on context.
 // Default implementation returns the static output handles.
 // Concrete nodes can override this for dynamic behavior.
 func (r *BaseNode) GetOutputHandles(ctx PropertyContext) []OutputHandle {
-	return r.outputHandles
+	return slices.Clone(r.outputHandles)
 }
 
 // ValidateProperties validates the input properties for the node.

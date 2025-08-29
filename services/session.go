@@ -48,8 +48,9 @@ func (s *EditSession) CreateNode(ref string, x, y int) (rc.Node, error) {
 		return rc.Node{}, err
 	}
 	lowerName := strings.ReplaceAll(strings.TrimSpace(strings.ToLower(createdNode.Name())), " ", "-")
-
-	nodeId := fmt.Sprintf("%s%d", lowerName, s.GetNodeCount(ref))
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	nodeId := fmt.Sprintf("%s%d", lowerName, s.nodeCounter[ref])
 	node := rc.Node{
 		Id:       nodeId,
 		Position: rc.Position{x, y},
@@ -66,6 +67,7 @@ func (s *EditSession) CreateNode(ref string, x, y int) (rc.Node, error) {
 			OutputHandles: createdNode.GetOutputHandles(node.PropertyContext{}),
 		},
 	}
+	s.nodeCounter[ref]++
 	s.Recipe.Nodes = append(s.Recipe.Nodes, node)
 	s.NeedsSave = true
 	s.LastModified = time.Now()
